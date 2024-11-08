@@ -1,0 +1,20 @@
+---
+Checks:          '-*,cppcoreguidelines-*,modernize-*,readability-*'
+WarningsAsErrors: '*'
+HeaderFileExtensions:
+  - ''
+  - h
+  - hh
+  - hpp
+  - hxx
+ImplementationFileExtensions:
+  - c
+  - cc
+  - cpp
+  - cxx
+HeaderFilterRegex: ''
+CheckOptions:
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: '_|i|j|k|p'
+  - key: readability-identifier-length.IgnoredParameterNames
+    value: '_|i|j|k|p'

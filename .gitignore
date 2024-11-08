@@ -1,0 +1,12 @@
+compile_commands.json
+build/*
+.vs/*
+.vscode/*
+.cache/*
+.ccls-cache/*
+include/*
+lib64/*
+lib/*
+CMakeUserPresets.json
+share/*
+bin/*
