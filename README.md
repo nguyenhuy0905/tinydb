@@ -1,142 +1,143 @@
-# Cmake template (2.0)
+# Tinydb
 
-> A rewrite of this CMake template, trimming away some "bloat"
+> Third attempt at making a database
 
-## What's this
+## Why did it take you so much pain
 
-- A somewhat minimalist CMake project configuration.
+- Well, didn't define a MVP well enough. And got overwhelmed.
+- Yes, that means the current draft is the MVP.
 
-## What's included
+## So what is the MVP
 
-- Integration with multiple tools:
-  - Formatters & linters:
-    - clang-format
-    - clang-tidy
-    - cmake-format
-  - Unit test (GTest), fuzz test (libFuzzer), benchmark (Google benchmark)
-  - Sanitizers (ASan, UBSan, MSan, TSan)
-  - Download dependencies with conan
-  - ccache
-  - lld
-- Choice to use either C++20 modules or traditional `#include`s.
-- Some convenient commands in [the Makefile](./Makefile).
-- Basic installation and CPack configuration.
+- Single table.
+- Each entry is at max about 4000 bytes large.
+  - This can be extended later.
 
-## How to use
+- Some basic data types.
+  - Unsigned Int (4 bytes).
+  - String (say, at most 255 characters).
 
-- If you want to use conan, first, set up conan [by Reading The Friendly Manual](https://docs.conan.io/2/installation.html):
-- Then install packages,
+- Single-indexed.
+  - Key assumed to be the first column. If first column isn't name `id`,
+  a `rowid` column is inserted.
+    - For now, manual `id` insertion is forced. No auto-increment.
+  - `id` must be an unsigned int.
+  - Simply compare byte-to-byte.
+  - Multi-indexing then probably something like a hash table.
 
-```bash
-# build type: either Debug, Release, MinSizeRel or RelWithDebInfo. Case-sensitive.
-# default to Debug.
-conan install <project source dir> --build=missing -s build_type=<your build type>
-# or, you can use the convenient Makefile
-# say, I also want to install CMake and Ninja
-make conan-install \
-    CONAN_OPTIONS="install_cmake=True install_ninja=True" \
-    BUILD_TYPE="<your build type>"
-```
+## Command-line
 
-- Build dir after this step is `<project root>/<your build type>`.
-- Then generate the CMake
+- Call `tinydb` to open the REPL.
 
-```bash
-# --preset conan-release if building release
-# if you want to use the default compiler, remove the
-# -DCMAKE_C(XX)_COMPILER and -G option.
-# maybe -DCMAKE_EXPORT_COMPILE_COMMANDS also, if you don't need it.
-cmake -B <your build dir> --preset conan-debug \
-    -DCMAKE_CXX_COMPILER=<the compiler> \
-    -DCMAKE_C_COMPILER=<the compiler> \
-    -G <generator> \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-```
+### 1. Quickie
 
-- Further configure with ccmake:
+- `exit` to quit.
+- `help` to print help.
+- `version` to print version.
+- `open <FILENAME>` to open a database file.
+- `close` to close the currently opened database file.
+- `create <TABLENAME> <DIR>` to create file `<DIR>/<TABLENAME>.tinydb`.
+- `format name<TAB>type<TAB>size...` to create a new table in the opened file.
+Invalidates all other data stored in the table.
+  - It's a bit inconvenient: an int is 4 bytes always but one still needs to
+  enter the length.
+- `query all` to print out all entries.
+- `query tblname` to print out current table name. Prints an empty line if no
+file is currently opened.
+- `query colname` to print out column names.
+- `query coldata` to print out column names and sizes.
+- `query id=ID` to get the row with the specified ID.
+  - As of now only ID query is thought of.
+  - May also go `id<ID`, `id>ID`, `id<=ID`, `id>=ID`, `id?`. The last
+  option prints a random row.
+- `insert (id ...)` to add a row into the table. ID must be the first specified
+element. Data must be sequentially ordered just like how the table is declared.
+- `behead id=ID` to remove the row with the specified ID.
 
-```bash
-ccmake -B <your build dir>
-```
+## Format of a database file
 
-- Lastly, create a symlink if you do need the compile\_commands.json:
+### 1. File header
 
-```bash
-# assuming you're at the project root
-ln -s <your build dir>/compile_commands.json compile_commands.json
-```
+#### 1.1. Table definition
 
-## What to change
+- Table name: it's just the filename. 0 byte.
+- Some validation string: "SMALLPP\0\0\0." 10 bytes.
+- Content type: in the format `name<TAB>type<TAB>size<TAB>`.
+  - So long as the table doesn't exceed 4000 bytes, it's good.
+  - Type: flagged. 1 = uint, 2 = string.
+  - Content ends with `\0`, so, for example:
 
-- At the very least, the project name, and the export macro.
-  - A [shell script](./sed-all.sh) is provided for this task.
-
-  ```bash
-  # assuming you're at the project root
-  sh ./sed-all.sh
+  ```txt
+  id    1   4   col1  1   4   col2    2   255   col3    2   69\0
   ```
 
-- If this is a top-level project, and you want these features:
-  - [The install configuration](./cmake/InstallConfig.cmake)
-  - [The packing configuration](./cmake/PackConfig.cmake)
+#### 1.2. More metadata
 
-- If you use other dependencies:
-  - [The conanfile](./conanfile.py).
-  - Search for the package you want on [ConanCenter](https://conan.io/center).
-  - Also, don't forget to read the friendly manual of the package you're consuming.
-  - Find package before you use:
+- Number of entries: 4 bytes.
+- Root pointer: pointer to B+ Tree root page. 4 bytes.
+- Free list pointer: pointer to head of free list. 4 bytes.
 
-  ```cmake
-  # eg, using raylib
-  find_package(raylib REQUIRED)
-  # using the stuff
-  add_library(my_game)
-  target_sources(my_game PRIVATE my_game_source.cxx)
-  target_link_libraries(my_game PRIVATE raylib)
+### 2. B+ tree
+
+- Each node can be of 2 types: an internal page (index page) or a leaf page
+(data page). Your usual B+ tree. All node has fixed size equivalent to a
+predefined page size (4096).
+
+#### 2.1. Index page format
+
+- Flag: 1 byte: tell that it's an index page.
+- n: 2 bytes. The index page has n pointers and n - 1 rowid.
+- Stores rowid and pointer to a child page.
+  - rowid: 4 bytes
+  - pointer: 4 bytes
+  - stored like so:
+
+  ```txt
+  -- n pointers, n - 1 rowid
+  ptr0 | rowid0 | ptr1 | rowid1 | ... | ptrn
   ```
 
-## Note
+  - ptr0 points to child page whose entries/children pages all contain
+  rowid less than rowid0
+  - ptr1 then greater than rowid0 and less than rowid1.
+  - and so on.
 
-- Limited testing was done for MSVC (Visual Studio). While it is expected that
-this works out of the box for Visual Studio, in reality, it may not be so simple.
+#### 2.2. Data page format
 
-- Option between C++20 modules and traditional headers uses some dirty tricks:
-  - Make sure to use either Ninja or Visual Studio as your generator.
-  - First, when module is enabled, `ENABLE_MODULE` is defined.
-  - Then, there's a header named "module\_cfg.h" in the source directory root.
-    - The essentials of this header is the macro `<PROJECT_NAME>_EXPORT`. This
-    macro is redefined as `export` when module is enabled, and nothing otherwise.
-  - Since preprocessor macro cannot contain other preprocessor macros, one has
-  to manually `#ifdef ENABLE_MODULE`. Something like,
+- Stores data. Of course.
+- This page is a leaf page so it has no more pointers.
+- Flag: 1 byte: tell that it's a data page.
+- n: 2 bytes. There are n entries in this page.
+- Data.
 
-  ```cxx
-  #ifdef ENABLE_MODULE
-  module;
-  #else
-  #include "lib.hxx"
-  #endif
+### 3. Free list
 
-  #include <print>
+- Singly linked list of free pages. The tail points to 0, indicating that the
+page right after it, and everything from there, is free.
+- After a B+ tree node is removed, it's added as the head of free list.
+- Content of free list:
+- Flag: 1 byte: Tell that it's a free page.
+- n: 2 bytes. Always 0. Just to be more in sync with other types of pages.
+- Pointer: 4 byte: The next free page.
 
-  #ifdef ENABLE_MODULE
-  export module lib;
-  #endif
-  ```
+## In-memory format
 
-  - And in the file that imports the module:
+- Used when processing data in the database file.
 
-  ```cxx
-  #ifdef ENABLE_MODULE
-  import lib;
-  #else
-  #include "lib.hxx"
-  #endif
-  ```
+### 1. Metadata
 
-  - For most compilers, standard library header is still experimental, and hence
-  not configured with this CMake template.
+- tblname: string.
+- table.
+- number of entries.
+- root and freelist pointers.
 
-## Future plans
+### 2. Page
 
-- Support for ast\_grep
-  - Such a cool tool. But have to learn about it first.
+- Flag (or, page type).
+- Number of pointers/entries.
+- Raw bytesp. Processed depending on page type.
+
+## Future upgrades
+
+- New types:
+  - Unsigned long: 8 bytes.
