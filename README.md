@@ -37,8 +37,9 @@
 - `open <FILENAME>` to open a database file.
 - `close` to close the currently opened database file.
 - `create <TABLENAME> <DIR>` to create file `<DIR>/<TABLENAME>.tinydb`.
-- `format name<TAB>type<TAB>size...` to create a new table in the opened file.
+- `format name type size name type size...` to create a new table in the opened file.
 Invalidates all other data stored in the table.
+  - `type`s accepted for now: `uint`, `strg`.
   - It's a bit inconvenient: an int is 4 bytes always but one still needs to
   enter the length.
 - `query all` to print out all entries.
