@@ -136,7 +136,7 @@ page right after it, and everything from there, is free.
 
 - Flag (or, page type).
 - Number of pointers/entries.
-- Raw bytesp. Processed depending on page type.
+- Raw bytes. Processed depending on page type.
 
 ## Future upgrades
 
