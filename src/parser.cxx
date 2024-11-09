@@ -85,7 +85,7 @@ auto Parser::handle_quote(char c) -> ParserReturn {
  * @param s
  * @return
  */
-auto format_symbol(Symbol s) -> std::string {
+static auto format_symbol(Symbol s) -> std::string {
     std::string ret{"Symbol: "};
     switch (s) {
     case Symbol::Equal:
