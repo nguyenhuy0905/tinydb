@@ -62,6 +62,7 @@ constexpr auto format_symbol(Symbol s) -> std::string {
     return ret;
 }
 
+// explicit instantiation to reduce compile time.
 using Token = std::variant<std::string, Symbol>;
 
 enum class State : uint8_t {
@@ -86,6 +87,9 @@ class Parser {
         EmptyQuote,
     };
 
+    // explicit instantiation to reduce compile time.
+    using ParserReturn = std::expected<void, ParseError>;
+
     Parser() = default;
 
     /**
@@ -100,10 +104,10 @@ class Parser {
     /**
      * @brief Parses the input string.
      *
-     * @param input 
+     * @param input
      * @return Nothing if successful, ParseError if an error occurs.
      */
-    auto parse(std::string_view input) -> std::expected<void, ParseError> {
+    auto parse(std::string_view input) -> ParserReturn {
         auto is_space = [](char c) {
             return c == ' ' || c == '\t' || c == '\n';
         };
@@ -124,17 +128,19 @@ class Parser {
         return {};
     }
 
-    auto handle_state(char c) -> std::expected<void, ParseError> {
+    auto handle_state(char c) -> ParserReturn {
         switch (m_curr_state) {
         case State::Word:
             return handle_word(c);
+        case State::Quote:
+            return handle_quote(c);
         default:
             return {};
         }
         return {};
     }
 
-    auto handle_word(char c) -> std::expected<void, ParseError> {
+    auto handle_word(char c) -> ParserReturn {
         if (c == ' ') {
             if (m_curr_word.empty()) {
                 return {};
@@ -164,9 +170,9 @@ class Parser {
         return {};
     }
 
-    auto handle_quote(char c) -> std::expected<void, ParseError> {
-        if(c == '"') {
-            if(m_curr_word.empty()) {
+    auto handle_quote(char c) -> ParserReturn {
+        if (c == '"') {
+            if (m_curr_word.empty()) {
                 return std::unexpected{ParseError::EmptyQuote};
             }
             m_tokens.emplace_back(std::move(m_curr_word));
@@ -174,7 +180,7 @@ class Parser {
             m_curr_state = State::Word;
             return {};
         }
-        
+
         m_curr_word.push_back(c);
         return {};
     }
@@ -205,8 +211,8 @@ class Parser {
     }
 #endif // !NDEBUG
   private:
-    std::vector<Token> m_tokens{};
     std::string m_curr_word{};
+    std::vector<Token> m_tokens{};
     State m_curr_state{State::Word};
 };
 
