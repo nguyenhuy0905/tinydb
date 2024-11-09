@@ -14,6 +14,9 @@ namespace tinydb {
 
 Cli::Cli() = default;
 
+/**
+ * @brief Types of symbols recognized by the CLI.
+ */
 enum class Symbol : uint8_t {
     Equal,
     EqualEquals,
