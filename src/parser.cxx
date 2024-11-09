@@ -13,35 +13,6 @@ template <class... Ts> struct matches : Ts... {
     using Ts::operator()...;
 };
 
-auto format_symbol(Symbol s) -> std::string {
-    std::string ret{"Symbol: "};
-    switch (s) {
-    case Symbol::Equal:
-        ret.append("=");
-        break;
-    case Symbol::MoreThan:
-        ret.append(">");
-        break;
-    case Symbol::LessThan:
-        ret.append("<");
-        break;
-    case Symbol::Backslash:
-        ret.append("\\");
-        break;
-    case Symbol::EqualEquals:
-        ret.append("==");
-        break;
-    case Symbol::LessThanEqual:
-        ret.append("<=");
-        break;
-    case Symbol::MoreThanEqual:
-        ret.append(">=");
-        break;
-    }
-
-    return ret;
-}
-
 auto Parser::parse(std::string_view input) -> ParserReturn {
     auto is_space = [](char c) { return c == ' ' || c == '\t' || c == '\n'; };
     // that scary views expression trims start and end spaces
@@ -107,6 +78,42 @@ auto Parser::handle_quote(char c) -> ParserReturn {
 }
 
 #ifndef NDEBUG
+
+/**
+ * @brief Return debug prints from a symbol.
+ *
+ * @param s
+ * @return
+ */
+auto format_symbol(Symbol s) -> std::string {
+    std::string ret{"Symbol: "};
+    switch (s) {
+    case Symbol::Equal:
+        ret.append("=");
+        break;
+    case Symbol::MoreThan:
+        ret.append(">");
+        break;
+    case Symbol::LessThan:
+        ret.append("<");
+        break;
+    case Symbol::Backslash:
+        ret.append("\\");
+        break;
+    case Symbol::EqualEquals:
+        ret.append("==");
+        break;
+    case Symbol::LessThanEqual:
+        ret.append("<=");
+        break;
+    case Symbol::MoreThanEqual:
+        ret.append(">=");
+        break;
+    }
+
+    return ret;
+}
+
 void Parser::print_tokens() {
     for (const auto& tok : m_tokens) {
         std::visit(

@@ -38,14 +38,6 @@ enum class State : uint8_t {
     MoreThan,
 };
 
-/**
- * @brief Return debug prints from a symbol.
- *
- * @param s
- * @return
- */
-auto format_symbol(Symbol s) -> std::string;
-
 // explicit instantiation to reduce compile time.
 using Token = std::variant<std::string, Symbol>;
 
@@ -75,6 +67,12 @@ class Parser {
      */
     auto parse(std::string_view input) -> ParserReturn;
 
+    /**
+     * @brief State machine.
+     *
+     * @param c Next character.
+     * @return Whether parsing succeeded.
+     */
     auto handle_state(char c) -> ParserReturn {
         switch (m_curr_state) {
         case State::Word:
