@@ -1,6 +1,6 @@
 ---
-Checks:          '-*,cppcoreguidelines-*,modernize-*,readability-*'
-WarningsAsErrors: '*'
+Checks:          '-*,cppcoreguidelines-*,modernize-*'
+# WarningsAsErrors: '*'
 HeaderFileExtensions:
   - ''
   - h

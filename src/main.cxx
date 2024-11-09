@@ -1,6 +1,8 @@
-#include <print>
+#include "cli.hxx"
 
 auto main() -> int {
-    std::println("Hello");
+    tinydb::Cli cli = tinydb::Cli{};
+    cli.run();
+
     return 0;
 }
