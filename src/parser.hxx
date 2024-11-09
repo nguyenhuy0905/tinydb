@@ -2,6 +2,7 @@
 #define TINYDB_PARSER_HXX
 
 #include <expected>
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -33,13 +34,14 @@ enum class Symbol : uint8_t {
 enum class State : uint8_t {
     Word,
     Quote,
+    Number,
     Equal,
     LessThan,
     MoreThan,
 };
 
 // explicit instantiation to reduce compile time.
-using Token = std::variant<std::string, Symbol>;
+using Token = std::variant<std::string, int64_t, Symbol>;
 
 /**
  * @class Parser
@@ -70,6 +72,10 @@ class Parser {
     /**
      * @brief State machine.
      *
+     * NOTE: We can actually skip this handle_state function for better runtime
+     * (that is, each time we change state, we change the handle function
+     * pointer also.)
+     *
      * @param c Next character.
      * @return Whether parsing succeeded.
      */
@@ -79,15 +85,61 @@ class Parser {
             return handle_word(c);
         case State::Quote:
             return handle_quote(c);
+        case State::Number:
+            return handle_number(c);
+        case State::Equal:
+            return handle_equal(c);
+        case State::LessThan:
+            return handle_less_than(c);
+        case State::MoreThan:
+            return handle_more_than(c);
         default:
-            return {};
+            return std::unexpected{ParseError::SussySymbols};
         }
         return {};
     }
 
-    auto handle_word(char c) -> ParserReturn; 
+    /**
+     * @brief Transition for `State::Word`
+     *
+     * @param c Next character.
+     */
+    auto handle_word(char c) -> ParserReturn;
 
-    auto handle_quote(char c) -> ParserReturn; 
+    /**
+     * @brief Transition for `State::Quote`
+     *
+     * @param c Next character.
+     */
+    auto handle_quote(char c) -> ParserReturn;
+
+    /**
+     * @brief Transition for `State::Number`
+     *
+     * @param c Next character.
+     */
+    auto handle_number(char c) -> ParserReturn;
+
+    /**
+     * @brief Transition for `State::Equal`
+     *
+     * @param c Next character.
+     */
+    auto handle_equal(char c) -> ParserReturn;
+
+    /**
+     * @brief Transition for `State::LessThan`
+     *
+     * @param c Next character.
+     */
+    auto handle_less_than(char c) -> ParserReturn;
+
+    /**
+     * @brief Transition for `State::MoreThan`
+     *
+     * @param c Next character.
+     */
+    auto handle_more_than(char c) -> ParserReturn;
 
     // TODO: handle all the other equals
 
@@ -95,12 +147,13 @@ class Parser {
     /**
      * @brief Debug printing
      */
-    void print_tokens(); 
+    void print_tokens();
 #endif // !NDEBUG
   private:
     std::string m_curr_word{};
     std::vector<Token> m_tokens{};
     State m_curr_state{State::Word};
+    std::optional<int64_t> m_curr_num;
 };
 
 } // namespace tinydb
