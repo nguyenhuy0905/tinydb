@@ -106,6 +106,7 @@ auto Parser::handle_quote(char c) -> ParserReturn {
     return {};
 }
 
+#ifndef NDEBUG
 void Parser::print_tokens() {
     for (const auto& tok : m_tokens) {
         std::visit(
@@ -114,5 +115,6 @@ void Parser::print_tokens() {
             tok);
     }
 }
+#endif
 
 } // namespace tinydb
