@@ -1,5 +1,5 @@
-#ifndef TINYDB_PARSER_HXX
-#define TINYDB_PARSER_HXX
+#ifndef TINYDB_TOKENIZER_HXX
+#define TINYDB_TOKENIZER_HXX
 
 #include <expected>
 #include <optional>
@@ -48,9 +48,9 @@ using Token = std::variant<std::string, int64_t, Symbol>;
  * @brief Parses an input string into tokens.
  *
  */
-class Parser {
+class Tokenizer {
   public:
-    Parser() = default;
+    Tokenizer() = default;
 
     /**
      * @brief Take the list of tokens out of `Parser`.
@@ -68,6 +68,13 @@ class Parser {
      * @return Nothing if successful, ParseError if an error occurs.
      */
     auto parse(std::string_view input) -> ParserReturn;
+
+    /**
+     * @brief Consumes the current tokenizer and returns its vector of tokens.
+     */
+    auto consume() -> std::vector<Token>&& {
+        return std::move(m_tokens);
+    }
 
     /**
      * @brief State machine.

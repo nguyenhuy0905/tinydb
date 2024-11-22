@@ -13,7 +13,7 @@ void Cli::run() {
     std::flush(std::cout);
     std::string input{};
     std::getline(std::cin, input);
-    Parser ps{};
+    Tokenizer ps{};
     ps.parse(input);
 #ifndef NDEBUG
     ps.print_tokens();

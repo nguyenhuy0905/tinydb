@@ -25,7 +25,7 @@ template <class... Ts> struct matches : Ts... {
     using Ts::operator()...;
 };
 
-auto Parser::parse(std::string_view input) -> ParserReturn {
+auto Tokenizer::parse(std::string_view input) -> ParserReturn {
     auto is_space = [](char c) { return c == ' ' || c == '\t' || c == '\n'; };
     // that scary views expression trims start and end spaces
     for (const char c :
@@ -46,7 +46,7 @@ auto Parser::parse(std::string_view input) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_word(char c) -> ParserReturn {
+auto Tokenizer::handle_word(char c) -> ParserReturn {
     if (c == ' ') {
         if (m_curr_word.empty()) {
             return {};
@@ -96,7 +96,7 @@ auto Parser::handle_word(char c) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_quote(char c) -> ParserReturn {
+auto Tokenizer::handle_quote(char c) -> ParserReturn {
     if (c == '"') {
         if (m_curr_word.empty()) {
             return std::unexpected{ParseError::EmptyQuote};
@@ -111,7 +111,7 @@ auto Parser::handle_quote(char c) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_number(char c) -> ParserReturn {
+auto Tokenizer::handle_number(char c) -> ParserReturn {
     assert(m_curr_word.empty());
 
     if (c >= '0' && c <= '9') {
@@ -142,7 +142,7 @@ auto Parser::handle_number(char c) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_equal(char c) -> ParserReturn {
+auto Tokenizer::handle_equal(char c) -> ParserReturn {
     assert(m_curr_word.empty() && !m_curr_num.has_value());
 
     if(is_symbol(c)) {
@@ -166,7 +166,7 @@ auto Parser::handle_equal(char c) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_less_than(char c) -> ParserReturn {
+auto Tokenizer::handle_less_than(char c) -> ParserReturn {
     assert(m_curr_word.empty());
 
     if (c == '=') {
@@ -183,7 +183,7 @@ auto Parser::handle_less_than(char c) -> ParserReturn {
     return {};
 }
 
-auto Parser::handle_more_than(char c) -> ParserReturn {
+auto Tokenizer::handle_more_than(char c) -> ParserReturn {
     assert(m_curr_word.empty());
 
     if (c == '=') {
@@ -242,7 +242,7 @@ static auto is_symbol(char c) -> bool {
     return c == '=' || c == '<' || c == '>';
 }
 
-void Parser::print_tokens() {
+void Tokenizer::print_tokens() {
     for (const auto& tok : m_tokens) {
         std::visit(
             matches{[](const std::string& s) { std::println("Token: {}", s); },
