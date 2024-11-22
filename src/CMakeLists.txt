@@ -12,6 +12,13 @@ target_sources(tinydb_tokenizer
     PUBLIC FILE_SET HEADERS FILES tokenizer.hxx)
 target_link_libraries(tinydb_tokenizer PRIVATE tinydb_compile_opts)
 
+add_library(tinydb_ast)
+target_sources(tinydb_ast
+    PRIVATE
+    ast.cxx
+    PUBLIC FILE_SET HEADERS FILES ast.hxx
+)
+
 add_library(tinydb_parser)
 target_sources(tinydb_parser
     PRIVATE
