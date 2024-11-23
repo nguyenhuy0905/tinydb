@@ -1,5 +1,5 @@
 #include "cli.hxx"
-#include "parser.hxx"
+#include "tokenizer.hxx"
 #include <iostream>
 #include <print>
 #include <string>
@@ -13,10 +13,10 @@ void Cli::run() {
     std::flush(std::cout);
     std::string input{};
     std::getline(std::cin, input);
-    Parser ps{};
-    ps.parse(input);
+    Tokenizer tk{};
+    tk.tokenize(input);
 #ifndef NDEBUG
-    ps.print_tokens();
+    tk.print_tokens();
 #endif // !NDEBUG
 }
 
