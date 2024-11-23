@@ -25,7 +25,7 @@ enum class TokenizerError : uint8_t {
     UnknownCommand = 0,
     MissingArguments,
     SussySymbols,
-    EmptyQuote,
+    MissingQuote,
 };
 
 /**
@@ -49,8 +49,9 @@ enum class State : uint8_t {
     Space,
     Word,
     Quote,
-    LessThan,
-    MoreThan,
+    Number,
+    LeftPointy,
+    RightPointy,
 };
 
 // token types
@@ -105,29 +106,6 @@ class Tokenizer {
      */
     auto tokenize(std::string_view input) -> TokenizerReturn;
 
-    auto handle_state(char c) -> StateHandleReturn {
-        switch (m_curr_state) {
-        case State::Space:
-            return handle_space(c);
-        case State::Word:
-            return handle_word(c);
-        case State::Quote:
-            return handle_quote(c);
-        // TODO: switch for all states
-        default:
-            return {};
-        }
-        return {};
-    }
-
-    auto handle_space(char c) -> StateHandleReturn;
-
-    auto handle_word(char c) -> StateHandleReturn;
-
-    auto handle_quote(char c) -> StateHandleReturn;
-
-    // TODO: handle all the other equals
-
 #ifndef NDEBUG
     /**
      * @brief Debug printing
@@ -138,6 +116,47 @@ class Tokenizer {
     std::string m_curr_word{};
     std::vector<Token> m_tokens{};
     State m_curr_state{State::Word};
+    std::optional<int32_t> m_curr_num;
+
+    auto handle_state(char c) -> StateHandleReturn {
+        switch (m_curr_state) {
+        case State::Comment:
+            // it's a comment until it's a new line.
+            return State::Comment;
+        case State::Dash:
+            return handle_dash(c);
+        case State::Space:
+            return handle_space(c);
+        case State::Word:
+            return handle_word(c);
+        case State::Number:
+            return handle_number(c);
+        case State::Quote:
+            return handle_quote(c);
+        case State::LeftPointy:
+            return handle_left_pointy(c);
+        case State::RightPointy:
+            return handle_right_pointy(c);
+        // TODO: switch for all states
+        }
+        return {};
+    }
+
+    auto handle_dash(char c) -> StateHandleReturn;
+
+    auto handle_space(char c) -> StateHandleReturn;
+
+    auto handle_word(char c) -> StateHandleReturn;
+
+    auto handle_quote(char c) -> StateHandleReturn;
+
+    auto handle_number(char c) -> StateHandleReturn;
+
+    auto handle_left_pointy(char c) -> StateHandleReturn;
+
+    auto handle_right_pointy(char c) -> StateHandleReturn;
+
+    // TODO: handle all the other equals
 };
 
 } // namespace tinydb

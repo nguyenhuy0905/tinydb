@@ -1,5 +1,7 @@
 #include "tokenizer.hxx"
 #include <cassert>
+#include <cctype>
+#include <cstdint>
 #include <print>
 #include <ranges>
 #include <string>
@@ -67,17 +69,30 @@ auto Tokenizer::tokenize(std::string_view input) -> TokenizerReturn {
             return std::unexpected(handle_result.error());
         }
     }
-
-    if (!m_curr_word.empty()) {
-        m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
+    switch (m_curr_state) {
+    case State::Space:
+    case State::Comment:
+    case State::Word:
+    case State::Number:
+        return handle_space(' ').transform([](auto _) { return; });
+    case State::Quote:
+        return std::unexpected{TokenizerError::MissingQuote};
+    default:
+        return std::unexpected{TokenizerError::SussySymbols};
     }
-
-    return {};
 }
 
 auto Tokenizer::handle_space(char c) -> StateHandleReturn {
     switch (c) {
     case ' ':
+        if (!m_curr_word.empty()) {
+            m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
+            m_curr_word = {};
+        }
+        if (m_curr_num) {
+            m_tokens.emplace_back(Literal{m_curr_num.value()});
+            m_curr_num.reset();
+        }
         return State::Space;
     default:
         return handle_word(c);
@@ -85,28 +100,41 @@ auto Tokenizer::handle_space(char c) -> StateHandleReturn {
 }
 
 auto Tokenizer::handle_word(char c) -> StateHandleReturn {
-    // assert(!m_curr_word.empty());
+    auto emplace_word = [this]() {
+        if (!m_curr_word.empty()) {
+            m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
+            m_curr_word = {};
+        }
+    };
     switch (c) {
     case ' ':
-        m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
+        emplace_word();
         // reconstructs m_curr_word
-        m_curr_word = {};
         return State::Space;
     case '=':
+        emplace_word();
         m_tokens.emplace_back(Symbol::Equal);
         return State::Space;
     case '<':
-        return State::LessThan;
+        emplace_word();
+        return State::LeftPointy;
     case '>':
-        return State::MoreThan;
+        emplace_word();
+        return State::RightPointy;
     case '\'':
+        emplace_word();
         return State::Quote;
     case ',':
+        emplace_word();
         m_tokens.emplace_back(Symbol::Comma);
         return State::Space;
     case ';':
+        emplace_word();
         m_tokens.emplace_back(Symbol::Semicolon);
         return State::Space;
+    case '-':
+        emplace_word();
+        return State::Dash;
     default:
         m_curr_word.push_back(c);
         return State::Word;
@@ -124,6 +152,72 @@ auto Tokenizer::handle_quote(char c) -> StateHandleReturn {
     return State::Quote;
 }
 
+auto Tokenizer::handle_left_pointy(char c) -> StateHandleReturn {
+    switch (c) {
+    case '<':
+        return std::unexpected{TokenizerError::SussySymbols};
+    case '>':
+        m_tokens.emplace_back(Symbol::NotEqual);
+        return State::Space;
+    case '=':
+        m_tokens.emplace_back(Symbol::LessThanEqual);
+        return State::Space;
+    default:
+        m_tokens.emplace_back(Symbol::LessThan);
+        return handle_space(c);
+    }
+}
+
+auto Tokenizer::handle_right_pointy(char c) -> StateHandleReturn {
+    switch (c) {
+    case '>':
+    case '<':
+        return std::unexpected{TokenizerError::SussySymbols};
+    case '=':
+        m_tokens.emplace_back(Symbol::MoreThanEqual);
+        return State::Space;
+    default:
+        m_tokens.emplace_back(Symbol::MoreThan);
+        return handle_space(c);
+    }
+}
+
+auto Tokenizer::handle_number(char c) -> StateHandleReturn {
+    if (isdigit(c)) {
+        m_curr_num = m_curr_num
+                         .transform([c](int32_t i) {
+                             // the goddamn 'magic number' warning.
+                             constexpr int32_t ten = 10;
+                             if(i < 0) {
+                                return (ten * i) - (c - '0');
+                             }
+                            return (ten * i) + (c - '0');
+                         })
+                         .or_else([this, c]() {
+                             if (m_curr_state == State::Dash) {
+                                 // the goddamn 'magic number' warning.
+                                 return decltype(m_curr_num)(-(c - '0'));
+                             }
+                             return decltype(m_curr_num)(c - '0');
+                         });
+        return State::Number;
+    }
+    assert(m_curr_num);
+    m_tokens.emplace_back(Literal(m_curr_num.value()));
+    m_curr_num.reset();
+    return handle_space(c);
+}
+
+auto Tokenizer::handle_dash(char c) -> StateHandleReturn {
+    if (c == '-') {
+        return State::Comment;
+    }
+    if (c >= '0' && c <= '9') {
+        return handle_number(c);
+    }
+    return std::unexpected{TokenizerError::SussySymbols};
+}
+
 #ifndef NDEBUG
 void Tokenizer::print_tokens() {
     auto print_literal = [](const Literal& lit) {
@@ -137,14 +231,13 @@ void Tokenizer::print_tokens() {
                    lit.val);
     };
     for (const auto& tok : m_tokens) {
-        std::visit(matches{[](const Identifier& iden) {
-                               std::println("Identifier: {}", iden.val);
-                           },
-                           [&](const Literal& lit) { print_literal(lit); },
-                           [](Symbol sym) {
-                               std::print("Symbol: {}", format_symbol(sym));
-                           }},
-                   tok);
+        std::visit(
+            matches{[](const Identifier& iden) {
+                        std::println("Identifier: {}", iden.val);
+                    },
+                    [&](const Literal& lit) { print_literal(lit); },
+                    [](Symbol sym) { std::println("{}", format_symbol(sym)); }},
+            tok);
     }
 }
 #endif // !NDEBUG
