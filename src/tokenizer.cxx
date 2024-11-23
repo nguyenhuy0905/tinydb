@@ -106,6 +106,13 @@ auto Tokenizer::handle_word(char c) -> StateHandleReturn {
             m_curr_word = {};
         }
     };
+    if (isdigit(c)) {
+        assert(!m_curr_num);
+        if (m_curr_word.empty()) {
+            m_curr_num = (c - '0');
+            return State::Number;
+        }
+    }
     switch (c) {
     case ' ':
         emplace_word();
@@ -188,10 +195,10 @@ auto Tokenizer::handle_number(char c) -> StateHandleReturn {
                          .transform([c](int32_t i) {
                              // the goddamn 'magic number' warning.
                              constexpr int32_t ten = 10;
-                             if(i < 0) {
-                                return (ten * i) - (c - '0');
+                             if (i < 0) {
+                                 return (ten * i) - (c - '0');
                              }
-                            return (ten * i) + (c - '0');
+                             return (ten * i) + (c - '0');
                          })
                          .or_else([this, c]() {
                              if (m_curr_state == State::Dash) {
@@ -203,7 +210,14 @@ auto Tokenizer::handle_number(char c) -> StateHandleReturn {
         return State::Number;
     }
     assert(m_curr_num);
-    m_tokens.emplace_back(Literal(m_curr_num.value()));
+    assert(m_curr_word.empty());
+    if (isalpha(c) || c == '_') {
+        // I know it's just a couple lines to hand-roll but I'm lazy.
+        m_curr_word = std::to_string(m_curr_num.value());
+        m_curr_num.reset();
+        return handle_word(c);
+    }
+    m_tokens.emplace_back(Literal{m_curr_num.value()});
     m_curr_num.reset();
     return handle_space(c);
 }
