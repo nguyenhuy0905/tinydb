@@ -53,15 +53,19 @@ static auto format_symbol(Symbol s) -> std::string {
 
 auto Tokenizer::tokenize(std::string_view input) -> TokenizerReturn {
     auto is_space = [](char c) { return c == ' ' || c == '\t' || c == '\n'; };
-    // that scary views expression trims start and end spaces
-    for (const char c :
-         input | std::views::drop_while(is_space) | std::views::reverse |
-             std::views::drop_while(is_space) | std::views::reverse) {
-        auto exp{handle_state(c)};
-        if (!exp.has_value()) {
-            return std::unexpected{exp.error()};
+    auto trimmed = [&](std::string_view sv) {
+        return sv | std::views::drop_while(is_space) | std::views::reverse |
+               std::views::drop_while(is_space) | std::views::reverse;
+    };
+
+    for (const char c : trimmed(input)) {
+        auto handle_result = handle_state(c).and_then([this](State s) {
+            m_curr_state = s;
+            return std::expected<void, TokenizerError>{};
+        });
+        if (!handle_result) {
+            return std::unexpected(handle_result.error());
         }
-        m_curr_state = exp.value();
     }
 
     if (!m_curr_word.empty()) {
@@ -81,19 +85,11 @@ auto Tokenizer::handle_space(char c) -> StateHandleReturn {
 }
 
 auto Tokenizer::handle_word(char c) -> StateHandleReturn {
-    assert(!m_curr_word.empty());
-    // if (c == ' ') {
-    //     // if (m_curr_word.empty()) {
-    //     //     return {};
-    //     // }
-    //     m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
-    //     // reconstruct m_curr_word
-    //     m_curr_word = {};
-    //     return State::Space;
-    // }
+    // assert(!m_curr_word.empty());
     switch (c) {
     case ' ':
         m_tokens.emplace_back(Identifier{std::move(m_curr_word)});
+        // reconstructs m_curr_word
         m_curr_word = {};
         return State::Space;
     case '=':
@@ -133,11 +129,11 @@ void Tokenizer::print_tokens() {
     for (const auto& tok : m_tokens) {
         std::visit(
             matches{
-                [](const Identifier& iden) { std::println("{}", iden.val); },
+                [](const Identifier& iden) { std::println("Identifier: {}", iden.val); },
                 [](const Literal& lit) {
                     std::visit(matches{
                                    [](const std::string& s) {
-                                       std::println("Literal string:\"{}\"", s);
+                                       std::println("Literal string: '{}'", s);
                                    },
                                    [](int32_t i) {
                                        std::println("Literal number: {}", i);
