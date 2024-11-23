@@ -126,28 +126,25 @@ auto Tokenizer::handle_quote(char c) -> StateHandleReturn {
 
 #ifndef NDEBUG
 void Tokenizer::print_tokens() {
+    auto print_literal = [](const Literal& lit) {
+        std::visit(matches{
+                       [](const std::string& s) {
+                           std::println("Literal string: '{}'", s);
+                       },
+                       [](int32_t i) { std::println("Literal number: {}", i); },
+                       [](bool b) { std::println("Literal boolean: {}", b); },
+                   },
+                   lit.val);
+    };
     for (const auto& tok : m_tokens) {
-        std::visit(
-            matches{
-                [](const Identifier& iden) { std::println("Identifier: {}", iden.val); },
-                [](const Literal& lit) {
-                    std::visit(matches{
-                                   [](const std::string& s) {
-                                       std::println("Literal string: '{}'", s);
-                                   },
-                                   [](int32_t i) {
-                                       std::println("Literal number: {}", i);
-                                   },
-                                   [](bool b) {
-                                       std::println("Literal boolean: {}", b);
-                                   },
-                               },
-                               lit.val);
-                },
-                [](Symbol sym) {
-                    std::print("Symbol: {}", format_symbol(sym));
-                }},
-            tok);
+        std::visit(matches{[](const Identifier& iden) {
+                               std::println("Identifier: {}", iden.val);
+                           },
+                           [&](const Literal& lit) { print_literal(lit); },
+                           [](Symbol sym) {
+                               std::print("Symbol: {}", format_symbol(sym));
+                           }},
+                   tok);
     }
 }
 #endif // !NDEBUG
