@@ -41,6 +41,8 @@ enum class Symbol : uint8_t {
     MoreThanEqual, // >=
     Comma,         // ,
     Semicolon,     // ;
+    LParen, // (
+    RParen, // )
 };
 
 enum class State : uint8_t {

@@ -48,6 +48,12 @@ static auto format_symbol(Symbol s) -> std::string {
     case Symbol::Semicolon:
         ret.append(";");
         break;
+    case Symbol::LParen:
+        ret.append("(");
+        break;
+    case Symbol::RParen:
+        ret.append(")");
+        break;
     }
 
     return ret;
@@ -142,6 +148,14 @@ auto Tokenizer::handle_word(char c) -> StateHandleReturn {
     case '-':
         emplace_word();
         return State::Dash;
+    case '(':
+        emplace_word();
+        m_tokens.emplace_back(Symbol::LParen);
+        return State::Space;
+    case ')':
+        emplace_word();
+        m_tokens.emplace_back(Symbol::RParen);
+        return State::Space;
     default:
         m_curr_word.push_back(c);
         return State::Word;
