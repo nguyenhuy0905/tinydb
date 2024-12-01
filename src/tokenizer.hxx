@@ -1,51 +1,90 @@
+/**
+ * @file tokenizer.hxx
+ * @brief Tokenizing is the first step in lexical analysis.
+ * This step simply translates a raw input strings into the following
+ * categories:
+ * - Spaces are ignored unless quoted.
+ * - Symbols (comment, semicolon, comma and operators).
+ * - Literal values (quoted string, number, boolean).
+ * - Identifiers.
+ *
+ * The next step after tokenizing will resolve the Identifiers category
+ * into either reserved keywords or actual identifiers.
+ */
+
 #ifndef TINYDB_TOKENIZER_HXX
 #define TINYDB_TOKENIZER_HXX
 
 #include <expected>
-#include <optional>
 #include <variant>
 #include <vector>
 
 namespace tinydb {
 
-enum class ParseError : uint8_t {
+enum class TokenizerError : uint8_t {
     UnknownCommand = 0,
     MissingArguments,
     SussySymbols,
-    EmptyQuote,
+    MissingQuote,
 };
-
-// explicit instantiation to reduce compile time.
-using ParserReturn = std::expected<void, ParseError>;
 
 /**
  * @brief Types of symbols recognized by the CLI.
  */
 enum class Symbol : uint8_t {
-    Equal,
-    EqualEquals,
-    LessThan,
-    LessThanEqual,
-    MoreThan,
-    MoreThanEqual,
-    Backslash,
+    DashDash,      // --
+    Equal,         // =
+    NotEqual,      // <>
+    LessThan,      // <
+    LessThanEqual, // <=
+    MoreThan,      // >
+    MoreThanEqual, // >=
+    Comma,         // ,
+    Semicolon,     // ;
+    LParen, // (
+    RParen, // )
 };
 
 enum class State : uint8_t {
+    Comment,
+    Dash, // resolve to a comment (or a minus, in the future)
+    Space,
     Word,
     Quote,
     Number,
-    Equal,
-    LessThan,
-    MoreThan,
+    LeftPointy,
+    RightPointy,
+};
+
+// token types
+/**
+ * @class Identifier
+ * @brief Generic unquoted bunch of characters
+ */
+struct Identifier {
+    std::string val;
+};
+/**
+ * @class Literal
+ * @brief Literal values (string, number, boolean).
+ * - Stored as a `variant<string, int32, bool>`.
+ */
+struct Literal {
+    std::variant<std::string, int32_t, bool> val;
 };
 
 // explicit instantiation to reduce compile time.
-using Token = std::variant<std::string, int64_t, Symbol>;
+using TokenizerReturn = std::expected<void, TokenizerError>;
+
+// explicit instantiation to reduce compile time.
+using StateHandleReturn = std::expected<State, TokenizerError>;
+
+// explicit instantiation to reduce compile time.
+using Token = std::variant<Identifier, Literal, Symbol>;
 
 /**
- * @class Parser
- * @brief Parses an input string into tokens.
+ * @class Tokenizer
+ * @brief Converts an input string into tokens.
  *
  */
 class Tokenizer {
@@ -53,102 +92,21 @@ class Tokenizer {
     Tokenizer() = default;
 
     /**
-     * @brief Take the list of tokens out of `Parser`.
-     * After this function call, one should not use this `Parser` anymore, or
-     * one should construct a new `Parser.`
+     * @brief Take the list of tokens out of `Tokenizer`.
+     * After this function call, one should not use this `Tokenizer` anymore, or
+     * one should construct a new `Tokenizer.`
      *
      * @return rvalue of tokens vector.
      */
     auto take_tokens() -> std::vector<Token>&& { return std::move(m_tokens); }
 
     /**
-     * @brief Parses the input string.
+     * @brief Tokenize the input string.
      *
      * @param input
      * @return Nothing if successful, ParseError if an error occurs.
      */
-    auto parse(std::string_view input) -> ParserReturn;
-
-    /**
-     * @brief Consumes the current tokenizer and returns its vector of tokens.
-     */
-    auto consume() -> std::vector<Token>&& {
-        return std::move(m_tokens);
-    }
-
-    /**
-     * @brief State machine.
-     *
-     * NOTE: We can actually skip this handle_state function for better runtime
-     * (that is, each time we change state, we change the handle function
-     * pointer also.)
-     *
-     * @param c Next character.
-     * @return Whether parsing succeeded.
-     */
-    auto handle_state(char c) -> ParserReturn {
-        switch (m_curr_state) {
-        case State::Word:
-            return handle_word(c);
-        case State::Quote:
-            return handle_quote(c);
-        case State::Number:
-            return handle_number(c);
-        case State::Equal:
-            return handle_equal(c);
-        case State::LessThan:
-            return handle_less_than(c);
-        case State::MoreThan:
-            return handle_more_than(c);
-        default:
-            return std::unexpected{ParseError::SussySymbols};
-        }
-        return {};
-    }
-
-    /**
-     * @brief Transition for `State::Word`
-     *
-     * @param c Next character.
-     */
-    auto handle_word(char c) -> ParserReturn;
-
-    /**
-     * @brief Transition for `State::Quote`
-     *
-     * @param c Next character.
-     */
-    auto handle_quote(char c) -> ParserReturn;
-
-    /**
-     * @brief Transition for `State::Number`
-     *
-     * @param c Next character.
-     */
-    auto handle_number(char c) -> ParserReturn;
-
-    /**
-     * @brief Transition for `State::Equal`
-     *
-     * @param c Next character.
-     */
-    auto handle_equal(char c) -> ParserReturn;
-
-    /**
-     * @brief Transition for `State::LessThan`
-     *
-     * @param c Next character.
-     */
-    auto handle_less_than(char c) -> ParserReturn;
-
-    /**
-     * @brief Transition for `State::MoreThan`
-     *
-     * @param c Next character.
-     */
-    auto handle_more_than(char c) -> ParserReturn;
-
-    // TODO: handle all the other equals
+    auto tokenize(std::string_view input) -> TokenizerReturn;
 
 #ifndef NDEBUG
     /**
@@ -160,9 +118,49 @@ class Tokenizer {
     std::string m_curr_word{};
     std::vector<Token> m_tokens{};
     State m_curr_state{State::Word};
-    std::optional<int64_t> m_curr_num;
+    std::optional<int32_t> m_curr_num;
+
+    auto handle_state(char c) -> StateHandleReturn {
+        switch (m_curr_state) {
+        case State::Comment:
+            // it's a comment until it's a new line.
+            return State::Comment;
+        case State::Dash:
+            return handle_dash(c);
+        case State::Space:
+            return handle_space(c);
+        case State::Word:
+            return handle_word(c);
+        case State::Number:
+            return handle_number(c);
+        case State::Quote:
+            return handle_quote(c);
+        case State::LeftPointy:
+            return handle_left_pointy(c);
+        case State::RightPointy:
+            return handle_right_pointy(c);
+        // TODO: switch for all states
+        }
+        return {};
+    }
+
+    auto handle_dash(char c) -> StateHandleReturn;
+
+    auto handle_space(char c) -> StateHandleReturn;
+
+    auto handle_word(char c) -> StateHandleReturn;
+
+    auto handle_quote(char c) -> StateHandleReturn;
+
+    auto handle_number(char c) -> StateHandleReturn;
+
+    auto handle_left_pointy(char c) -> StateHandleReturn;
+
+    auto handle_right_pointy(char c) -> StateHandleReturn;
+
+    // TODO: handle all the other equals
 };
 
 } // namespace tinydb
 
-#endif // !TINYDB_PARSER_HXX
+#endif // !TINYDB_TOKENIZER_HXX

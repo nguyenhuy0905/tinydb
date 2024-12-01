@@ -15,7 +15,6 @@ namespace tinydb {
 class Cli {
   public:
     Cli();
-    // TODO: return an error type for run if something screws up.
     /**
      * @brief Runs the REPL.
      */
