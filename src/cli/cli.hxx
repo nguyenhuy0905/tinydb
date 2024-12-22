@@ -5,7 +5,7 @@
 #include <fstream>
 #include <optional>
 
-namespace tinydb {
+namespace tinydb::cli {
 
 /**
  * @class Cli

@@ -4,7 +4,7 @@
 #include <print>
 #include <string>
 
-namespace tinydb {
+namespace tinydb::cli {
 
 Cli::Cli() = default;
 
