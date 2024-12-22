@@ -18,6 +18,9 @@
 #include <expected>
 #include <variant>
 #include <vector>
+#include <cstdint>
+#include <string>
+#include <optional>
 
 namespace tinydb {
 
