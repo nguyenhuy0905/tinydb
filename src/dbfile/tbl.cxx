@@ -34,36 +34,28 @@ auto TableMeta::read_from(const std::filesystem::path& t_path)
     std::ifstream file{t_path, std::ios::binary};
     std::stringstream sbuilder{};
 
-    file.get(*sbuilder.rdbuf(), '{');
+    auto fill_var = [&]<typename T>(char delim, T& var) mutable {
+        file.get(*sbuilder.rdbuf(), delim);
+        sbuilder >> var;
+        sbuilder.clear();
+        sbuilder.str(std::string{});
+        file.seekg(1, std::ios_base::cur);
+    };
+
     std::string tblname{};
-    sbuilder >> tblname;
-    sbuilder.clear();
-    sbuilder.str(std::string{});
-    file.seekg(1, std::ios_base::cur);
+    fill_var('{', tblname);
     TableMeta new_tbl{std::move(tblname)};
     EntrySiz off{0};
 
     while (file.peek() != '}') {
-        file.get(*sbuilder.rdbuf(), ',');
         std::string colname{};
-        file.seekg(1, std::ios_base::cur);
-        sbuilder >> colname;
-        sbuilder.clear();
-        sbuilder.str(std::string{});
+        fill_var(',', colname);
 
-        file.get(*sbuilder.rdbuf(), ',');
         ColID id{0};
-        file.seekg(1, std::ios_base::cur);
-        sbuilder >> id;
-        sbuilder.clear();
-        sbuilder.str(std::string{});
+        fill_var(',', id);
 
-        file.get(*sbuilder.rdbuf(), ';');
         EntrySiz size{0};
-        file.seekg(1, std::ios_base::cur);
-        sbuilder >> size;
-        sbuilder.clear();
-        sbuilder.str(std::string{});
+        fill_var(';', size);
 
         auto new_col = ColumnMeta{.m_name{std::move(colname)},
                                   .m_size = size,
