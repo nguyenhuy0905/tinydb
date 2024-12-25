@@ -37,15 +37,26 @@ class TableMeta {
 
   public:
     template <typename T> using rw = std::reference_wrapper<T>;
-    template <typename T> requires std::convertible_to<T, std::string>
-    explicit TableMeta(T t_name)
-        : m_name(std::forward<decltype(t_name)>(t_name)) {}
+    template <typename T>
+        requires std::convertible_to<T, std::string>
+    explicit TableMeta(T&& t_name) : m_name(std::forward<T>(t_name)) {}
     TableMeta(TableMeta&& t_meta) = default;
     TableMeta(const TableMeta& t_meta) = default;
     auto operator=(const TableMeta& t_meta) -> TableMeta& = default;
     auto operator=(TableMeta&& t_meta) -> TableMeta& = default;
     ~TableMeta() = default;
-    static auto read_from(const std::filesystem::path& t_path) -> std::optional<TableMeta>;
+    /**
+     * @brief Reads the table metadata from a database file.
+     *
+     * @param t_path The path to that file.
+     * @return
+     * - The table metadata if the read and data extraction is successful.
+     * - nullopt otherwise.
+     * - This API will be changed later. optional is a terrible but
+     * quick-and-seemingly-easy way to say there's something wrong.
+     */
+    static auto
+    read_from(const std::filesystem::path& t_path) -> std::optional<TableMeta>;
     /**
      * @brief I changed this to noexcept since I think the lookup function
      * should not throw an exception.
@@ -68,8 +79,8 @@ class TableMeta {
      * @return Whether the column meta was successfully added.
      */
     template <typename T>
-        requires std::same_as<std::remove_cvref_t<T>, ColumnMeta>
-    auto add_column(T t_colmeta) -> bool {
+        requires std::convertible_to<T, ColumnMeta>
+    auto add_column(T&& t_colmeta) -> bool {
         return m_entries.emplace(t_colmeta.m_col_id, std::forward<T>(t_colmeta))
             .second;
     }

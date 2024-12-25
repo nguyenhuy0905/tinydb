@@ -10,7 +10,14 @@
 namespace tinydb::dbfile {
 
 void TableMeta::write_to(const std::filesystem::path& path) {
+    // table format:
+    // tblname{col1-name,col1-id,col1-size;...;coln-name,coln-id,coln-size;}
+
+    // id and size are NOT written as characters.
+    // With this implementation, the names cannot contain any comma, semicolon
+    // or curly brace.
     using ss = std::streamsize;
+    // maybe I should throw some kind of failbit exception here.
     std::ofstream file{path, std::ios::binary | std::ios::trunc};
     file.write(m_name.c_str(), static_cast<ss>(m_name.length())).put('{');
     for (const ColumnMeta& colmeta :
@@ -31,9 +38,16 @@ void TableMeta::write_to(const std::filesystem::path& path) {
 
 auto TableMeta::read_from(const std::filesystem::path& t_path)
     -> std::optional<TableMeta> {
+    // read the comment at the beginning of the definition of `write_to` to get
+    // a sense of how the table metadata is written.
     std::ifstream file{t_path, std::ios::binary};
+    // maybe I should throw some kind of failbit exception here.
     std::stringstream sbuilder{};
 
+    // Put data into the stringstream, until either EOF or the delimiter.
+    // There's zero checking whether the file is in valid format.
+    // After that, put formatted data into the variable passed in, then clear
+    // the stringstream flags and content.
     auto fill_var = [&]<typename T>(char delim, T& var) mutable {
         file.get(*sbuilder.rdbuf(), delim);
         sbuilder >> var;
@@ -45,8 +59,8 @@ auto TableMeta::read_from(const std::filesystem::path& t_path)
     std::string tblname{};
     fill_var('{', tblname);
     TableMeta new_tbl{std::move(tblname)};
-    EntrySiz off{0};
 
+    EntrySiz off{0};
     while (file.peek() != '}') {
         std::string colname{};
         fill_var(',', colname);
