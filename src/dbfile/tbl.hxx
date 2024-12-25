@@ -71,10 +71,10 @@ class TableMeta {
      * @return The column meta with the specified ID, or nullopt if there isn't
      * one
      */
-    auto get_column(ColID t_id) noexcept
+    auto get_column(const std::string t_name) noexcept
         -> std::optional<rw<const ColumnMeta>> const {
         try {
-            return {{m_entries.at(t_id)}};
+            return {{m_entries.at(t_name)}};
         } catch (std::out_of_range e) {
             return {std::nullopt};
         }
@@ -89,7 +89,7 @@ class TableMeta {
     template <typename T>
         requires std::convertible_to<T, ColumnMeta>
     auto add_column(T&& t_colmeta) -> bool {
-        return m_entries.emplace(t_colmeta.m_col_id, std::forward<T>(t_colmeta))
+        return m_entries.emplace(t_colmeta.m_name, std::forward<T>(t_colmeta))
             .second;
     }
     /**
@@ -99,7 +99,7 @@ class TableMeta {
      * @param t_id
      * @return
      */
-    auto remove_column(ColID t_id) noexcept -> bool {
+    auto remove_column(const std::string& t_id) noexcept -> bool {
         return m_entries.erase(t_id) == 1;
     }
     /**
@@ -110,7 +110,7 @@ class TableMeta {
     void write_to(const std::filesystem::path& t_path);
 
   private:
-    std::map<ColID, ColumnMeta> m_entries;
+    std::map<std::string, ColumnMeta, std::less<>> m_entries;
     std::string m_name;
 };
 
