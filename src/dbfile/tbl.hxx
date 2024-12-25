@@ -12,7 +12,15 @@
 namespace tinydb::dbfile {
 
 using ColID = uint8_t;
-using EntrySiz = uint8_t;
+using EntrySiz = uint16_t;
+
+enum class NumericColType : uint8_t {
+    Number, // 16-bit   
+};
+
+struct VarCharColType {
+    EntrySiz m_len;
+};
 
 /**
  * @class ColumnMeta

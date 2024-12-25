@@ -1,5 +1,4 @@
 #include "tbl.hxx"
-#include <bit>
 #include <filesystem>
 #include <fstream>
 #include <ios>
@@ -13,25 +12,18 @@ void TableMeta::write_to(const std::filesystem::path& path) {
     // table format:
     // tblname{col1-name,col1-id,col1-size;...;coln-name,coln-id,coln-size;}
 
-    // id and size are NOT written as characters.
-    // With this implementation, the names cannot contain any comma, semicolon
-    // or curly brace.
+    // id is NOT written as characters, due to how this thing works. uint8_t
+    // gets interpreted as bytes. With this implementation, the names cannot
+    // contain any comma, semicolon or curly brace.
     using ss = std::streamsize;
     // maybe I should throw some kind of failbit exception here.
-    std::ofstream file{path, std::ios::binary | std::ios::trunc};
+    std::ofstream file{path, std::ios::trunc};
     file.write(m_name.c_str(), static_cast<ss>(m_name.length())).put('{');
     for (const ColumnMeta& colmeta :
          m_entries | std::views::transform(
                          [](const auto& pair) { return pair.second; })) {
-        file.write(colmeta.m_name.c_str(),
-                   static_cast<ss>(colmeta.m_name.length()))
-            .put(',')
-            .write(std::bit_cast<const char*>(&colmeta.m_col_id),
-                   sizeof(colmeta.m_col_id))
-            .put(',')
-            .write(std::bit_cast<const char*>(&colmeta.m_size),
-                   sizeof(colmeta.m_size))
-            .put(';');
+        file << colmeta.m_name << ',' << colmeta.m_col_id << ','
+             << colmeta.m_size << ';';
     }
     file.put('}');
 }
@@ -40,7 +32,7 @@ auto TableMeta::read_from(const std::filesystem::path& t_path)
     -> std::optional<TableMeta> {
     // read the comment at the beginning of the definition of `write_to` to get
     // a sense of how the table metadata is written.
-    std::ifstream file{t_path, std::ios::binary};
+    std::ifstream file{t_path};
     // maybe I should throw some kind of failbit exception here.
     std::stringstream sbuilder{};
 
