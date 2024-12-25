@@ -12,7 +12,7 @@
 namespace tinydb::dbfile {
 
 using ColID = uint8_t;
-using EntrySiz = uint16_t;
+using EntrySiz = uint8_t;
 
 /**
  * @class ColumnMeta
@@ -37,8 +37,15 @@ class TableMeta {
 
   public:
     template <typename T> using rw = std::reference_wrapper<T>;
-    TableMeta() = default;
-    static auto read_from(const std::filesystem::path& t_path) -> TableMeta;
+    template <typename T> requires std::convertible_to<T, std::string>
+    explicit TableMeta(T t_name)
+        : m_name(std::forward<decltype(t_name)>(t_name)) {}
+    TableMeta(TableMeta&& t_meta) = default;
+    TableMeta(const TableMeta& t_meta) = default;
+    auto operator=(const TableMeta& t_meta) -> TableMeta& = default;
+    auto operator=(TableMeta&& t_meta) -> TableMeta& = default;
+    ~TableMeta() = default;
+    static auto read_from(const std::filesystem::path& t_path) -> std::optional<TableMeta>;
     /**
      * @brief I changed this to noexcept since I think the lookup function
      * should not throw an exception.
@@ -61,8 +68,8 @@ class TableMeta {
      * @return Whether the column meta was successfully added.
      */
     template <typename T>
-        requires std::same_as<std::remove_cvref<T>, ColumnMeta>
-    auto add_column(const ColumnMeta& t_colmeta) -> bool {
+        requires std::same_as<std::remove_cvref_t<T>, ColumnMeta>
+    auto add_column(T t_colmeta) -> bool {
         return m_entries.emplace(t_colmeta.m_col_id, std::forward<T>(t_colmeta))
             .second;
     }
