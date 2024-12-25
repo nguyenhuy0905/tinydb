@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <map>
+#include <unordered_map>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -110,7 +110,7 @@ class TableMeta {
     void write_to(const std::filesystem::path& t_path);
 
   private:
-    std::map<std::string, ColumnMeta, std::less<>> m_entries;
+    std::unordered_map<std::string, ColumnMeta, std::less<>> m_entries;
     std::string m_name;
 };
 
