@@ -15,17 +15,17 @@ void TableMeta::write_to(const std::filesystem::path& path) {
     // id is NOT written as characters, due to how this thing works. uint8_t
     // gets interpreted as bytes. With this implementation, the names cannot
     // contain any comma, semicolon or curly brace.
-    using ss = std::streamsize;
+
     // maybe I should throw some kind of failbit exception here.
     std::ofstream file{path, std::ios::trunc};
-    file.write(m_name.c_str(), static_cast<ss>(m_name.length())).put('{');
+    file << m_name << '{';
     for (const ColumnMeta& colmeta :
          m_entries | std::views::transform(
                          [](const auto& pair) { return pair.second; })) {
         file << colmeta.m_name << ',' << colmeta.m_col_id << ','
              << colmeta.m_size << ';';
     }
-    file.put('}');
+    file << '}';
 }
 
 auto TableMeta::read_from(const std::filesystem::path& t_path)
