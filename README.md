@@ -18,16 +18,17 @@
   - String (say, at most 255 characters).
 
 - Single-indexed.
-  - Key assumed to be the first column. If first column isn't name `id`,
-  a `rowid` column is inserted.
-    - For now, manual `id` insertion is forced. No auto-increment.
+  - For now, manual `id` insertion is forced. No auto-increment.
   - `id` must be an unsigned int.
   - Simply compare byte-to-byte.
   - Multi-indexing then probably something like a hash table.
 
 ## Command-line
 
-- Call `tinydb` to open the REPL.
+- Call `tinydbcli` to open the REPL.
+
+> [!WARNING]
+> The following is outdated and is being updated.
 
 ### 1. Quickie
 
