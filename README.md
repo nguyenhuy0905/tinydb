@@ -27,22 +27,19 @@
 
 - Call `tinydbcli` to open the REPL.
 
-> [!WARNING]
-> The following is outdated and is being updated.
-
 ### 1. Quickie
 
 - `exit` to quit.
 - `help` to print help.
 - `version` to print version.
-- `open <FILENAME>` to open a database file.
+- `open <FILENAME>` to open (or create) a database file.
 - `close` to close the currently opened database file.
-- `create <TABLENAME> <DIR>` to create file `<DIR>/<TABLENAME>.tinydb`.
-- `format name type size name type size...` to create a new table in the opened file.
-Invalidates all other data stored in the table.
-  - `type`s accepted for now: `uint`, `strg`.
-  - It's a bit inconvenient: an int is 4 bytes always but one still needs to
-  enter the length.
+- `create <TBLNAME>{name1,type1;name2,type2;...}` to create a table in the
+opened file.
+  - Some types (vchr) needs a length specifier. varchar(255) for
+  example, creates a character array length 255.
+  - `type`s accepted for now: `uint`, `vchr`.
+  - Maximum length is 255.
 - `query all` to print out all entries.
 - `query tblname` to print out current table name. Prints an empty line if no
 file is currently opened.
@@ -52,9 +49,10 @@ file is currently opened.
   - As of now only ID query is thought of.
   - May also go `id<ID`, `id>ID`, `id<=ID`, `id>=ID`, `id?`. The last
   option prints a random row.
-- `insert (id ...)` to add a row into the table. ID must be the first specified
-element. Data must be sequentially ordered just like how the table is declared.
-- `behead id=ID` to remove the row with the specified ID.
+- `insert {name1,name2,...}{val1,val2,...}` to add a row into the table.
+
+> [!WARNING]
+> The following is outdated and is being updated.
 
 ## Format of a database file
 
