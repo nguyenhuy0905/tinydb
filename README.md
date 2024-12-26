@@ -58,86 +58,38 @@ file is currently opened.
 
 ### 1. File header
 
-#### 1.1. Table definition
+#### 1.1. Version (0 byte offset)
 
-- Table name: it's just the filename. 0 byte.
-- Some validation string: "SMALLPP\0\0\0." 10 bytes.
-- Content type: in the format `name<TAB>type<TAB>size<TAB>`.
-  - So long as the table doesn't exceed 4000 bytes, it's good.
-  - Type: flagged. 1 = uint, 2 = string.
-  - Content ends with `\0`, so, for example:
+- 2 bytes major, 2 bytes minor, 2 bytes patch.
 
-  ```txt
-  id    1   4   col1  1   4   col2    2   255   col3    2   69\0
-  ```
+#### 1.2. Freelist pointer (6 bytes offset)
 
-#### 1.2. More metadata
+- 4-byte pointer to the first free page.
 
-- Number of entries: 4 bytes.
-- Root pointer: pointer to B+ Tree root page. 4 bytes.
-- Free list pointer: pointer to head of free list. 4 bytes.
+#### 1.3. Table list pointer (10 bytes offset)
 
-### 2. B+ tree
+- 4-byte pointer to the first table definition page.
 
-- Each node can be of 2 types: an internal page (index page) or a leaf page
-(data page). Your usual B+ tree. All node has fixed size equivalent to a
-predefined page size (4096).
+### 2. Page types
 
-#### 2.1. Index page format
+#### 2.1. General
 
-- Flag: 1 byte: tell that it's an index page.
-- n: 2 bytes. The index page has n pointers and n - 1 rowid.
-- Stores rowid and pointer to a child page.
-  - rowid: 4 bytes
-  - pointer: 4 bytes
-  - stored like so:
+- All pages start with one byte indicating the page type.
 
-  ```txt
-  -- n pointers, n - 1 rowid
-  ptr0 | rowid0 | ptr1 | rowid1 | ... | ptrn
-  ```
+#### 2.2. Free page (flag 0)
 
-  - ptr0 points to child page whose entries/children pages all contain
-  rowid less than rowid0
-  - ptr1 then greater than rowid0 and less than rowid1.
-  - and so on.
+- On the way :).
 
-#### 2.2. Data page format
+#### 2.3. Table definition
 
-- Stores data. Of course.
-- This page is a leaf page so it has no more pointers.
-- Flag: 1 byte: tell that it's a data page.
-- n: 2 bytes. There are n entries in this page.
-- Data.
-
-### 3. Free list
-
-- Singly linked list of free pages. The tail points to 0, indicating that the
-page right after it, and everything from there, is free.
-- After a B+ tree node is removed, it's added as the head of free list.
-- Content of free list:
-- Flag: 1 byte: Tell that it's a free page.
-- n: 2 bytes. Always 0. Just to be more in sync with other types of pages.
-- Pointer: 4 byte: The next free page.
-
-## In-memory format
-
-- Used when processing data in the database file.
-
-### 1. Metadata
-
-- tblname: string.
-- table.
-- number of entries.
-- root and freelist pointers.
-
-### 2. Page
-
-- Flag (or, page type).
-- Number of pointers/entries.
-- Raw bytes. Processed depending on page type.
+- Variable length, ends at the first closing curly brace.
+- Format: `tblname{col1name,col1id,col1size;...;colnname,colnid,colnsize;}`
+  - In the future, coltype may be used instead of colsize, when there's
+  a better-defined type system.
 
 ## Future upgrades
 
 - New types:
   - Unsigned long: 8 bytes.
+  - Variable-length data types: 4 bytes (pointer).
+    - Say, text or any big (more-than-255-byte) stuff.
