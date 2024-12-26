@@ -99,8 +99,8 @@ class TableMeta {
      * @param t_id
      * @return
      */
-    auto remove_column(const std::string& t_id) noexcept -> bool {
-        return m_entries.erase(t_id) == 1;
+    auto remove_column(const std::string& t_name) noexcept -> bool {
+        return m_entries.erase(t_name) == 1;
     }
     /**
      * @brief Overwrite the content of a file with the table metadata.
@@ -110,7 +110,7 @@ class TableMeta {
     void write_to(const std::filesystem::path& t_path);
 
   private:
-    std::unordered_map<std::string, ColumnMeta, std::less<>> m_entries;
+    std::unordered_map<std::string, ColumnMeta> m_entries;
     std::string m_name;
 };
 
