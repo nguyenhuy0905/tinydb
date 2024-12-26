@@ -1,6 +1,7 @@
 #ifndef TINYDB_DBFILE_PAGE_HXX
 #define TINYDB_DBFILE_PAGE_HXX
 
+#include <cassert>
 #include <cstdint>
 #include <filesystem>
 #include <type_traits>
@@ -68,7 +69,10 @@ class PageMeta {
      *
      * @param t_pagenum
      */
-    explicit PageMeta(uint16_t t_pagenum) : m_pagenum(t_pagenum) {}
+    explicit PageMeta(uint16_t t_pagenum) : m_pagenum(t_pagenum) {
+        // the 0th page is the metadata header.
+        assert(t_pagenum > 0);
+    }
     // NOLINTBEGIN(*-private-member-variables-*)
     uint16_t m_pagenum;
     // NOLINTEND(*-private-member-variables-*)
