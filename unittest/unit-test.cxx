@@ -17,11 +17,6 @@ TEST(some, tbl_test) {
         .m_name{"col2"}, .m_size = 8, .m_col_id = 2, .m_offset = 4}); // NOLINT
     tbl.write_to(file);
     auto checkup = TableMeta::read_from(file);
-
-    FreePageMeta fpm{1, 1, 0};
-    fpm.write_to(file);
-    auto placeholder = FreePageMeta::placeholder(1);
-    placeholder.read_from(file);
 }
 
 TEST(some, page_test) {
@@ -29,8 +24,8 @@ TEST(some, page_test) {
     using namespace tinydb::dbfile;
     std::fstream file{"test.db"};
 
-    FreePageMeta fpm{1, 1, 128}; // NOLINT(*magic-numbers)
+    FreePageMeta fpm{2, 1, 128}; // NOLINT(*magic-numbers)
     fpm.write_to(file);
-    auto placeholder = FreePageMeta::placeholder(1);
+    auto placeholder = FreePageMeta::placeholder(2);
     placeholder.read_from(file);
 }
