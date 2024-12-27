@@ -2,12 +2,12 @@
 #define TINYDB_DBFILE_TBL_HXX
 
 #include <cstdint>
-#include <filesystem>
-#include <unordered_map>
+#include <iosfwd>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 
 namespace tinydb::dbfile {
 
@@ -15,7 +15,7 @@ using ColID = uint8_t;
 using EntrySiz = uint16_t;
 
 enum class NumericColType : uint8_t {
-    Number, // 16-bit   
+    Number, // 16-bit
 };
 
 struct VarCharColType {
@@ -40,7 +40,6 @@ struct ColumnMeta {
  *
  */
 class TableMeta {
-    static_assert(!std::is_trivially_copyable_v<std::filesystem::path>);
     static_assert(!std::is_trivially_copyable_v<ColumnMeta>);
 
   public:
@@ -63,8 +62,7 @@ class TableMeta {
      * - This API will be changed later. optional is a terrible but
      * quick-and-seemingly-easy way to say there's something wrong.
      */
-    static auto
-    read_from(const std::filesystem::path& t_path) -> std::optional<TableMeta>;
+    static auto read_from(std::istream& t_in) -> std::optional<TableMeta>;
     /**
      * @brief I changed this to noexcept since I think the lookup function
      * should not throw an exception.
@@ -107,7 +105,7 @@ class TableMeta {
      *
      * @param t_path The path to write to.
      */
-    void write_to(const std::filesystem::path& t_path);
+    void write_to(std::ostream& t_out);
 
   private:
     std::unordered_map<std::string, ColumnMeta> m_entries;

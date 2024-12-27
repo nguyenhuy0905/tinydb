@@ -4,6 +4,7 @@ add_library(tinydb_page)
 target_sources(tinydb_page
     PRIVATE
     page.cxx
+    page_free.cxx
     PUBLIC FILE_SET HEADERS FILES
     page.hxx
 )
@@ -25,7 +26,7 @@ target_sources(tinydb_tbl
     PUBLIC FILE_SET HEADERS FILES
     tbl.hxx
 )
-target_link_libraries(tinydb_tbl PRIVATE tinydb_compile_opts)
+target_link_libraries(tinydb_tbl PUBLIC tinydb_page PRIVATE tinydb_compile_opts)
 
 add_library(tinydb_tree)
 target_sources(tinydb_tree

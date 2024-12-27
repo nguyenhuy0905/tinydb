@@ -1,14 +1,13 @@
 #include "tbl.hxx"
-#include <filesystem>
-#include <fstream>
-#include <ios>
+#include <iostream>
 #include <print>
 #include <ranges>
 #include <sstream>
 
 namespace tinydb::dbfile {
 
-void TableMeta::write_to(const std::filesystem::path& path) {
+void TableMeta::write_to(std::ostream& t_out) {
+    t_out.seekp(0);
     // table format:
     // tblname{col1-name,col1-id,col1-size;...;coln-name,coln-id,coln-size;}
 
@@ -17,22 +16,20 @@ void TableMeta::write_to(const std::filesystem::path& path) {
     // contain any comma, semicolon or curly brace.
 
     // maybe I should throw some kind of failbit exception here.
-    std::ofstream file{path, std::ios::trunc};
-    file << m_name << '{';
+    t_out << m_name << '{';
     for (const ColumnMeta& colmeta :
          m_entries | std::views::transform(
                          [](const auto& pair) { return pair.second; })) {
-        file << colmeta.m_name << ',' << colmeta.m_col_id << ','
-             << colmeta.m_size << ';';
+        t_out << colmeta.m_name << ',' << colmeta.m_col_id << ','
+              << colmeta.m_size << ';';
     }
-    file << '}';
+    t_out << '}';
 }
 
-auto TableMeta::read_from(const std::filesystem::path& t_path)
-    -> std::optional<TableMeta> {
+auto TableMeta::read_from(std::istream& t_in) -> std::optional<TableMeta> {
+    t_in.seekg(0);
     // read the comment at the beginning of the definition of `write_to` to get
     // a sense of how the table metadata is written.
-    std::ifstream file{t_path};
     // maybe I should throw some kind of failbit exception here.
     std::stringstream sbuilder{};
 
@@ -41,11 +38,11 @@ auto TableMeta::read_from(const std::filesystem::path& t_path)
     // After that, put formatted data into the variable passed in, then clear
     // the stringstream flags and content.
     auto fill_var = [&]<typename T>(char delim, T& var) mutable {
-        file.get(*sbuilder.rdbuf(), delim);
+        t_in.get(*sbuilder.rdbuf(), delim);
         sbuilder >> var;
         sbuilder.clear();
         sbuilder.str(std::string{});
-        file.seekg(1, std::ios_base::cur);
+        t_in.seekg(1, std::ios_base::cur);
     };
 
     std::string tblname{};
@@ -53,7 +50,7 @@ auto TableMeta::read_from(const std::filesystem::path& t_path)
     TableMeta new_tbl{std::move(tblname)};
 
     EntrySiz off{0};
-    while (file.peek() != '}') {
+    while (t_in.peek() != '}') {
         std::string colname{};
         fill_var(',', colname);
 
