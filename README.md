@@ -66,9 +66,12 @@ file is currently opened.
 
 - 4-byte pointer to the first free page.
 
-#### 1.3. Table list pointer (10 bytes offset)
+#### 1.3. Table definition
 
-- 4-byte pointer to the first table definition page.
+- Variable length, ends at the first closing curly brace.
+- Format: `tblname{col1name,col1id,col1size;...;colnname,colnid,colnsize;}`
+  - In the future, coltype may be used instead of colsize, when there's
+  a better-defined type system.
 
 ### 2. Page types
 
@@ -78,14 +81,23 @@ file is currently opened.
 
 #### 2.2. Free page (flag 0)
 
-- On the way :).
+- offset 1: 4-byte, number of pages under the current free page, including
+itself. This number being 0 means this free page is the last page in the
+entire database file.
+- offset 5: 4-byte, the pointer to the next page. 0 means this free page is
+the last free page. This also means that, the number-of-pages is set to 0.
 
-#### 2.3. Table definition
+#### 2.3. Btree leaf
 
-- Variable length, ends at the first closing curly brace.
-- Format: `tblname{col1name,col1id,col1size;...;colnname,colnid,colnsize;}`
-  - In the future, coltype may be used instead of colsize, when there's
-  a better-defined type system.
+- To be added.
+
+#### 2.4. Btree internal
+
+- To be added.
+
+#### 2.5. Heap page
+
+- To be added.
 
 ## Future upgrades
 
