@@ -4,7 +4,6 @@ add_library(tinydb_page)
 target_sources(tinydb_page
     PRIVATE
     page.cxx
-    page_free.cxx
     PUBLIC FILE_SET HEADERS FILES
     page.hxx
 )
