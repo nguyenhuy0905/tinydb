@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
+#include <iosfwd>
 namespace tinydb::dbfile {
 
 /**
@@ -20,24 +20,18 @@ class FreeListMeta {
     // definition.
 
     /**
-     * @brief Initializes a free list in the specified file.
-     *
-     * For now, this is planned to be at the beginning of the file. This means
-     * there needs to be a change to how `TableMeta` writes stuff.
-     *
-     * Note: With this, I probably will have to change the open mode inside
-     * `TableMeta` into out, not trunc.
-     *
-     * @param path The path to the specified file.
-     */
-    static void init_free_list(const std::filesystem::path& path);
-
-    /**
      * @brief Reads the content of the freelist from the specified database file.
      *
      * @param path The specified database file.
      */
-    static auto read_from(const std::filesystem::path& path) -> FreeListMeta;
+    static auto read_from(std::istream& t_in) -> FreeListMeta;
+
+    /**
+     * @brief Writes the content of this freelist into the specified database file.
+     *
+     * @param t_out The specified database file.
+     */
+    void write_to(std::ostream& t_out);
 
     /**
      * @return The page number of the first free page available.
