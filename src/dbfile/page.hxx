@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <filesystem>
 #include <type_traits>
 #include <iosfwd>
 namespace tinydb::dbfile {
