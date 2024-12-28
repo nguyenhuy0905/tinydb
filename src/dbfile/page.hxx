@@ -110,7 +110,7 @@ class FreePageMeta : public PageMeta {
     }
     void write_to(std::ostream& t_out) override;
     void read_from(std::istream& t_in) override;
-    ~FreePageMeta() override;
+    ~FreePageMeta() override = default;
 
   private:
     explicit FreePageMeta(uint32_t t_pagenum)

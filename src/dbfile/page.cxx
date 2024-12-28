@@ -39,6 +39,4 @@ void FreePageMeta::read_from(std::istream& t_in) {
     m_p_next_page = pnext;
 }
 
-FreePageMeta::~FreePageMeta() = default;
-
 } // namespace tinydb::dbfile
