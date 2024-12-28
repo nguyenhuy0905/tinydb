@@ -125,6 +125,35 @@ class FreePageMeta : public PageMeta {
     uint32_t m_p_next_page;
 };
 
+/**
+ * @class BTreeLeafMeta
+ * @brief Contains metadata about a BTree leaf page.
+ *
+ */
+class BTreeLeafMeta : public PageMeta {
+    public:
+    private:
+};
+
+/**
+ * @class BTreeInternalMeta
+ * @brief Contains metadata about a BTree internal page.
+ *
+ */
+class BTreeInternalMeta : public PageMeta {
+    public:
+    private:
+};
+
+/**
+ * @class HeapMeta
+ * @brief Contains metadata about a heap page.
+ *
+ */
+class HeapMeta : public PageMeta {
+
+};
+
 } // namespace tinydb::dbfile
 
 #endif // !TINYDB_DBFILE_PAGE_HXX
