@@ -3,8 +3,8 @@
 
 #include <cassert>
 #include <cstdint>
-#include <type_traits>
 #include <iosfwd>
+#include <type_traits>
 namespace tinydb::dbfile {
 
 constexpr uint16_t PAGESIZ = 4096;
@@ -90,10 +90,15 @@ class PageMeta {
 /**
  * @class FreePageMeta
  * @brief Contains metadata about free page.
+ * @detail For now, this is a "page" that can be more than 1 page big. A
+ * one-page-each implementation should be simpler though, I may reconsider.
+ *
+ * With this implementation, I don't have a reason to use more than 1 page.
+ * Maybe I will remove that "feature".
  *
  */
 class FreePageMeta : public PageMeta {
-// NOLINTEND(*-special-member-functions*)
+    // NOLINTEND(*-special-member-functions*)
   public:
     FreePageMeta(uint32_t t_pagenum, uint32_t t_n_page, uint32_t t_p_next_page)
         : PageMeta(t_pagenum), m_n_pages(t_n_page),
@@ -131,8 +136,13 @@ class FreePageMeta : public PageMeta {
  *
  */
 class BTreeLeafMeta : public PageMeta {
-    public:
-    private:
+  public:
+  private:
+    // Format (planned):
+    // offset 0: 1-byte set to 1 (indicating B Tree leaf).
+    // offset 1: 2-byte, number of rows currently recorded in this page.
+    // offset 3: 4-byte, pointer to the next leaf page (0 means this is the last
+    // leaf page). offset 7 onwards: the tables.
 };
 
 /**
@@ -141,8 +151,13 @@ class BTreeLeafMeta : public PageMeta {
  *
  */
 class BTreeInternalMeta : public PageMeta {
-    public:
-    private:
+  public:
+  private:
+    // Format:
+    // offset 0: 1-byte set to 2 (indicating B Tree internal).
+    // offset 1: 2-byte, number of keys currently in this page.
+    //   The number of keys is always at least 1.
+    // offset 3 onwards: the list of keys stored in this page.
 };
 
 /**
@@ -151,7 +166,62 @@ class BTreeInternalMeta : public PageMeta {
  *
  */
 class HeapMeta : public PageMeta {
-
+  public:
+  private:
+    // Format:
+    // offset 0: 1-byte set to 3 (indicating heap).
+    // offset 1: 4-byte, pointer to the next heap page.
+    //   If this number is 0, this is the last heap page in the heap list. If we
+    //   need more heap page, we need to get one from the free page.
+    // offset 5: 2-byte, pointer to first free fragment.
+    // offset 7: 2-byte, the size of the largest fragment.
+    //   If this number is the page size minus 9, which is assumed to be
+    //   4096 - 9 = 4087, this page is freed and added to the freelist.
+    //
+    // Free fragments form a linked list.
+    // Free fragment format:
+    // offset 0: 2-byte, pointer to the next fragment.
+    //   We take 0 as "this is the last free fragment in the list".
+    // offset 2: 1-byte; 0 if free, 1 if currently in use.
+    // offset 3: 2-byte, size of the fragment.
+    //
+    //   This implementation suffers from memory fragmentation.
+    //
+    //   To avoid memory fragmentation, we need a way to merge 2 or more free
+    //   fragments that lie next to each other into a bigger one.
+    //
+    //   I'm thinking of, making the linked list sorted in ascending memory
+    //   position. That is, the first free fragment is the one with the smallest
+    //   offset from the beginning of the page, and so on.
+    //
+    //   So, if a heap fragment is freed, we can traverse the linked list until
+    //   the next pointer is either 0 or larger than this fragment's pointer.
+    //
+    // Any poitner to a fragment should be, in 6 bytes:
+    //   offset 0: 4-byte, pointer to the heap page.
+    //   offset 4: 2-byte, the offset from the beginning of that heap page.
+    //     Note, the offset points to the actual data in the heap fragment. What
+    //     that means is, the number 2 bytes before this number is the size of
+    //     the fragment.
+    //
+    //   Since I lock the data size to be 1-byte, the maximum byte size of any
+    //   data is 255 bytes. So, if anything uses more than 255 bytes, some of
+    //   its data must be on heap.
+    //
+    //   Say, the first 249 bytes are at where it should be, and the next 6 is
+    //   the fragment pointer.
+    //
+    //   Then grab as much memory as needed in a heap page. The maximum to be
+    //   allocated is 4087 bytes. If more than 4087 is still needed, 4081 is
+    //   used for the actual data, and the next 6 is, again, a fragment pointer.
+    //
+    //   Rinse and repeat until we fit all the data in.
+    //
+    //   The worst case of this is pretty terrible (looping through all free
+    //   page, every single time we need more data).
+    //
+    //   Alternative: red-black tree and a best-fit allocation scheme.
+    //   I will cook this later, if I ever decide on this.
 };
 
 } // namespace tinydb::dbfile
