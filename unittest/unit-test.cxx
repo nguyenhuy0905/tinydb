@@ -15,6 +15,8 @@ TEST(some, tbl_test) {
         ColumnMeta{.m_name{"col1"}, .m_size = 4, .m_col_id = 1, .m_offset = 0});
     tbl.add_column(ColumnMeta{
         .m_name{"col2"}, .m_size = 8, .m_col_id = 2, .m_offset = 4}); // NOLINT
+    ASSERT_FALSE(tbl.remove_column("hello"));
+    ASSERT_TRUE(tbl.remove_column("col1"));
     tbl.write_to(file);
     auto checkup = TableMeta::read_from(file);
 }

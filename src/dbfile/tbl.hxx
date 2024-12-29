@@ -97,8 +97,10 @@ class TableMeta {
      * @param t_id
      * @return
      */
-    auto remove_column(const std::string& t_name) noexcept -> bool {
-        return m_entries.erase(t_name) == 1;
+    template <typename T>
+        requires std::convertible_to<T, std::string>
+    auto remove_column(T&& t_name) noexcept -> bool {
+        return m_entries.erase(std::forward<T>(t_name)) == 1;
     }
     /**
      * @brief Overwrite the content of a file with the table metadata.
