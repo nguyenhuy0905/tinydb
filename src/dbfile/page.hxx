@@ -137,12 +137,35 @@ class FreePageMeta : public PageMeta {
  */
 class BTreeLeafMeta : public PageMeta {
   public:
+    BTreeLeafMeta(uint32_t t_n_page, uint16_t t_n_cols, uint32_t t_p_next)
+        : PageMeta(t_n_page), m_n_cols(t_n_cols), m_p_next(t_p_next) {}
+
+    void read_from(std::istream& t_in) override;
+
+    void write_to(std::ostream& t_out) override;
+
+    /**
+     * @brief Initializes a placeholder BTree leaf meta object. One should call
+     * read_from after this.
+     *
+     * @param t_pagenum
+     * @return A new `BTreeLeafMeta`.
+     */
+    static inline auto placeholder(uint32_t t_n_page) -> BTreeLeafMeta {
+        return BTreeLeafMeta{t_n_page};
+    }
+
   private:
+    explicit BTreeLeafMeta(uint32_t t_n_page)
+        : PageMeta(t_n_page), m_n_cols(0), m_p_next(0) {}
     // Format (planned):
     // offset 0: 1-byte set to 1 (indicating B Tree leaf).
     // offset 1: 2-byte, number of rows currently recorded in this page.
     // offset 3: 4-byte, pointer to the next leaf page (0 means this is the last
     // leaf page). offset 7 onwards: the tables.
+
+    uint16_t m_n_cols;
+    uint32_t m_p_next;
 };
 
 /**
@@ -152,6 +175,9 @@ class BTreeLeafMeta : public PageMeta {
  */
 class BTreeInternalMeta : public PageMeta {
   public:
+    void read_from(std::istream& t_in) override;
+    void write_to(std::ostream& t_out) override;
+
   private:
     // Format:
     // offset 0: 1-byte set to 2 (indicating B Tree internal).
