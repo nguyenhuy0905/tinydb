@@ -16,6 +16,7 @@ TEST(some, tbl_test) {
     tbl.add_column(ColumnMeta{
         .m_name{"col2"}, .m_size = 8, .m_col_id = 2, .m_offset = 4}); // NOLINT
     ASSERT_FALSE(tbl.remove_column("hello"));
+    ASSERT_TRUE(tbl.get_column("col1").has_value());
     ASSERT_TRUE(tbl.remove_column("col1"));
     tbl.write_to(file);
     auto checkup = TableMeta::read_from(file);

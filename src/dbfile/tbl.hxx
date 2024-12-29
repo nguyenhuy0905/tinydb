@@ -69,10 +69,12 @@ class TableMeta {
      * @return The column meta with the specified ID, or nullopt if there isn't
      * one
      */
-    auto get_column(const std::string t_name) noexcept
+    template <typename T>
+        requires std::convertible_to<T, std::string>
+    auto get_column(T&& t_name) noexcept
         -> std::optional<rw<const ColumnMeta>> const {
         try {
-            return {{m_entries.at(t_name)}};
+            return {{m_entries.at(std::forward<T>(t_name))}};
         } catch (std::out_of_range e) {
             return {std::nullopt};
         }
