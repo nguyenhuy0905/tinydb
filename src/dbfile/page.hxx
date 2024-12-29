@@ -162,7 +162,7 @@ class BTreeLeafMeta : public PageMeta {
     // offset 0: 1-byte set to 1 (indicating B Tree leaf).
     // offset 1: 2-byte, number of rows currently recorded in this page.
     // offset 3: 4-byte, pointer to the next leaf page (0 means this is the last
-    // leaf page). offset 7 onwards: the tables.
+    // leaf page). offset 7 onwards: the data rows.
 
     uint16_t m_n_cols;
     uint32_t m_p_next;
