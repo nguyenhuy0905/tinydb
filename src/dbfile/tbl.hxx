@@ -92,6 +92,26 @@ class TableMeta {
         return m_entries.emplace(t_colmeta.m_name, std::forward<T>(t_colmeta))
             .second;
     }
+
+    /**
+     * @brief Sets a specific column as the key.
+     * If one's writing this into a database file, this must be set before
+     * calling write_to.
+     *
+     * @param t_key The name of the column that should be the key.
+     * @return false if the specified key doesn't exist in the entry map.
+     *   true otherwise.
+     */
+    template <typename T>
+        requires std::convertible_to<T, std::string>
+    auto set_key(T&& t_key) -> bool {
+        if (!m_entries.find(t_key)) {
+            return false;
+        }
+
+        m_key = std::forward<T>(t_key);
+        return true;
+    }
     /**
      * @brief Note; this is marked as noexcept because I believe the default
      * hash and equality function for size_t don't throw anything.
@@ -107,6 +127,8 @@ class TableMeta {
     /**
      * @brief Overwrite the content of a file with the table metadata.
      *
+     * TODO: add to write_to and read_from the data of the key column
+     *
      * @param t_path The path to write to.
      */
     void write_to(std::ostream& t_out);
@@ -114,6 +136,7 @@ class TableMeta {
   private:
     std::unordered_map<std::string, ColumnMeta> m_entries;
     std::string m_name;
+    std::string m_key;
 };
 
 } // namespace tinydb::dbfile
