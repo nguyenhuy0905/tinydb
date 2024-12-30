@@ -18,6 +18,7 @@ TEST(some, tbl_test) {
     ASSERT_FALSE(tbl.remove_column("hello"));
     ASSERT_TRUE(tbl.get_column("col1").has_value());
     ASSERT_TRUE(tbl.remove_column("col1"));
+    ASSERT_TRUE(tbl.set_key("col2"));
     tbl.write_to(file);
     auto checkup = TableMeta::read_from(file);
 }

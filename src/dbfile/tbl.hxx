@@ -105,7 +105,7 @@ class TableMeta {
     template <typename T>
         requires std::convertible_to<T, std::string>
     auto set_key(T&& t_key) -> bool {
-        if (!m_entries.find(t_key)) {
+        if (m_entries.find(t_key) == m_entries.end()) {
             return false;
         }
 

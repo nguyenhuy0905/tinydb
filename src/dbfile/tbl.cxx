@@ -17,6 +17,7 @@ void TableMeta::write_to(std::ostream& t_out) {
 
     // maybe I should throw some kind of failbit exception here.
     t_out << m_name << '{';
+    t_out << m_key << ';';
     for (const ColumnMeta& colmeta :
          m_entries | std::views::transform(
                          [](const auto& pair) { return pair.second; })) {
@@ -48,6 +49,9 @@ auto TableMeta::read_from(std::istream& t_in) -> std::optional<TableMeta> {
     std::string tblname{};
     fill_var('{', tblname);
     TableMeta new_tbl{std::move(tblname)};
+
+    std::string key{};
+    fill_var(';', key);
 
     EntrySiz off{0};
     while (t_in.peek() != '}') {
