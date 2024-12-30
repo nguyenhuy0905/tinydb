@@ -66,4 +66,25 @@ void BTreeLeafMeta::read_from(std::istream& t_in) {
     m_p_next = pnextpg;
 }
 
+void BTreeInternalMeta::write_to(std::ostream& t_out) {
+    t_out.seekp(m_pagenum * PAGESIZ);
+    t_out << static_cast<pt_num>(PageType::BTreeInternal);
+    t_out.write(std::bit_cast<const char*>(&m_n_pairs), sizeof(m_n_pairs));
+}
+
+void BTreeInternalMeta::read_from(std::istream& t_in) {
+    t_in.seekg(m_pagenum * PAGESIZ);
+
+    uint8_t pagetype{0};
+    t_in >> pagetype;
+    if (pagetype != static_cast<pt_num>(PageType::BTreeInternal)) {
+        throw PageReadError::WrongPageType;
+    }
+
+    uint16_t npairs{0};
+    t_in >> npairs;
+
+    m_n_pairs = npairs;
+}
+
 } // namespace tinydb::dbfile

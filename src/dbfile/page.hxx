@@ -166,6 +166,7 @@ class BTreeLeafMeta : public PageMeta {
 
     uint16_t m_n_cols;
     uint32_t m_p_next;
+    // TODO: format data rows
 };
 
 /**
@@ -184,6 +185,7 @@ class BTreeInternalMeta : public PageMeta {
     // offset 1: 2-byte, number of keys currently in this page.
     //   The number of keys is always at least 1.
     // offset 3 onwards: the list of keys stored in this page.
+    uint16_t m_n_pairs;
 };
 
 /**
