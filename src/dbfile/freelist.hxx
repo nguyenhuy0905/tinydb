@@ -40,14 +40,6 @@ class FreeListMeta {
      */
     auto get_first_free_page() -> uint16_t { return m_first_free_ptr; }
 
-    /**
-     * @brief Similarly to `get_first_free_page` but we are instead looking for
-     * `t_n_pages` consecutive free pages.
-     *
-     * @param t_n_pages
-     */
-    auto get_first_n_free_page(size_t t_n_pages) -> uint16_t;
-
   private:
     uint16_t m_first_free_ptr;
     // we may need more down here. Who knows?
