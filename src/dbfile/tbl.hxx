@@ -127,8 +127,6 @@ class TableMeta {
     /**
      * @brief Overwrite the content of a file with the table metadata.
      *
-     * TODO: add to write_to and read_from the data of the key column
-     *
      * @param t_path The path to write to.
      */
     void write_to(std::ostream& t_out);

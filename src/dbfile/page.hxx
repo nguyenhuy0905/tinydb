@@ -39,8 +39,6 @@ using err_num = std::underlying_type_t<PageReadError>;
 class PageMeta {
     // NOLINTEND(*-special-member-functions*)
   public:
-    // TODO: implement page metadata.
-    //
     // I will probably use inheritance for this one. There are a few `PageMeta`
     // types, as listed in the `PageType` enum.
 
