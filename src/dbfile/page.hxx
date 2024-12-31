@@ -100,7 +100,7 @@ class PageMeta {
 class FreePageMeta : public PageMeta {
     // NOLINTEND(*-special-member-functions*)
   public:
-    FreePageMeta(uint32_t t_pagenum, uint32_t t_n_page, uint32_t t_p_next_page)
+    FreePageMeta(uint32_t t_pagenum, uint32_t t_p_next_page)
         : PageMeta(t_pagenum), m_p_next_page(t_p_next_page) {}
     /**
      * @brief Initializes a placeholder page meta object. One should call

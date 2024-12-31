@@ -35,3 +35,18 @@ target_sources(tinydb_tree
     btree.hxx
 )
 target_link_libraries(tinydb_tree PRIVATE tinydb_compile_opts PUBLIC tinydb_tbl)
+
+add_library(tinydb_dbfile)
+target_sources(tinydb_dbfile
+    PRIVATE
+    dbfile.cxx
+    PUBLIC FILE_SET HEADERS FILES
+    dbfile.hxx)
+target_link_libraries(tinydb_dbfile
+    PRIVATE
+    tinydb_compile_opts
+    PUBLIC
+    tinydb_page
+    tinydb_freelist
+    tinydb_tbl
+    tinydb_tree)

@@ -28,7 +28,7 @@ TEST(some, page_test) {
     using namespace tinydb::dbfile;
     std::fstream file{"test.db"};
 
-    FreePageMeta fpm{2, 1, 128}; // NOLINT(*magic-numbers)
+    FreePageMeta fpm{2, 128}; // NOLINT(*magic-numbers)
     fpm.write_to(file);
     auto placeholder = FreePageMeta::placeholder(2);
     placeholder.read_from(file);
