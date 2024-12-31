@@ -1,7 +1,6 @@
 #ifndef TINYDB_DBFILE_FREELIST_HXX
 #define TINYDB_DBFILE_FREELIST_HXX
 
-#include <cstddef>
 #include <cstdint>
 #include <iosfwd>
 namespace tinydb::dbfile {
