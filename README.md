@@ -62,11 +62,20 @@ file is currently opened.
 
 - 2 bytes major, 2 bytes minor, 2 bytes patch.
 
-#### 1.2. Freelist pointer (6 bytes offset)
+#### 1.2. Database file size (6 bytes offset)
+
+- 4 bytes, number of pages in use.
+- Freelist pages or heap pages are also considered "in use"
+
+#### 1.3. Freelist pointer (10 bytes offset)
 
 - 4-byte pointer to the first free page.
 
-#### 1.3. Table definition
+#### 1.4. Heap pointer (14 bytes offset)
+
+- 4-byte pointer to the first heap page.
+
+#### 1.4. Table definition
 
 - Variable length, ends at the first closing curly brace.
 - Format: `tblname{col1name,col1id,col1size;...;colnname,colnid,colnsize;}`
