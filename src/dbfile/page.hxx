@@ -101,8 +101,7 @@ class FreePageMeta : public PageMeta {
     // NOLINTEND(*-special-member-functions*)
   public:
     FreePageMeta(uint32_t t_pagenum, uint32_t t_n_page, uint32_t t_p_next_page)
-        : PageMeta(t_pagenum), m_n_pages(t_n_page),
-          m_p_next_page(t_p_next_page) {}
+        : PageMeta(t_pagenum), m_p_next_page(t_p_next_page) {}
     /**
      * @brief Initializes a placeholder page meta object. One should call
      * read_from after this.
@@ -119,14 +118,12 @@ class FreePageMeta : public PageMeta {
 
   private:
     explicit FreePageMeta(uint32_t t_pagenum)
-        : PageMeta(t_pagenum), m_n_pages(0), m_p_next_page(0) {}
+        : PageMeta(t_pagenum), m_p_next_page(0) {}
     // Format:
     // offset 0: 1-byte set to 0 (indicating free page)
-    // offset 1: 4-byte, the size of this freepage in number-of-pages.
     //   If number is 0, this page and anything below it is free.
-    // offset 5: 4-byte pointer to the next free page.
+    // offset 1: 4-byte pointer to the next free page.
     // the rest: raw bytes of nothingness.
-    uint32_t m_n_pages;
     uint32_t m_p_next_page;
 };
 

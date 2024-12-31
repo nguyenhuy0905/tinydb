@@ -13,7 +13,6 @@ void FreePageMeta::write_to(std::ostream& t_out) {
     //
     // the table metadata thing is simpler in the sense that, we can rely on the
     // delimiter (comma, semicolon) to determine how long a variable is.
-    t_out.write(std::bit_cast<const char*>(&m_n_pages), sizeof(m_n_pages));
     t_out.write(std::bit_cast<const char*>(&m_p_next_page),
                 sizeof(m_p_next_page));
 }
@@ -29,13 +28,9 @@ void FreePageMeta::read_from(std::istream& t_in) {
     }
 
     // and, similarly, we need to rawdog the bytes into the number(s) here.
-    uint32_t npages{0};
-    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&npages), sizeof(npages));
-
     uint32_t pnext{0};
     t_in.rdbuf()->sgetn(std::bit_cast<char*>(&pnext), sizeof(pnext));
 
-    m_n_pages = npages;
     m_p_next_page = pnext;
 }
 
