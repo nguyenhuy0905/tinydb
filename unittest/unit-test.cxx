@@ -16,4 +16,7 @@ TEST(page, init) {
     init1.write_to(test_stream);
     PageMeta init2{FreePageMeta{1}};
     init2.read_from(test_stream);
+
+    // test cloning
+    auto init3 = init1;
 }

@@ -47,6 +47,17 @@ class PageMeta {
     void read_from(std::istream& t_in) { m_impl->read_from(t_in); }
     void write_to(std::ostream& t_out) { m_impl->write_to(t_out); }
 
+    // special members
+
+    PageMeta(PageMeta&&) = default;
+    auto operator=(PageMeta&&) -> PageMeta& = default;
+    PageMeta(const PageMeta& t_meta) : m_impl{t_meta.m_impl->clone()} {}
+    auto operator=(const PageMeta& t_meta) -> PageMeta& {
+        m_impl = t_meta.m_impl->clone();
+        return *this;
+    }
+    ~PageMeta() = default;
+
   private:
     // NOLINTBEGIN(*special-member*)
     struct PageConcept {
