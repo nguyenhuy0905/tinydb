@@ -41,7 +41,7 @@ class PageTag {};
 class PageMeta {
   public:
     template <typename T>
-        requires std::derived_from<T, PageTag>
+        requires std::is_base_of_v<PageTag, T>
     explicit PageMeta(T&& t_page)
         : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
     void read_from(std::istream& t_in) { m_impl->read_from(t_in); }
@@ -57,7 +57,7 @@ class PageMeta {
     };
     // NOLINTEND(*special-member*)
     template <typename T>
-        requires std::derived_from<T, PageTag>
+        requires std::is_base_of_v<PageTag, T>
     struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
@@ -79,7 +79,7 @@ class PageMeta {
     std::unique_ptr<PageConcept> m_impl;
 };
 
-class FreePageMeta : public PageTag {
+class FreePageMeta : PageTag {
     friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
     friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
 
