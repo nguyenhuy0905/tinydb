@@ -38,80 +38,58 @@ using err_num = std::underlying_type_t<PageReadError>;
  */
 class PageTag {};
 
-/**
- * @class PageMeta
- * @brief Type-erased page metadata.
- * @details
- */
 class PageMeta {
   public:
     template <typename T>
         requires std::derived_from<T, PageTag>
-    PageMeta(T&& t_page)
-        : m_pimpl(new PageMethod<T>(std::forward<T>(t_page))){};
-    void write_to(std::ostream& t_out) { m_pimpl->write_to(t_out); }
-    void read_from(std::istream& t_in) { m_pimpl->read_from(t_in); }
+    explicit PageMeta(T&& t_page)
+        : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
+    void read_from(std::istream& t_in) { m_impl->read_from(t_in); }
+    void write_to(std::ostream& t_out) { m_impl->write_to(t_out); }
 
   private:
     // NOLINTBEGIN(*special-member*)
-    class IPage {
-      public:
-        IPage() = delete;
-        virtual void write_to(std::ostream& t_out) = 0;
+    struct PageConcept {
         virtual void read_from(std::istream& t_in) = 0;
-        virtual auto clone() -> std::unique_ptr<IPage> = 0;
-        virtual ~IPage() = default;
+        virtual void write_to(std::ostream& t_out) = 0;
+        virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
+        virtual ~PageConcept() = default;
     };
     // NOLINTEND(*special-member*)
     template <typename T>
         requires std::derived_from<T, PageTag>
-    class PageMethod : IPage {
-      public:
+    struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
-        explicit PageMethod(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}
-        void write_to(std::ostream& t_out) override { write_to(m_page, t_out); }
-        void read_from(std::istream& t_in) override { read_from(m_page, t_in); }
-        auto clone() -> std::unique_ptr<IPage> override {
-            return std::make_unique<PageMethod<T>>(*this);
+        explicit PageModel(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}
+        void read_from(std::istream& t_in) override {
+            // it seems to not be possible to just name this `read_from` due to
+            // conflicting names.
+            read_from_impl(m_page, t_in);
+        }
+        void write_to(std::ostream& t_out) override {
+            write_to_impl(m_page, t_out);
+        }
+        auto clone() -> std::unique_ptr<PageConcept> override {
+            return std::make_unique<PageModel>(*this);
         }
         T m_page;
     };
 
-    std::unique_ptr<IPage> m_pimpl;
+    std::unique_ptr<PageConcept> m_impl;
 };
 
-// Note, friend functions are not member functions.
-
-/**
- * @class FreePageMeta
- * @brief Contains metadata of a free page.
- *
- */
 class FreePageMeta : public PageTag {
-  public:
-    friend void write_to(const FreePageMeta& t_page, std::ostream& t_out);
-    friend void read_from(const FreePageMeta& t_page, std::istream& t_in);
+    friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
+    friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
 
   private:
-    uint32_t m_pagenum;
+    // not written into the database file.
+    uint32_t m_page_num;
+    // offset 1: pointer to next page. Set to 0 if this is the last free page.
+    //   If set to 0, the next free page should be the page right below this
+    //   page in memory order.
     uint32_t m_next_pg;
-};
-
-/**
- * @class FreePageMeta
- * @brief Contains metadata of a leaf page.
- *
- */
-class BTreeLeafMeta : public PageTag {
-  public:
-    friend void write_to(const BTreeLeafMeta& t_page, std::ostream& t_out);
-    friend void read_from(const BTreeLeafMeta& t_page, std::istream& t_in);
-
-  private:
-    uint32_t m_pagenum;
-    uint16_t m_nrows;
-    uint16_t m_last_offset;
 };
 
 } // namespace tinydb::dbfile
