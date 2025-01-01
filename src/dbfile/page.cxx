@@ -13,7 +13,7 @@ void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out) {
 
 void read_from_impl(FreePageMeta& t_meta, std::istream& t_in) {
     t_in.seekg(t_meta.m_page_num * PAGESIZ);
-    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sgetc());
+    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
     if (pagetype != static_cast<pt_num>(PageType::Free)) {
         // I should return something more meaningful here.
         return;

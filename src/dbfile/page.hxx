@@ -51,7 +51,7 @@ class PageMeta {
     // NOLINTBEGIN(*special-member*)
     struct PageConcept {
         virtual void read_from(std::istream& t_in) = 0;
-        virtual void write_to(std::ostream& t_out) = 0;
+        virtual void write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
         virtual ~PageConcept() = default;
     };
@@ -67,7 +67,7 @@ class PageMeta {
             // conflicting names.
             read_from_impl(m_page, t_in);
         }
-        void write_to(std::ostream& t_out) override {
+        void write_to(std::ostream& t_out) const override {
             write_to_impl(m_page, t_out);
         }
         auto clone() -> std::unique_ptr<PageConcept> override {
@@ -80,8 +80,14 @@ class PageMeta {
 };
 
 class FreePageMeta : PageTag {
-    friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
-    friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
+  public:
+    explicit FreePageMeta(uint32_t t_page_num)
+        : m_page_num{t_page_num}, m_next_pg{0} {}
+    FreePageMeta(uint32_t t_page_num, uint32_t t_next_pg)
+        : m_page_num{t_page_num}, m_next_pg{t_next_pg} {}
+
+    void set_next_pg(uint32_t t_next_pg) { m_next_pg = t_next_pg; }
+    [[nodiscard]] auto next_pg() const -> uint32_t { return m_next_pg; }
 
   private:
     // not written into the database file.
@@ -90,6 +96,9 @@ class FreePageMeta : PageTag {
     //   If set to 0, the next free page should be the page right below this
     //   page in memory order.
     uint32_t m_next_pg;
+
+    friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
+    friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
 };
 
 } // namespace tinydb::dbfile

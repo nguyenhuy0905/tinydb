@@ -6,6 +6,14 @@ TEST(some, obvious_thingy) { ASSERT_TRUE(1 == 1); }
 
 TEST(page, init) {
     using namespace tinydb::dbfile;
-    PageMeta init1{FreePageMeta{}};
-    // TODO: use a stringstream or something to test I/O.
+    PageMeta init1{FreePageMeta{1, 2}};
+    // if we don't fill in the string, stringstream will throw an error when we
+    // seek to some position outside of the current string length.
+    std::stringstream test_stream{std::string(2 * PAGESIZ, '\0')};
+    test_stream.exceptions(std::stringstream::failbit);
+
+    // hook this up into gdb to test the return value.
+    init1.write_to(test_stream);
+    PageMeta init2{FreePageMeta{1}};
+    init2.read_from(test_stream);
 }
