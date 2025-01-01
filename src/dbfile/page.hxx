@@ -41,7 +41,7 @@ class PageTag {};
 /**
  * @class PageMeta
  * @brief Type-erased page metadata.
- * @details 
+ * @details
  */
 class PageMeta {
   public:
@@ -49,8 +49,8 @@ class PageMeta {
         requires std::derived_from<T, PageTag>
     PageMeta(T&& t_page)
         : m_pimpl(new PageMethod<T>(std::forward<T>(t_page))){};
-    void write_to(std::ostream& t_out);
-    void read_from(std::istream& t_in);
+    void write_to(std::ostream& t_out) { m_pimpl->write_to(t_out); }
+    void read_from(std::istream& t_in) { m_pimpl->read_from(t_in); }
 
   private:
     // NOLINTBEGIN(*special-member*)
@@ -79,6 +79,39 @@ class PageMeta {
     };
 
     std::unique_ptr<IPage> m_pimpl;
+};
+
+// Note, friend functions are not member functions.
+
+/**
+ * @class FreePageMeta
+ * @brief Contains metadata of a free page.
+ *
+ */
+class FreePageMeta : public PageTag {
+  public:
+    friend void write_to(const FreePageMeta& t_page, std::ostream& t_out);
+    friend void read_from(const FreePageMeta& t_page, std::istream& t_in);
+
+  private:
+    uint32_t m_pagenum;
+    uint32_t m_next_pg;
+};
+
+/**
+ * @class FreePageMeta
+ * @brief Contains metadata of a leaf page.
+ *
+ */
+class BTreeLeafMeta : public PageTag {
+  public:
+    friend void write_to(const BTreeLeafMeta& t_page, std::ostream& t_out);
+    friend void read_from(const BTreeLeafMeta& t_page, std::istream& t_in);
+
+  private:
+    uint32_t m_pagenum;
+    uint16_t m_nrows;
+    uint16_t m_last_offset;
 };
 
 } // namespace tinydb::dbfile
