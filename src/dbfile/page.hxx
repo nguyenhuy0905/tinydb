@@ -38,13 +38,32 @@ using err_num = std::underlying_type_t<PageReadError>;
  */
 class PageTag {};
 
+/**
+ * @class PageMeta
+ * @brief Type-erased page metadata.
+ *
+ */
 class PageMeta {
   public:
     template <typename T>
         requires std::is_base_of_v<PageTag, T>
     explicit PageMeta(T&& t_page)
         : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
+    /**
+     * @brief Reads the page metadata from the given stream.
+     *   The content read is written to the page held under this `PageMeta`.
+     *
+     * @param t_in The given stream.
+     *   The stream must inherit from `std::istream`.
+     */
     void read_from(std::istream& t_in) { m_impl->read_from(t_in); }
+    /**
+     * @brief Writes the content of the page this `PageMeta` holds into the
+     * given stream.
+     *
+     * @param t_out The given stream.
+     *   The stream must inherit from `std::ostream`
+     */
     void write_to(std::ostream& t_out) { m_impl->write_to(t_out); }
 
     // special members
@@ -60,6 +79,13 @@ class PageMeta {
 
   private:
     // NOLINTBEGIN(*special-member*)
+
+    /**
+     * @class PageConcept
+     * @brief Standardized name.
+     * @details A pure virtual struct.
+     *
+     */
     struct PageConcept {
         virtual void read_from(std::istream& t_in) = 0;
         virtual void write_to(std::ostream& t_out) const = 0;
@@ -67,6 +93,15 @@ class PageMeta {
         virtual ~PageConcept() = default;
     };
     // NOLINTEND(*special-member*)
+
+    // NOLINTBEGIN(*special-member*)
+
+    /**
+     * @class PageModel
+     * @tparam T Must inherit from PageTag.
+     * @brief The inner type that holds the actual page metadata.
+     * 
+     */
     template <typename T>
         requires std::is_base_of_v<PageTag, T>
     struct PageModel : PageConcept {
@@ -86,6 +121,7 @@ class PageMeta {
         }
         T m_page;
     };
+    // NOLINTEND(*special-member*)
 
     std::unique_ptr<PageConcept> m_impl;
 };
