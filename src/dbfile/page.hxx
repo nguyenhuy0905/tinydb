@@ -119,6 +119,7 @@ class PageMeta {
         auto clone() -> std::unique_ptr<PageConcept> override {
             return std::make_unique<PageModel>(*this);
         }
+        ~PageModel() override = default;
         T m_page;
     };
     // NOLINTEND(*special-member*)
