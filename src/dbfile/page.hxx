@@ -100,7 +100,7 @@ class PageMeta {
      * @class PageModel
      * @tparam T Must inherit from PageTag.
      * @brief The inner type that holds the actual page metadata.
-     * 
+     *
      */
     template <typename T>
         requires std::is_base_of_v<PageTag, T>
@@ -127,6 +127,11 @@ class PageMeta {
     std::unique_ptr<PageConcept> m_impl;
 };
 
+/**
+ * @class FreePageMeta
+ * @brief Contains metadata about free page
+ *
+ */
 class FreePageMeta : PageTag {
   public:
     explicit FreePageMeta(uint32_t t_page_num)
@@ -147,6 +152,28 @@ class FreePageMeta : PageTag {
 
     friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
     friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
+};
+
+class BTreeLeafMeta : PageTag {
+  public:
+    explicit BTreeLeafMeta(uint32_t t_page_num)
+        : m_page_num{t_page_num}, m_n_rows{0}, m_first_free{DEFAULT_FREE_OFF} {}
+    BTreeLeafMeta(uint32_t t_page_num, uint16_t t_n_rows, uint16_t t_first_free)
+        : m_page_num{t_page_num}, m_n_rows{t_n_rows},
+          m_first_free{t_first_free} {}
+
+  private:
+    // not written into the database file.
+    uint32_t m_page_num;
+    // offset 1: number of rows stored inside this leaf.
+    uint16_t m_n_rows;
+    // offset 3: the first free offset.
+    //   default to 5, since 4 is the last byte of the metadata chunk.
+    uint16_t m_first_free;
+    static constexpr uint16_t DEFAULT_FREE_OFF = 5;
+
+    friend void read_from_impl(BTreeLeafMeta& t_meta, std::istream& t_in);
+    friend void write_to_impl(const BTreeLeafMeta& t_meta, std::ostream& t_out);
 };
 
 } // namespace tinydb::dbfile
