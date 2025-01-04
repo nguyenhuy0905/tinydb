@@ -33,10 +33,26 @@ using err_num = std::underlying_type_t<PageReadError>;
 
 /**
  * @class PageTag
- * @brief Any page should inherit this tag.
+ * @brief Any page should inherit this tag, publicly.
+ * @details PageTag is also a mixin.
  *
  */
-class PageTag {};
+class PageTag {
+  public:
+    PageTag() = delete;
+    /**
+     * @return The page number of this page.
+     */
+    [[nodiscard]] auto get_pg_num() -> uint32_t { return m_pg_num; }
+
+    // no need for virtual dtor here.
+
+  protected:
+    explicit PageTag(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
+    // NOLINTBEGIN(*non-private*)
+    uint32_t m_pg_num;
+    // NOLINTEND(*non-private*)
+};
 
 /**
  * @class PageMeta
@@ -135,16 +151,13 @@ class PageMeta {
 class FreePageMeta : PageTag {
   public:
     explicit FreePageMeta(uint32_t t_page_num)
-        : m_page_num{t_page_num}, m_next_pg{0} {}
+        : PageTag{t_page_num}, m_next_pg{0} {}
     FreePageMeta(uint32_t t_page_num, uint32_t t_next_pg)
-        : m_page_num{t_page_num}, m_next_pg{t_next_pg} {}
+        : PageTag{t_page_num}, m_next_pg{t_next_pg} {}
 
-    void set_next_pg(uint32_t t_next_pg) { m_next_pg = t_next_pg; }
-    [[nodiscard]] auto next_pg() const -> uint32_t { return m_next_pg; }
+    [[nodiscard]] auto get_next_pg() const -> uint32_t { return m_next_pg; }
 
   private:
-    // not written into the database file.
-    uint32_t m_page_num;
     // offset 1: pointer to next page. Set to 0 if this is the last free page.
     //   If set to 0, the next free page should be the page right below this
     //   page in memory order.
@@ -154,17 +167,14 @@ class FreePageMeta : PageTag {
     friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
 };
 
-class BTreeLeafMeta : PageTag {
+class BTreeLeafMeta : public PageTag {
   public:
     explicit BTreeLeafMeta(uint32_t t_page_num)
-        : m_page_num{t_page_num}, m_n_rows{0}, m_first_free{DEFAULT_FREE_OFF} {}
+        : PageTag{t_page_num}, m_n_rows{0}, m_first_free{DEFAULT_FREE_OFF} {}
     BTreeLeafMeta(uint32_t t_page_num, uint16_t t_n_rows, uint16_t t_first_free)
-        : m_page_num{t_page_num}, m_n_rows{t_n_rows},
-          m_first_free{t_first_free} {}
+        : PageTag{t_page_num}, m_n_rows{t_n_rows}, m_first_free{t_first_free} {}
 
   private:
-    // not written into the database file.
-    uint32_t m_page_num;
     // offset 1: number of rows stored inside this leaf.
     uint16_t m_n_rows;
     // offset 3: the first free offset.
@@ -174,6 +184,14 @@ class BTreeLeafMeta : PageTag {
 
     friend void read_from_impl(BTreeLeafMeta& t_meta, std::istream& t_in);
     friend void write_to_impl(const BTreeLeafMeta& t_meta, std::ostream& t_out);
+};
+
+class BTreeInternalMeta : public PageTag {
+  public:
+  private:
+    friend void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in);
+    friend void write_to_impl(const BTreeInternalMeta& t_meta,
+                              std::ostream& t_out);
 };
 
 } // namespace tinydb::dbfile
