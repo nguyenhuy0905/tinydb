@@ -32,14 +32,14 @@ using pt_num = std::underlying_type_t<PageType>;
 using err_num = std::underlying_type_t<PageReadError>;
 
 /**
- * @class PageTag
- * @brief Any page should inherit this tag, publicly.
- * @details PageTag is also a mixin.
+ * @class PageMixin
+ * @brief Any page should inherit this, publicly.
+ * @details Adds page number functionality into any page.
  *
  */
-class PageTag {
+class PageMixin {
   public:
-    PageTag() = delete;
+    PageMixin() = delete;
     /**
      * @return The page number of this page.
      */
@@ -48,7 +48,7 @@ class PageTag {
     // no need for virtual dtor here.
 
   protected:
-    explicit PageTag(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
+    explicit PageMixin(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
     // NOLINTBEGIN(*non-private*)
     uint32_t m_pg_num;
     // NOLINTEND(*non-private*)
@@ -62,9 +62,28 @@ class PageTag {
 class PageMeta {
   public:
     template <typename T>
-        requires std::is_base_of_v<PageTag, T>
+        requires std::is_base_of_v<PageMixin, T>
     explicit PageMeta(T&& t_page)
         : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
+    /**
+     * @brief Reads the data from the specified input stream, starting at the
+     * specified page number (usually 4096 * page number bytes).
+     *
+     * @tparam T The page type to be constructed.
+     * @param t_in The specified input stream.
+     * @param t_pg_num The page number.
+     * @return The PageMeta object containing the page constructed.
+     *   Or, an exception if the stream is configured to throw, and a read error
+     *   occurs.
+     */
+    template <typename T>
+        requires std::is_base_of_v<PageMixin, T>
+    static auto construct_from(std::istream& t_in,
+                               uint32_t t_pg_num) -> PageMeta {
+        PageMeta ret{T{t_pg_num}};
+        ret.read_from(t_in);
+        return ret;
+    }
     /**
      * @brief Reads the page metadata from the given stream.
      *   The content read is written to the page held under this `PageMeta`.
@@ -114,12 +133,12 @@ class PageMeta {
 
     /**
      * @class PageModel
-     * @tparam T Must inherit from PageTag.
+     * @tparam T Must inherit from PageMixin.
      * @brief The inner type that holds the actual page metadata.
      *
      */
     template <typename T>
-        requires std::is_base_of_v<PageTag, T>
+        requires std::is_base_of_v<PageMixin, T>
     struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
@@ -148,12 +167,12 @@ class PageMeta {
  * @brief Contains metadata about free page
  *
  */
-class FreePageMeta : PageTag {
+class FreePageMeta : PageMixin {
   public:
     explicit FreePageMeta(uint32_t t_page_num)
-        : PageTag{t_page_num}, m_next_pg{0} {}
+        : PageMixin{t_page_num}, m_next_pg{0} {}
     FreePageMeta(uint32_t t_page_num, uint32_t t_next_pg)
-        : PageTag{t_page_num}, m_next_pg{t_next_pg} {}
+        : PageMixin{t_page_num}, m_next_pg{t_next_pg} {}
 
     [[nodiscard]] auto get_next_pg() const -> uint32_t { return m_next_pg; }
 
@@ -167,12 +186,13 @@ class FreePageMeta : PageTag {
     friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
 };
 
-class BTreeLeafMeta : public PageTag {
+class BTreeLeafMeta : public PageMixin {
   public:
     explicit BTreeLeafMeta(uint32_t t_page_num)
-        : PageTag{t_page_num}, m_n_rows{0}, m_first_free{DEFAULT_FREE_OFF} {}
+        : PageMixin{t_page_num}, m_n_rows{0}, m_first_free{DEFAULT_FREE_OFF} {}
     BTreeLeafMeta(uint32_t t_page_num, uint16_t t_n_rows, uint16_t t_first_free)
-        : PageTag{t_page_num}, m_n_rows{t_n_rows}, m_first_free{t_first_free} {}
+        : PageMixin{t_page_num}, m_n_rows{t_n_rows},
+          m_first_free{t_first_free} {}
 
   private:
     // offset 1: number of rows stored inside this leaf.
@@ -186,7 +206,7 @@ class BTreeLeafMeta : public PageTag {
     friend void write_to_impl(const BTreeLeafMeta& t_meta, std::ostream& t_out);
 };
 
-class BTreeInternalMeta : public PageTag {
+class BTreeInternalMeta : public PageMixin {
   public:
   private:
     friend void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in);

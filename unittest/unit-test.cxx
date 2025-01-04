@@ -14,8 +14,7 @@ TEST(page, init) {
 
     // hook this up into gdb to test the return value.
     init1.write_to(test_stream);
-    PageMeta init2{FreePageMeta{1}};
-    init2.read_from(test_stream);
+    auto init2 = PageMeta::construct_from<FreePageMeta>(test_stream, 1);
 
     // test cloning
     auto init3 = init1;
