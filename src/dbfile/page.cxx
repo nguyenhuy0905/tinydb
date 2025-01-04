@@ -44,4 +44,48 @@ void read_from_impl(BTreeLeafMeta& t_meta, std::istream& t_in) {
                         sizeof(t_meta.m_first_free));
 }
 
+void write_to_impl(const BTreeInternalMeta& t_meta, std::ostream& t_out) {
+    t_out.seekp(t_meta.m_pg_num * PAGESIZ);
+    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::BTreeInternal));
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_n_keys),
+                         sizeof(t_meta.m_n_keys));
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_first_free),
+                         sizeof(t_meta.m_first_free));
+}
+
+void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in) {
+    t_in.seekg(t_meta.m_pg_num * PAGESIZ);
+    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    if (pagetype != static_cast<pt_num>(PageType::BTreeInternal)) {
+        // I should return something more meaningful here.
+        return;
+    }
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_n_keys),
+                        sizeof(t_meta.m_n_keys));
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_first_free),
+                        sizeof(t_meta.m_first_free));
+}
+
+void write_to_impl(const HeapMeta& t_meta, std::ostream& t_out) {
+    t_out.seekp(t_meta.m_pg_num * PAGESIZ);
+    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::Heap));
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_next_pg),
+                         sizeof(t_meta.m_next_pg));
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_first_free),
+                         sizeof(t_meta.m_first_free));
+}
+
+void read_from_impl(HeapMeta& t_meta, std::istream& t_in) {
+    t_in.seekg(t_meta.m_pg_num * PAGESIZ);
+    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    if (pagetype != static_cast<pt_num>(PageType::Heap)) {
+        // I should return something more meaningful here.
+        return;
+    }
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_next_pg),
+                        sizeof(t_meta.m_next_pg));
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_first_free),
+                        sizeof(t_meta.m_first_free));
+}
+
 } // namespace tinydb::dbfile

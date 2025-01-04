@@ -208,10 +208,70 @@ class BTreeLeafMeta : public PageMixin {
 
 class BTreeInternalMeta : public PageMixin {
   public:
+    explicit BTreeInternalMeta(uint32_t t_page_num)
+        : PageMixin{t_page_num}, m_n_keys{0}, m_first_free{DEFAULT_FREE_OFF} {}
+    BTreeInternalMeta(uint32_t t_page_num, uint16_t t_n_keys,
+                      uint16_t t_first_free)
+        : PageMixin{t_page_num}, m_n_keys{t_n_keys},
+          m_first_free{t_first_free} {}
+
   private:
+    // offset 1: number of keys currently stored inside this internal node.
+    uint16_t m_n_keys;
+    // offset 3: the first free offset.
+    //   default to 5, since 4 is the last byte of the metadata chunk.
+    uint16_t m_first_free;
+    static constexpr uint16_t DEFAULT_FREE_OFF = 5;
+
     friend void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in);
     friend void write_to_impl(const BTreeInternalMeta& t_meta,
                               std::ostream& t_out);
+};
+
+class HeapMeta : public PageMixin {
+  public:
+    explicit HeapMeta(uint32_t t_page_num)
+        : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF} {}
+    HeapMeta(uint32_t t_page_num, uint32_t t_next_pg, uint16_t t_first_free)
+        : PageMixin{t_page_num}, m_next_pg{t_next_pg},
+          m_first_free{t_first_free} {}
+
+  private:
+    // offset 1: pointer to the next heap page.
+    //   Default to 0, which means this heap page is the last one.
+    //   In that case, if a new heap page is needed, a new heap page will be
+    //   allocated from the free list.
+    uint32_t m_next_pg;
+    // offset 5: the first free fragment.
+    //   By default, the first free fragment is at offset 7.
+    //   And, there's always one fragment at offset 7.
+    uint16_t m_first_free;
+    static constexpr uint16_t DEFAULT_FREE_OFF = 7;
+
+    /**
+     * @class FragMeta
+     * @brief Contains metadata about a fragment inside the heap page.
+     *
+     */
+    struct FragMeta {
+        FragMeta() : m_siz{LARGEST_SIZ}, m_next_off{0} {}
+        explicit FragMeta(uint16_t t_siz, uint16_t t_next_off)
+            : m_siz{t_siz}, m_next_off{t_next_off} {}
+        // offset 0: the size of this fragment, not including the metadata.
+        uint16_t m_siz;
+        // offset 2: the offset (starting from the beginning of the page,
+        // including the metadata) of the next fragment. Must be strictly larger
+        // memory address-wise.
+        //   Default to 0 if this is the last heap. This also means this
+        //   fragment covers everything until the end of the heap page it's
+        //   currently in.
+        uint16_t m_next_off;
+        static constexpr uint16_t LARGEST_SIZ =
+            PAGESIZ - DEFAULT_FREE_OFF - sizeof(m_siz) - sizeof(m_next_off);
+    };
+
+    friend void read_from_impl(HeapMeta& t_meta, std::istream& t_in);
+    friend void write_to_impl(const HeapMeta& t_meta, std::ostream& t_out);
 };
 
 } // namespace tinydb::dbfile
