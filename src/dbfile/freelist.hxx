@@ -1,6 +1,7 @@
 #ifndef TINYDB_DBFILE_FREELIST_HXX
 #define TINYDB_DBFILE_FREELIST_HXX
 
+#include "page.hxx"
 #include <cstdint>
 #include <iosfwd>
 namespace tinydb::dbfile {
@@ -8,40 +9,79 @@ namespace tinydb::dbfile {
 /**
  * @class FreeListMeta
  * @brief Contains metadata about the freelist of a database file.
+ * @details The streams passed into any function of this class are expected to
+ * be the same, or at the very least, point to the same file/string.
+ *
+ * This is be guaranteed if the FreeList is only used in context of a database
+ * file.
  *
  */
 class FreeListMeta {
   public:
-    // TODO: implement free list
-    //
     // This should be written into the header of the database file.
     // This is constant-sized so I expect this to be written before the table
     // definition.
 
     /**
-     * @brief Reads the content of the freelist from the specified database file.
+     * @brief Reads the content of the freelist from the specified database
+     * file.
      *
      * @param path The specified database file.
      */
-    static auto read_from(std::istream& t_in) -> FreeListMeta;
+    static auto construct_from(std::istream& t_in) -> FreeListMeta;
 
     /**
-     * @brief Writes the content of this freelist into the specified database file.
+     * @brief Writes the content of this freelist into the specified database
+     * file.
      *
      * @param t_out The specified database file.
      */
     void write_to(std::ostream& t_out);
 
     /**
-     * @return The page number of the first free page available.
+     * @brief Allocates a page of the specified page type, and formats the page
+     * accordingly.
+     * @tparam T The type of page to be allocated.
+     * @tparam Args types of the arguments. Should be deduced by the compiler.
+     * @param t_io The stream to read from and write to.
+     * @param t_args The parameters, except the page number, required to
+     * construct the page.
+     * @return The constructed page.
+     * @details Use this when you don't need the type-erasure from PageMeta.
+     *   However, the I/O is way more expensive than some dynamic casting
+     *   anyways.
      *
-     * This only guarantees one free page.
+     *   If you want a PageMeta instead, simply wrap the return value of this
+     * function inside a PageMeta constructor.
+     *
      */
-    auto get_first_free_page() -> uint16_t { return m_first_free_ptr; }
+    template <typename T, typename... Args>
+        requires std::is_base_of_v<PageMixin, T>
+    auto allocate_page(std::iostream& t_io, Args... t_args) -> T;
+
+    /**
+     * @brief Deallocates the page in the database pointed to by the PageMeta.
+     * @details After the deallocation, the PageMeta passed in is invalid.
+     *   As of writing this doc, there is no safety-checking mechanism for
+     *   PageMeta. We assume that the PageMeta passed in is correct (so, 1.
+     * Actually represents something in the stream passed in and 2. Contains the
+     * correct information of the page it points to).
+     *
+     * @param t_meta The specified PageMeta.
+     */
+    void deallocate_page(std::iostream& t_io, PageMeta&& t_meta);
 
   private:
-    uint16_t m_first_free_ptr;
-    // we may need more down here. Who knows?
+    // first free page.
+    uint32_t m_first_free_pg;
+    static constexpr uint16_t FREELIST_OFF = 10;
+
+    /**
+     * @brief Returns the current `m_first_free_pg`, reads the stream passed in,
+     * and updates `m_first_free_pg` to be the next free page.
+     * @return The current `m_first_free_pg`.
+     */
+    [[nodiscard]] auto next_free_page(std::iostream& t_io) -> uint32_t;
 };
 
 } // namespace tinydb::dbfile
