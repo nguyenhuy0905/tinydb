@@ -135,6 +135,7 @@ class TableMeta {
     std::unordered_map<std::string, ColumnMeta> m_entries;
     std::string m_name;
     std::string m_key;
+    static constexpr uint16_t TABLE_OFFSET = 18;
 };
 
 } // namespace tinydb::dbfile

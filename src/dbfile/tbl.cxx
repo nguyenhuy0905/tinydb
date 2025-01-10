@@ -7,7 +7,7 @@
 namespace tinydb::dbfile {
 
 void TableMeta::write_to(std::ostream& t_out) {
-    t_out.seekp(0);
+    t_out.seekp(TABLE_OFFSET);
     // table format:
     // tblname{col1-name,col1-id,col1-size;...;coln-name,coln-id,coln-size;}
 
