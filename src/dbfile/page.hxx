@@ -47,8 +47,8 @@ class PageMixin {
 
     // no need for virtual dtor here.
 
-  protected:
     explicit PageMixin(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
+  protected:
     // NOLINTBEGIN(*non-private*)
     uint32_t m_pg_num;
     // NOLINTEND(*non-private*)
@@ -101,6 +101,13 @@ class PageMeta {
      */
     void write_to(std::ostream& t_out) { m_impl->write_to(t_out); }
 
+    /**
+     * @return The page number of this `PageMeta`.
+     */
+    auto get_pg_num() -> uint32_t {
+        return m_impl->page_num();
+    }
+
     // special members
 
     PageMeta(PageMeta&&) = default;
@@ -125,6 +132,7 @@ class PageMeta {
         virtual void read_from(std::istream& t_in) = 0;
         virtual void write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
+        virtual auto page_num() -> uint32_t = 0;
         virtual ~PageConcept() = default;
     };
     // NOLINTEND(*special-member*)
@@ -154,6 +162,9 @@ class PageMeta {
         auto clone() -> std::unique_ptr<PageConcept> override {
             return std::make_unique<PageModel>(*this);
         }
+        auto page_num() -> uint32_t override {
+            return m_page.get_pg_num();
+        }
         ~PageModel() override = default;
         T m_page;
     };
@@ -167,7 +178,7 @@ class PageMeta {
  * @brief Contains metadata about free page
  *
  */
-class FreePageMeta : PageMixin {
+class FreePageMeta : public PageMixin {
   public:
     explicit FreePageMeta(uint32_t t_page_num)
         : PageMixin{t_page_num}, m_next_pg{0} {}
