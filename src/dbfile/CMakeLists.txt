@@ -7,7 +7,7 @@ target_sources(tinydb_page
     PUBLIC FILE_SET HEADERS FILES
     page.hxx
 )
-target_link_libraries(tinydb_page PRIVATE tinydb_compile_opts)
+target_link_libraries(tinydb_page PRIVATE tinydb_compile_opts PUBLIC tinydb_general)
 
 add_library(tinydb_freelist)
 target_sources(tinydb_freelist

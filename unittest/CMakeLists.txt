@@ -14,6 +14,7 @@ target_link_libraries(tinydb_unittest
     GTest::gtest_main
     tinydb_tbl
     tinydb_freelist
+    tinydb_general
 )
 gtest_discover_tests(tinydb_unittest)
 message(STATUS "After building, run ${CMAKE_CURRENT_BINARY_DIR}/tinydb_unittest")

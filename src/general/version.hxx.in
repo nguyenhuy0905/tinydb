@@ -1,0 +1,13 @@
+#ifndef TINYDB_GENERAL_VERSION_HXX
+#define TINYDB_GENERAL_VERSION_HXX
+
+#include <cstdint>
+namespace tinydb {
+
+constexpr uint16_t VERSION_MAJOR = @tinydb_VERSION_MAJOR@;
+constexpr uint16_t VERSION_MINOR = @tinydb_VERSION_MINOR@;
+constexpr uint16_t VERSION_PATCH = @tinydb_VERSION_PATCH@;
+
+}
+
+#endif // !TINYDB_GENERAL_VERSION_HXX

@@ -1,6 +1,7 @@
 #ifndef TINYDB_DBFILE_PAGE_HXX
 #define TINYDB_DBFILE_PAGE_HXX
 
+#include "sizes.hxx"
 #include <cassert>
 #include <concepts>
 #include <cstdint>
@@ -9,8 +10,6 @@
 #include <type_traits>
 
 namespace tinydb::dbfile {
-
-constexpr uint16_t PAGESIZ = 4096;
 
 /**
  * @brief A flag that each page has.
@@ -278,7 +277,7 @@ class HeapMeta : public PageMixin {
         //   currently in.
         uint16_t m_next_off;
         static constexpr uint16_t LARGEST_SIZ =
-            PAGESIZ - DEFAULT_FREE_OFF - sizeof(m_siz) - sizeof(m_next_off);
+            SIZEOF_PAGE - DEFAULT_FREE_OFF - sizeof(m_siz) - sizeof(m_next_off);
     };
 
     friend void read_from_impl(HeapMeta& t_meta, std::istream& t_in);

@@ -1,14 +1,16 @@
 #include "freelist.hxx"
 #include "page.hxx"
+#include "sizes.hxx"
 #include <bit>
 #include <gtest/gtest.h>
 
 TEST(simple_page, init) {
+    using namespace tinydb;
     using namespace tinydb::dbfile;
     PageMeta init1{FreePageMeta{1, 2}};
     // if we don't fill in the string, stringstream will throw an error when we
     // seek to some position outside of the current string length.
-    std::stringstream test_stream{std::string(2 * PAGESIZ, '\0')};
+    std::stringstream test_stream{std::string(2 * SIZEOF_PAGE, '\0')};
     test_stream.exceptions(std::stringstream::failbit);
 
     // hook this up into gdb to test the return value.
@@ -20,9 +22,10 @@ TEST(simple_page, init) {
 }
 
 TEST(free_list, init) {
+    using namespace tinydb;
     using namespace tinydb::dbfile;
     constexpr uint32_t filesize{2};
-    std::stringstream test_stream{std::string(filesize * PAGESIZ, '\0')};
+    std::stringstream test_stream{std::string(filesize * SIZEOF_PAGE, '\0')};
     constexpr uint16_t sizeoff{6};
     test_stream.seekp(sizeoff);
     test_stream.write(std::bit_cast<const char*>(&filesize), sizeof(filesize));
