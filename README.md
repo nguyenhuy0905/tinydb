@@ -75,7 +75,7 @@ file is currently opened.
 
 - 4-byte pointer to the first heap page.
 
-#### 1.4. Table definition
+#### 1.4. Table definition (18 bytes offset)
 
 - Variable length, ends at the first closing curly brace.
 - Format: `tblname{col1name,col1id,col1size;...;colnname,colnid,colnsize;}`
