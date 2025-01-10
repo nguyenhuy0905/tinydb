@@ -26,17 +26,18 @@ class FreeListMeta {
      * @brief Reads the content of the freelist from the specified database
      * file.
      *
-     * @param path The specified database file.
+     * @param t_in The specified database file.
      */
     static auto construct_from(std::istream& t_in) -> FreeListMeta;
 
     /**
-     * @brief Writes the content of this freelist into the specified database
-     * file.
+     * @brief Default-initializes a FreeListMeta, and writes its content to the
+     * database file.
      *
-     * @param t_out The specified database file.
+     * @param t_in The specified database file.
      */
-    void write_to(std::ostream& t_out);
+    static auto default_init(uint32_t t_first_free_pg,
+                             std::ostream& t_in) -> FreeListMeta;
 
     /**
      * @brief Allocates a page of the specified page type, and formats the page
@@ -57,7 +58,11 @@ class FreeListMeta {
      */
     template <typename T, typename... Args>
         requires std::is_base_of_v<PageMixin, T>
-    auto allocate_page(std::iostream& t_io, Args... t_args) -> T;
+    auto allocate_page(std::iostream& t_io, Args... t_args) -> T {
+        auto page = T{next_free_page(t_io), t_args...};
+        write_to_impl(page, t_io);
+        return page;
+    }
 
     /**
      * @brief Deallocates the page in the database pointed to by the PageMeta.
@@ -72,6 +77,7 @@ class FreeListMeta {
     void deallocate_page(std::iostream& t_io, PageMeta&& t_meta);
 
   private:
+    FreeListMeta(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
     // first free page.
     uint32_t m_first_free_pg;
     static constexpr uint16_t FREELIST_OFF = 10;
