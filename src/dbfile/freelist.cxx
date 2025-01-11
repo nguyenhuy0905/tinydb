@@ -53,4 +53,31 @@ auto FreeListMeta::next_free_page(std::iostream& t_io) -> uint32_t {
     return old_first_free;
 }
 
+void FreeListMeta::deallocate_page(std::iostream& t_io, PageMixin&& t_meta) {
+    // move is to shut the compiler up.
+    auto pgnum = std::move(t_meta).get_pg_num();
+    auto curr_free_pg = m_first_free_pg;
+    // this should never happen anyways.
+    if (curr_free_pg == pgnum) {
+        return;
+    }
+    if (curr_free_pg > pgnum) {
+        t_io.seekp(pgnum * SIZEOF_PAGE);
+        write_to_impl(FreePageMeta{pgnum, curr_free_pg}, t_io);
+        m_first_free_pg = pgnum;
+        return;
+    }
+    uint32_t prev_free_pg{0};
+    while(curr_free_pg < pgnum) {
+        prev_free_pg = curr_free_pg;
+        // not best performance-wise. May need to improve later.
+        FreePageMeta freepg{curr_free_pg};
+        read_from_impl(freepg, t_io);
+        curr_free_pg = freepg.get_pg_num();
+    }
+    // the same as inserting a node to a linked list.
+    write_to_impl(FreePageMeta{prev_free_pg, pgnum}, t_io);
+    write_to_impl(FreePageMeta{pgnum, curr_free_pg}, t_io);
+}
+
 } // namespace tinydb::dbfile

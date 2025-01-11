@@ -42,4 +42,10 @@ TEST(free_list, init) {
     test_stream.seekg(sizeoff);
     test_stream.read(std::bit_cast<char*>(&filesize), sizeof(filesize));
     ASSERT_EQ(filesize, 3);
+
+    // deallocation. Also hook this to GDB. The first free page should be 1.
+    // And, page 1 should be a free page, whose next free page is page 2.
+    freelist.deallocate_page(test_stream, std::move(btlpage));
+    FreePageMeta dealloc_page{1};
+    read_from_impl(dealloc_page, test_stream);
 }

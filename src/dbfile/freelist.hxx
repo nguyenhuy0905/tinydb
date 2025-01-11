@@ -66,15 +66,13 @@ class FreeListMeta {
 
     /**
      * @brief Deallocates the page in the database pointed to by the PageMeta.
-     * @details After the deallocation, the PageMeta passed in is invalid.
-     *   As of writing this doc, there is no safety-checking mechanism for
-     *   PageMeta. We assume that the PageMeta passed in is correct (so, 1.
-     * Actually represents something in the stream passed in and 2. Contains the
-     * correct information of the page it points to).
+     * @details There is no safety check done. One can deallocate the header
+     * page, which essentially destroys the entire database.
      *
-     * @param t_meta The specified PageMeta.
+     * @param t_meta The specified page. Only PageMixin is needed, since I
+     * really only care about the page number.
      */
-    void deallocate_page(std::iostream& t_io, PageMeta&& t_meta);
+    void deallocate_page(std::iostream& t_io, PageMixin&& t_meta);
 
   private:
     FreeListMeta(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
