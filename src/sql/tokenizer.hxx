@@ -15,12 +15,12 @@
 #ifndef TINYDB_TOKENIZER_HXX
 #define TINYDB_TOKENIZER_HXX
 
+#include <cstdint>
 #include <expected>
+#include <optional>
+#include <string>
 #include <variant>
 #include <vector>
-#include <cstdint>
-#include <string>
-#include <optional>
 
 namespace tinydb {
 
@@ -44,8 +44,8 @@ enum class Symbol : uint8_t {
     MoreThanEqual, // >=
     Comma,         // ,
     Semicolon,     // ;
-    LParen, // (
-    RParen, // )
+    LParen,        // (
+    RParen,        // )
 };
 
 enum class State : uint8_t {
@@ -142,7 +142,7 @@ class Tokenizer {
             return handle_left_pointy(c);
         case State::RightPointy:
             return handle_right_pointy(c);
-        // TODO: switch for all states
+            // TODO: switch for all states
         }
         return {};
     }

@@ -47,6 +47,7 @@ class PageMixin {
     // no need for virtual dtor here.
 
     explicit PageMixin(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
+
   protected:
     // NOLINTBEGIN(*non-private*)
     uint32_t m_pg_num;
@@ -103,9 +104,7 @@ class PageMeta {
     /**
      * @return The page number of this `PageMeta`.
      */
-    auto get_pg_num() -> uint32_t {
-        return m_impl->page_num();
-    }
+    auto get_pg_num() -> uint32_t { return m_impl->page_num(); }
 
     // special members
 
@@ -161,9 +160,7 @@ class PageMeta {
         auto clone() -> std::unique_ptr<PageConcept> override {
             return std::make_unique<PageModel>(*this);
         }
-        auto page_num() -> uint32_t override {
-            return m_page.get_pg_num();
-        }
+        auto page_num() -> uint32_t override { return m_page.get_pg_num(); }
         ~PageModel() override = default;
         T m_page;
     };

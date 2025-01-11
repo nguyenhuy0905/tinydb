@@ -27,6 +27,6 @@ class Cli {
     std::optional<std::fstream> file;
 };
 
-} // namespace tinydb
+} // namespace tinydb::cli
 
 #endif // !TINYDB_ARGS_HXX

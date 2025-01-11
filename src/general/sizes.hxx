@@ -11,6 +11,6 @@ constexpr uint16_t SIZEOF_FILESIZ = 4;
 constexpr uint16_t SIZEOF_FREELIST_PTR = 4;
 constexpr uint16_t SIZEOF_HEAP_PTR = 4;
 
-}
+} // namespace tinydb
 
 #endif // !TINYDB_GENERAL_SIZES_HXX
