@@ -20,4 +20,4 @@ void Cli::run() {
 #endif // !NDEBUG
 }
 
-} // namespace tinydb
+} // namespace tinydb::cli

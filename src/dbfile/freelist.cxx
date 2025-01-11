@@ -1,7 +1,7 @@
 #include "freelist.hxx"
+#include "offsets.hxx"
 #include "page.hxx"
 #include "sizes.hxx"
-#include "offsets.hxx"
 #include <bit>
 #include <iostream>
 
@@ -43,7 +43,8 @@ auto FreeListMeta::next_free_page(std::iostream& t_io) -> uint32_t {
     t_io.rdbuf()->sgetn(std::bit_cast<char*>(&filesize), sizeof(filesize));
     filesize++;
     t_io.seekp(DBFILE_SIZE_OFF);
-    t_io.rdbuf()->sputn(std::bit_cast<const char*>(&filesize), sizeof(filesize));
+    t_io.rdbuf()->sputn(std::bit_cast<const char*>(&filesize),
+                        sizeof(filesize));
     FreePageMeta newfree{filesize - 1, 0};
     write_to_impl(newfree, t_io);
 
