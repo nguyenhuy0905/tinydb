@@ -68,7 +68,7 @@ void FreeListMeta::deallocate_page(std::iostream& t_io, PageMixin&& t_meta) {
         return;
     }
     uint32_t prev_free_pg{0};
-    while(curr_free_pg < pgnum) {
+    while (curr_free_pg < pgnum) {
         prev_free_pg = curr_free_pg;
         // not best performance-wise. May need to improve later.
         FreePageMeta freepg{curr_free_pg};
