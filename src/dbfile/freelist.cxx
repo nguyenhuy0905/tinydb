@@ -4,7 +4,6 @@
 #include "offsets.hxx"
 #include <bit>
 #include <iostream>
-#include <type_traits>
 
 namespace tinydb::dbfile {
 
