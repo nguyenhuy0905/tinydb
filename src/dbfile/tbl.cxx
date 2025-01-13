@@ -27,7 +27,7 @@ void TableMeta::write_to(std::ostream& t_out) {
     t_out << '}';
 }
 
-auto TableMeta::read_from(std::istream& t_in) -> std::optional<TableMeta> {
+auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
     t_in.seekg(TABLE_OFFSET);
     // read the comment at the beginning of the definition of `write_to` to get
     // a sense of how the table metadata is written.
@@ -71,6 +71,7 @@ auto TableMeta::read_from(std::istream& t_in) -> std::optional<TableMeta> {
         new_tbl.add_column(std::move(new_col));
         off += size;
     }
+    new_tbl.set_key(std::move(key));
 
     return new_tbl;
 }

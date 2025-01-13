@@ -4,7 +4,7 @@ include(GoogleTest)
 find_package(GTest REQUIRED)
 
 add_executable(tinydb_unittest
-    unit-test.cxx
+    tbl-test.cxx
     init-test.cxx
 )
 

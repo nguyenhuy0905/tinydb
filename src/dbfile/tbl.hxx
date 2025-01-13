@@ -62,7 +62,7 @@ class TableMeta {
      * - This API will be changed later. optional is a terrible but
      * quick-and-seemingly-easy way to say there's something wrong.
      */
-    static auto read_from(std::istream& t_in) -> std::optional<TableMeta>;
+    static auto read_from(std::istream& t_in) -> TableMeta;
     /**
      * @brief I changed this to noexcept since I think the lookup function
      * should not throw an exception.
