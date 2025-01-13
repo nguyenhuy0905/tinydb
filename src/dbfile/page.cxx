@@ -1,7 +1,13 @@
+#ifndef ENABLE_MODULE
 #include "page.hxx"
-#include "sizes.hxx"
 #include <bit>
 #include <iostream>
+#else
+// TODO: start throwing some module compat, starting from file page.hxx/cxx
+#include "page.hxx"
+import std;
+#endif // !ENABLE_MODULE
+
 
 namespace tinydb::dbfile {
 

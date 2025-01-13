@@ -1,0 +1,28 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 30,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "debug-module",
+            "binaryDir": "${sourceDir}/build/Debug",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "0e5b6991-d74f-4b3d-a41c-cf096e0b2508",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+                "CMAKE_CXX_MODULE_STD": "ON",
+                "tinydb_ENABLE_ASAN": "ON",
+                "tinydb_ENABLE_LLD": "ON",
+                "tinydb_ENABLE_MODULE": "ON",
+                "tinydb_USE_LIBCXX": "ON",
+                "tinydb_WARNING_AS_ERR": "ON",
+                "tinydb_ENABLE_UNIT_TEST": "ON"
+            },
+            "toolchainFile": "build/Debug/generators/conan_toolchain.cmake"
+        }
+    ]
+}

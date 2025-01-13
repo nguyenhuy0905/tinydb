@@ -60,11 +60,14 @@ macro(tinydb_global_config)
 
     # libc++
     if(tinydb_USE_LIBCXX)
-        include(cmake/CheckLibcxxSourceCompile.cmake)
+        include(${PROJECT_SOURCE_DIR}/cmake/CheckLibcxxSourceCompile.cmake)
         tinydb_check_libcxx_compile(tinydb_LIBCXX_COMPILE)
         if(tinydb_LIBCXX_COMPILE)
-            set(CMAKE_CXX_LINKER_FLAGS
-                "${CMAKE_CXX_LINKER_FLAGS} -stdlib=libc++;-lc++abi")
+            set(CMAKE_EXE_LINKER_FLAGS
+                "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        else()
+            message(FATAL_ERROR "Cannot link with libc++")
         endif()
     endif()
 

@@ -34,15 +34,18 @@ macro(tinydb_local_config)
         endif()
     endif()
 
-    include(cmake/CheckSanitizerSourceCompile.cmake)
+    include(${PROJECT_SOURCE_DIR}/cmake/CheckSanitizerSourceCompile.cmake)
     if(tinydb_ENABLE_ASAN OR tinydb_ENABLE_UBSAN OR tinydb_ENABLE_MSAN OR tinydb_ENABLE_TSAN)
         message(STATUS "Running checks on whether ASan, UBSan, MSan or TSan can be linked")
         tinydb_check_san_compile(tinydb_compile_opts INTERFACE)
     endif()
 
     if(tinydb_ENABLE_HARDENING)
-        include(cmake/AddHardeningFlags.cmake)
+        include(${PROJECT_SOURCE_DIR}/cmake/AddHardeningFlags.cmake)
         tinydb_add_hardening_flags(tinydb_compile_opts INTERFACE)
     endif()
-
+    
+    if(tinydb_ENABLE_MODULE)
+        set(CMAKE_CXX_MODULE_STD 1)
+    endif()
 endmacro()

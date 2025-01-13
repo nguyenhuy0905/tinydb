@@ -2,12 +2,17 @@
 # tinydb top level CMakeLists
 # ##############################################################################
 
-# module support starts at 3.28
-cmake_minimum_required(VERSION 3.28)
+# module support starts at 3.28, but we need 3.30 to import std
+cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
+  # This specific value changes as experimental support evolves. See
+  # `Help/dev/experimental.rst` in the CMake source corresponding to
+  # your CMake build for the exact value to use.
+  "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
 project(
     tinydb
     VERSION 0.1.0
-    LANGUAGES C CXX
+    LANGUAGES CXX
     HOMEPAGE_URL
         "https://github.com/huynguyen-and-friend-projects/cmake-template"
         DESCRIPTION "Somewhat portable CMake project template")
@@ -16,6 +21,12 @@ if(NOT CMAKE_CXX_STANDARD)
     message(STATUS "C++ standard not set, default to C++23")
     set(CMAKE_CXX_STANDARD 23)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(CMAKE_CXX_COMPILER_SUPPORTS_CXX_STDLIB_MODULE_IMPORT) 
+    message(STATUS "C++23 module import support enabled")
+else()
+    message(STATUS "C++23 module import support not enabled")
 endif()
 
 if(NOT CMAKE_C_STANDARD AND NOT MSVC)
@@ -27,8 +38,8 @@ endif()
 # turn off compiler extensions
 message(STATUS "Turn off ${CMAKE_CXX_COMPILER_ID} extensions")
 message(STATUS "Turn off ${CMAKE_C_COMPILER_ID} extensions")
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_EXTENSIONS ON)
 # hide as much as I can
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)

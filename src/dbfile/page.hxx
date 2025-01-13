@@ -3,7 +3,7 @@
 
 #include "sizes.hxx"
 #include <cassert>
-#include <concepts>
+#include <type_traits>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>

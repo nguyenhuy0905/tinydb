@@ -8,6 +8,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <functional>
 
 namespace tinydb::dbfile {
 
