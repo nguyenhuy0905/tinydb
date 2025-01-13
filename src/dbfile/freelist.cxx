@@ -27,6 +27,12 @@ auto FreeListMeta::construct_from(std::istream& t_in) -> FreeListMeta {
     return FreeListMeta{first_free};
 }
 
+void FreeListMeta::write_to(std::ostream& t_out) {
+    t_out.seekp(tinydb::FREELIST_PTR_OFF);
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&m_first_free_pg),
+                         sizeof(m_first_free_pg));
+}
+
 auto FreeListMeta::next_free_page(std::iostream& t_io) -> uint32_t {
     auto old_first_free = m_first_free_pg;
     FreePageMeta fpage{m_first_free_pg};

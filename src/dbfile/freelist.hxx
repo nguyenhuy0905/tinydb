@@ -39,6 +39,8 @@ class FreeListMeta {
     static auto default_init(uint32_t t_first_free_pg,
                              std::ostream& t_in) -> FreeListMeta;
 
+    void write_to(std::ostream& t_out);
+
     /**
      * @brief Allocates a page of the specified page type, and formats the page
      * accordingly.
@@ -73,7 +75,7 @@ class FreeListMeta {
      * really only care about the page number.
      */
     void deallocate_page(std::iostream& t_io, PageMixin&& t_meta);
-
+    
   private:
     FreeListMeta(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
     // first free page.
