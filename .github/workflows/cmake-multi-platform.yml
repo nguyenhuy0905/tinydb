@@ -60,5 +60,5 @@ jobs:
 
     - name: Run module build workflow
       run: >
-        CMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        cmake --workflow --preset module-build-test
+        cmake --preset debug-module
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
