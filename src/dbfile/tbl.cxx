@@ -1,8 +1,16 @@
+#ifndef ENABLE_MODULE
 #include "tbl.hxx"
 #include <iostream>
 #include <print>
 #include <ranges>
 #include <sstream>
+#else
+module;
+#include <cstdint>
+export module tinydb.dbfile.tbl;
+import std;
+#include "tbl.hxx"
+#endif // !ENABLE_MODULE
 
 namespace tinydb::dbfile {
 

@@ -4,8 +4,11 @@
 #include <iostream>
 #else
 // TODO: start throwing some module compat, starting from file page.hxx/cxx
-#include "page.hxx"
+module;
+#include "sizes.hxx"
+export module tinydb.dbfile.page;
 import std;
+#include "page.hxx"
 #endif // !ENABLE_MODULE
 
 

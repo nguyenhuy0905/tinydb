@@ -1,10 +1,12 @@
 #ifndef TINYDB_DBFILE_DBFILE_HXX
 #define TINYDB_DBFILE_DBFILE_HXX
 
+#ifndef ENABLE_MODULE
 #include "freelist.hxx"
 #include "tbl.hxx"
 #include <iosfwd>
 #include <memory>
+#endif
 
 namespace tinydb::dbfile {
 

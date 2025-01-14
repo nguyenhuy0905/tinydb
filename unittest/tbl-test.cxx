@@ -1,3 +1,4 @@
+#ifndef ENABLE_MODULE
 #include "sizes.hxx"
 #include "tbl.hxx"
 #include <gtest/gtest.h>
@@ -16,3 +17,6 @@ TEST(tbl, init) {
     auto readtest = TableMeta::read_from(test_stream);
     // breakpoint here and test
 }
+#else
+#endif // !ENABLE_MODULE
+

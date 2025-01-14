@@ -1,3 +1,4 @@
+#ifndef ENABLE_MODULE
 #include "freelist.hxx"
 #include "page.hxx"
 #include "sizes.hxx"
@@ -49,3 +50,9 @@ TEST(free_list, init) {
     FreePageMeta dealloc_page{1};
     read_from_impl(dealloc_page, test_stream);
 }
+#else
+import std;
+import tinydb.dbfile.freelist;
+// #include "sizes.hxx"
+#endif // !ENABLE_MODULE
+

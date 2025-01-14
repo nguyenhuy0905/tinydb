@@ -1,15 +1,18 @@
 #ifndef TINYDB_DBFILE_PAGE_HXX
 #define TINYDB_DBFILE_PAGE_HXX
 
-#include "sizes.hxx"
+#include "modules.hxx"
+#ifndef ENABLE_MODULE
+include "sizes.hxx"
 #include <cassert>
 #include <type_traits>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
 #include <type_traits>
+#endif // !ENABLE_MODULE
 
-namespace tinydb::dbfile {
+TINYDB_EXPORT namespace tinydb::dbfile {
 
 /**
  * @brief A flag that each page has.

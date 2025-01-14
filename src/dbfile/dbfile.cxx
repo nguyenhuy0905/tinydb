@@ -1,9 +1,21 @@
-#include "dbfile.hxx"
+#ifndef ENABLE_MODULE
+#include "version.hxx"
 #include "freelist.hxx"
 #include "tbl.hxx"
-#include "version.hxx"
 #include <bit>
 #include <iostream>
+#else
+module;
+#include "version.hxx"
+#include <cstdint>
+export module tinydb.dbfile;
+import tinydb.dbfile.page;
+import tinydb.dbfile.freelist;
+import tinydb.dbfile.tbl;
+import std;
+#include "dbfile.hxx"
+#endif // !ENABLE_MODULE
+
 
 namespace tinydb::dbfile {
 

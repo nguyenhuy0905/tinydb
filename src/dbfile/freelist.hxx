@@ -1,10 +1,14 @@
 #ifndef TINYDB_DBFILE_FREELIST_HXX
 #define TINYDB_DBFILE_FREELIST_HXX
 
+#include "modules.hxx"
+#ifndef ENABLE_MODULE
 #include "page.hxx"
 #include <cstdint>
 #include <iosfwd>
-namespace tinydb::dbfile {
+#endif // !ENABLE_MODULE
+
+TINYDB_EXPORT namespace tinydb::dbfile {
 
 /**
  * @class FreeListMeta

@@ -19,7 +19,7 @@ function(tinydb_target_module_if_enabled target)
     endif()
     target_sources(${target} PUBLIC FILE_SET HEADERS FILES ${tinydb_HEADER_FILES})
     if(tinydb_ENABLE_MODULE)
-        target_sources(${target} PUBLIC FILE_SET MODULES FILES ${tinydb_MODULE_FILES}
+        target_sources(${target} PUBLIC FILE_SET CXX_MODULES FILES ${tinydb_MODULE_FILES}
             PRIVATE ${tinydb_SOURCE_FILES})
     else()
         target_sources(${target} PRIVATE ${tinydb_MODULE_FILES} ${tinydb_SOURCE_FILES})
