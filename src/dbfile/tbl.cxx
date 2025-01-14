@@ -40,17 +40,15 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
     // read the comment at the beginning of the definition of `write_to` to get
     // a sense of how the table metadata is written.
     // maybe I should throw some kind of failbit exception here.
-    std::stringstream sbuilder{};
 
     // Put data into the stringstream, until either EOF or the delimiter.
     // There's zero checking whether the file is in valid format.
     // After that, put formatted data into the variable passed in, then clear
     // the stringstream flags and content.
     auto fill_var = [&]<typename T>(char delim, T& var) mutable {
+        std::stringstream sbuilder{};
         t_in.get(*sbuilder.rdbuf(), delim);
         sbuilder >> var;
-        sbuilder.clear();
-        sbuilder.str(std::string{});
         t_in.seekg(1, std::ios_base::cur);
     };
 

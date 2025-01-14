@@ -42,7 +42,7 @@ void DbFile::write_init() {
     m_tbl.write_to(*m_rw);
 }
 
-auto DbFile::construct_from(std::unique_ptr<std::iostream>&& t_io) -> DbFile {
+auto DbFile::construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile {
     auto freelist = FreeListMeta::construct_from(*t_io);
     auto tbl = TableMeta::read_from(*t_io);
     return DbFile{std::move(freelist), std::move(tbl), std::move(t_io)};

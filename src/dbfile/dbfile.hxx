@@ -17,7 +17,7 @@ namespace tinydb::dbfile {
  */
 class DbFile {
   public:
-    static auto construct_from(std::unique_ptr<std::iostream>&& t_io) -> DbFile;
+    static auto construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile;
 
     static auto new_empty(std::unique_ptr<std::iostream>&& t_io) -> DbFile;
 
