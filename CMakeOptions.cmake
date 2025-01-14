@@ -102,3 +102,9 @@ if(tinydb_ENABLE_PCH)
     set_pch_options(PCH <memory> <string> <print> <expected> <variant> <vector> <ranges> <iostream> <fstream>)
 endif()
 tinydb_local_config()
+
+# this has to stay here for ctest to more conveniently work
+if(tinydb_ENABLE_UNIT_TEST)
+    include(CTest)
+    add_test(NAME tinydb_utest COMMAND ${CMAKE_BINARY_DIR}/unittest/tinydb_unittest)
+endif()

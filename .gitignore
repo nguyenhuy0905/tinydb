@@ -10,4 +10,5 @@ lib/*
 CMakeUserPresets.json
 share/*
 bin/*
+Testing/
 test.db
