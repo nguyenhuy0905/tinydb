@@ -35,6 +35,7 @@
                 "tinydb_ENABLE_LLD": "ON",
                 "tinydb_USE_LIBCXX": "ON",
                 "tinydb_WARNING_AS_ERR": "ON",
+                "tinydb_ENABLE_PCH": "ON",
                 "tinydb_ENABLE_UNIT_TEST": "ON"
             },
             "toolchainFile": "build/Debug/generators/conan_toolchain.cmake"
