@@ -3,16 +3,16 @@
 
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
-#include "sizes.hxx"
 #include <cassert>
-#include <type_traits>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
 #include <type_traits>
+#include <vector>
 #endif // !ENABLE_MODULE
 
-TINYDB_EXPORT namespace tinydb::dbfile {
+TINYDB_EXPORT
+namespace tinydb::dbfile {
 
 /**
  * @brief A flag that each page has.
@@ -246,6 +246,14 @@ class HeapMeta : public PageMixin {
         : PageMixin{t_page_num}, m_next_pg{t_next_pg},
           m_first_free{t_first_free} {}
 
+    /**
+     * @param t_off The offset from the start of this page.
+     * @return The raw bytes of the fragment at the specified offset.
+     * @details The data on how many bytes there are to read is contained inside
+     * a fragment's header.
+     */
+    auto get_raw_bytes_at(uint16_t t_off) -> std::vector<std::byte>;
+
   private:
     // offset 1: pointer to the next heap page.
     //   Default to 0, which means this heap page is the last one.
@@ -257,28 +265,6 @@ class HeapMeta : public PageMixin {
     //   And, there's always one fragment at offset 7.
     uint16_t m_first_free;
     static constexpr uint16_t DEFAULT_FREE_OFF = 7;
-
-    /**
-     * @class FragMeta
-     * @brief Contains metadata about a fragment inside the heap page.
-     *
-     */
-    struct FragMeta {
-        FragMeta() : m_siz{LARGEST_SIZ}, m_next_off{0} {}
-        explicit FragMeta(uint16_t t_siz, uint16_t t_next_off)
-            : m_siz{t_siz}, m_next_off{t_next_off} {}
-        // offset 0: the size of this fragment, not including the metadata.
-        uint16_t m_siz;
-        // offset 2: the offset (starting from the beginning of the page,
-        // including the metadata) of the next fragment. Must be strictly larger
-        // memory address-wise.
-        //   Default to 0 if this is the last heap. This also means this
-        //   fragment covers everything until the end of the heap page it's
-        //   currently in.
-        uint16_t m_next_off;
-        static constexpr uint16_t LARGEST_SIZ =
-            SIZEOF_PAGE - DEFAULT_FREE_OFF - sizeof(m_siz) - sizeof(m_next_off);
-    };
 
     friend void read_from_impl(HeapMeta& t_meta, std::istream& t_in);
     friend void write_to_impl(const HeapMeta& t_meta, std::ostream& t_out);

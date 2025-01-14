@@ -1,5 +1,6 @@
 #ifndef ENABLE_MODULE
 #include "page.hxx"
+#include "sizes.hxx"
 #include <bit>
 #include <iostream>
 #else
@@ -11,8 +12,8 @@ import std;
 #include "page.hxx"
 #endif // !ENABLE_MODULE
 
-
-TINYDB_EXPORT namespace tinydb::dbfile {
+TINYDB_EXPORT
+namespace tinydb::dbfile {
 
 void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);
