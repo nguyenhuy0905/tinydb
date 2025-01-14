@@ -12,7 +12,7 @@ import std;
 #endif // !ENABLE_MODULE
 
 
-namespace tinydb::dbfile {
+TINYDB_EXPORT namespace tinydb::dbfile {
 
 void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);

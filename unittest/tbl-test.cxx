@@ -18,5 +18,16 @@ TEST(tbl, init) {
     // breakpoint here and test
 }
 #else
+import std;
+import tinydb.dbfile.page;
 #endif // !ENABLE_MODULE
 
+/**
+ * @brief Simply here while I'm finding a way to unit-test these modules.
+ * @details I may have to move back to CTest.
+ */
+void something() {
+    using namespace tinydb::dbfile;
+    PageMeta t_meta{FreePageMeta{1}};
+    std::println("{}", t_meta.get_pg_num());
+}
