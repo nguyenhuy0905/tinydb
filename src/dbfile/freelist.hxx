@@ -8,7 +8,8 @@
 #include <iosfwd>
 #endif // !ENABLE_MODULE
 
-TINYDB_EXPORT namespace tinydb::dbfile {
+TINYDB_EXPORT
+namespace tinydb::dbfile {
 
 /**
  * @class FreeListMeta

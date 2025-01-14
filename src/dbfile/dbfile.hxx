@@ -1,6 +1,7 @@
 #ifndef TINYDB_DBFILE_DBFILE_HXX
 #define TINYDB_DBFILE_DBFILE_HXX
 
+#include "modules.hxx"
 #ifndef ENABLE_MODULE
 #include "freelist.hxx"
 #include "tbl.hxx"
@@ -8,6 +9,7 @@
 #include <memory>
 #endif
 
+TINYDB_EXPORT
 namespace tinydb::dbfile {
 
 /**
