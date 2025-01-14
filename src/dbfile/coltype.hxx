@@ -1,12 +1,19 @@
 #include "modules.hxx"
+#ifndef ENABLE_MODULE
 #include <cstddef>
 #include <cstdint>
 #include <span>
 #include <variant>
 #include <vector>
-#ifndef ENABLE_MODULE
-
 #endif // !ENABLE_MODULE
+
+namespace {
+
+template <class... Ts> struct overload : Ts... {
+    using Ts::operator()...;
+};
+
+}
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::column {
@@ -61,10 +68,6 @@ class Text {
 
   private:
     std::vector<std::byte> m_data;
-};
-
-template <class... Ts> struct overload : Ts... {
-    using Ts::operator()...;
 };
 
 using ColType = std::variant<ScalarColType, Text>;
