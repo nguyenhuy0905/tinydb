@@ -1,4 +1,5 @@
 #ifndef ENABLE_MODULE
+#include "dbfile.hxx"
 #include "version.hxx"
 #include "freelist.hxx"
 #include "tbl.hxx"

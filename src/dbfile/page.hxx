@@ -3,7 +3,7 @@
 
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
-include "sizes.hxx"
+#include "sizes.hxx"
 #include <cassert>
 #include <type_traits>
 #include <cstdint>
