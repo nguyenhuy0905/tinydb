@@ -54,8 +54,8 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Run unit test workflow
+    - name: Run module build workflow
       run: >
-        cmake --preset test
+        cmake --preset module-build-test
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -S ${{ github.workspace }}
