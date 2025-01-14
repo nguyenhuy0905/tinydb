@@ -8,7 +8,8 @@
     "configurePresets": [
         {
             "name": "debug-module",
-            "displayName": "Debug build with Modules. You probably need libc++ and clang++ on Unix.",
+            "displayName": "Debug build with Modules.",
+            "description": "You probably need libc++ and clang++ on Unix. Do so by changing tinydb_USE_LIBCXX to ON",
             "binaryDir": "${sourceDir}/build/Debug",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
