@@ -248,11 +248,45 @@ class HeapMeta : public PageMixin {
 
     /**
      * @param t_off The offset from the start of this page.
+     * @param t_in The file/stream this HeapMeta is written in.
      * @return The raw bytes of the fragment at the specified offset.
      * @details The data on how many bytes there are to read is contained inside
      * a fragment's header.
+     * - The assumption is the end-user doesn't deal with this stuff, especially
+     * the stream. Let's assume that the stream we passed in is the correct one.
      */
-    auto get_raw_bytes_at(uint16_t t_off) -> std::vector<std::byte>;
+    auto get_raw_bytes_at(std::istream& t_in,
+                          uint16_t t_off) -> std::vector<std::byte>;
+
+    /**
+     * @class AllocRetType.
+     * @brief Return type of calling HeapMeta::allocate.
+     */
+    struct AllocRetType {
+        // the offset compared to the page this heap points to.
+        uint16_t offset;
+        // whether this allocate call fully allocated the memory needed.
+        bool fully_alloc;
+    };
+
+    /**
+     * @brief Allocates as much memory as possible until either we receive
+     * enough bytes, or the page doesn't have enough space.
+     * NOT IMPLEMENTED YET.
+     *
+     * @param t_in The file/stream this HeapMeta is written in.
+     * @param t_max_siz The maximum size needed.
+     */
+    auto allocate(std::iostream& t_in, uint16_t t_max_siz) -> uint16_t;
+
+    /**
+     * @brief Deallocates the memory fragment at the specified offset.
+     * NOT IMPLEMENTED YET.
+     *
+     * @param t_out 
+     * @param t_off 
+     */
+    auto deallocate(std::iostream& t_out, uint16_t t_off) -> bool;
 
   private:
     // offset 1: pointer to the next heap page.
