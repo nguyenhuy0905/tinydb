@@ -12,7 +12,7 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
 project(
     tinydb
     VERSION 0.1.0
-    LANGUAGES CXX
+    LANGUAGES C CXX
     HOMEPAGE_URL
         "https://github.com/huynguyen-and-friend-projects/cmake-template"
         DESCRIPTION "Somewhat portable CMake project template")
