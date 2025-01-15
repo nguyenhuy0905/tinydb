@@ -14,8 +14,8 @@ project(
     VERSION 0.1.0
     LANGUAGES C CXX
     HOMEPAGE_URL
-        "https://github.com/huynguyen-and-friend-projects/cmake-template"
-        DESCRIPTION "Somewhat portable CMake project template")
+        "https://github.com/nguyenhuy0905/tinydb"
+        DESCRIPTION "A non-functioning database as of now")
 
 if(NOT CMAKE_CXX_STANDARD)
     message(STATUS "C++ standard not set, default to C++23")
@@ -63,7 +63,6 @@ if(tinydb_PACK)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(submodule)
 
 if(tinydb_ENABLE_UNIT_TEST)
     message(STATUS "Unit test enabled")

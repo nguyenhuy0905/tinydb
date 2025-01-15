@@ -9,13 +9,15 @@
 #include <sstream>
 #else
 module;
+#include "offsets.hxx"
 #include <cstdint>
 export module tinydb.dbfile.tbl;
 import std;
 #include "tbl.hxx"
 #endif // !ENABLE_MODULE
 
-// TODO: change all reads and writes to use rdbuf instead of the stream formatting.
+// TODO: change all reads and writes to use rdbuf instead of the stream
+// formatting.
 
 namespace tinydb::dbfile {
 

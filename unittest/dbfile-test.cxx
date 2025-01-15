@@ -1,5 +1,7 @@
 #ifndef ENABLE_MODULE
+#include "coltype.hxx"
 #include "dbfile.hxx"
+#include "sizes.hxx"
 #include "tbl.hxx"
 #include <gtest/gtest.h>
 #include <sstream>
@@ -13,8 +15,10 @@ TEST(dbfile, init) {
     // the table in first. Which is actually a good thing. Better than some
     // random data being written.
     TableMeta meta{"tbl1"};
-    meta.add_column(
-        ColumnMeta{.m_name{"col1"}, .m_size = 4, .m_col_id = 1, .m_offset = 0});
+    meta.add_column(ColumnMeta{.m_name{"col1"},
+                               .m_type{column::ScalarColType::Int32},
+                               .m_col_id = 1,
+                               .m_offset = 0});
     meta.set_key("col1");
     meta.write_to(*test_stream);
     auto dbfile = DbFile::construct_from(std::move(test_stream));
