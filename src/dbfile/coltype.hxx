@@ -1,10 +1,14 @@
+#ifndef TINYDB_DBFILE_COLTYPE_HXX
+#define TINYDB_DBFILE_COLTYPE_HXX
+
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
 #include <cstddef>
 #include <cstdint>
-#include <span>
+#include <functional>
+#include <optional>
+#include <type_traits>
 #include <variant>
-#include <vector>
 #endif // !ENABLE_MODULE
 
 namespace {
@@ -13,7 +17,7 @@ template <class... Ts> struct overload : Ts... {
     using Ts::operator()...;
 };
 
-}
+} // namespace
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::column {
@@ -24,11 +28,25 @@ namespace tinydb::dbfile::column {
 /**
  * @enum ScalarColType
  * @brief More like numeric types. But I digress.
+ * @details Technically we could derive the underlying type as uint8_t which
+ * saves more space. The only problem, we lose access to the entire formatting
+ * output of streams.
+ * So, if I want it that way, I need to write everything using raw rdbuf.
  */
-enum class ScalarColType : uint8_t {
+enum class ScalarColType : uint16_t {
+    Int8 = 0,
+    Uint8,
     Int16,
     Uint16,
+    Int32,
+    Uint32,
+    Int64,
+    Uint64,
+    Float32,
+    Float64,
 };
+
+using IdType = std::underlying_type_t<ScalarColType>;
 
 /**
  * @return The byte size of the specified scalar type.
@@ -37,9 +55,22 @@ enum class ScalarColType : uint8_t {
 constexpr auto scalar_size(ScalarColType t_type) -> uint8_t {
     using enum ScalarColType;
     switch (t_type) {
+    case Int8:
+    case Uint8:
+        return sizeof(uint8_t);
     case Int16:
     case Uint16:
         return sizeof(uint16_t);
+    case Int32:
+    case Uint32:
+        return sizeof(uint32_t);
+    case Int64:
+    case Uint64:
+        return sizeof(uint64_t);
+    case Float32:
+        return sizeof(float);
+    case Float64:
+        return sizeof(double);
         // the more type we have, the more we need to add.
     }
 }
@@ -51,39 +82,112 @@ constexpr auto scalar_size(ScalarColType t_type) -> uint8_t {
  * files.
  *
  */
-class Text {
-  public:
-    /**
-     * @return The underlying data.
-     */
-    [[nodiscard]] constexpr auto get_data() -> std::span<std::byte> {
-        return {m_data.begin(), m_data.end()};
-    }
+struct TextType {
+    static constexpr IdType TYPE_ID =
+        static_cast<std::underlying_type_t<ScalarColType>>(
+            ScalarColType::Float64) +
+        1;
     /**
      * @return The size of the underlying data.
      */
-    [[nodiscard]] constexpr auto get_size() const -> uint64_t {
-        return m_data.size();
-    }
+    [[nodiscard]] constexpr auto get_size() const -> uint64_t { return m_size; }
 
-  private:
-    std::vector<std::byte> m_data;
+    uint64_t m_size;
 };
 
-using ColType = std::variant<ScalarColType, Text>;
+using ColType = std::variant<ScalarColType, TextType>;
+
+template <typename F>
+concept FScalarMap = requires(F f, ScalarColType st) { std::invoke(f, st); };
+
+template <typename F>
+concept FTextMap = requires(F f, TextType tt) { std::invoke(f, tt); };
+
+/**
+ * @brief Applies the correct map function to the type variant passed in.
+ * Both functions t_f_scalar and t_f_text should return the same type.
+ *
+ * @param t_type The variant
+ * @param t_f_scalar Callable object/function to operate on if column type holds
+ * a scalar type.
+ * @param t_f_text Callable object/function to operate on if column type holds
+ * the text type.
+ * @return
+ */
+template <FScalarMap F1, FTextMap F2>
+constexpr auto map_type(ColType& t_type, F1 t_f_scalar,
+                        F2 t_f_text) -> decltype(auto) {
+    // std::invoke nicely handles a couple extra cases, eg, if a function
+    // pointer is passed, I need to deref the pointer then call the function in
+    // the syntax (*f)(args...).
+    return std::visit(
+        overload{[&](ScalarColType t_scalar) {
+                     return std::invoke(t_f_scalar, t_scalar);
+                 },
+                 [&](TextType& t_txt) { return std::invoke(t_f_text, t_txt); }},
+        t_type);
+}
+
+/**
+ * @brief Applies the correct map function to the type variant passed in.
+ * Both functions t_f_scalar and t_f_text should return the same type.
+ *
+ * @param t_type The variant
+ * @param t_f_scalar Callable object/function to operate on if column type holds
+ * a scalar type.
+ * @param t_f_text Callable object/function to operate on if column type holds
+ * the text type.
+ * @return
+ */
+template <FScalarMap F1, FTextMap F2>
+constexpr auto map_type(const ColType& t_type, F1 t_f_scalar,
+                        F2 t_f_text) -> decltype(auto) {
+    // std::invoke nicely handles a couple extra cases, eg, if a function
+    // pointer is passed, I need to deref the pointer then call the function in
+    // the syntax (*f)(args...).
+    return std::visit(overload{[&](ScalarColType t_scalar) {
+                                   return std::invoke(t_f_scalar, t_scalar);
+                               },
+                               [&](const TextType& t_txt) {
+                                   return std::invoke(t_f_text, t_txt);
+                               }},
+                      t_type);
+}
 
 /**
  * @return The size of the type.
  * @param t_type The type.
  */
 constexpr auto type_size(const ColType& t_type) -> uint64_t {
+    return map_type(
+        t_type,
+        [](ScalarColType t_scalar) {
+            return static_cast<uint64_t>(scalar_size(t_scalar));
+        },
+        [](const TextType& t_txt) { return t_txt.get_size(); });
+}
 
-    return std::visit(
-        overload{[](ScalarColType t_scalar) {
-                     return static_cast<uint64_t>(scalar_size(t_scalar));
-                 },
-                 [](const Text& t_txt) { return t_txt.get_size(); }},
-        t_type);
+/**
+ * @param t_type The ColType passed in.
+ * @return The type id of the specified column type.
+ */
+constexpr auto type_id(const ColType& t_type) -> IdType {
+    return map_type(
+        t_type,
+        [](ScalarColType t_scalar) { return static_cast<IdType>(t_scalar); },
+        [](const TextType& _) { return TextType::TYPE_ID; });
+}
+
+constexpr auto type_of(IdType t_num) -> std::optional<ColType> {
+    using enum ScalarColType;
+    if (t_num >= type_id(Int8) && t_num <= type_id(Float64)) {
+        return ScalarColType{t_num};
+    }
+    if (t_num == TextType::TYPE_ID) {
+        return TextType{1};
+    }
+    return std::nullopt;
 }
 
 }; // namespace tinydb::dbfile::column
+#endif // !TINYDB_DBFILE_COLTYPE_HXX

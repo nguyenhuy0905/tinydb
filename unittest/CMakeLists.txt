@@ -1,6 +1,11 @@
 # CMake's default GTest finding
 enable_testing()
 include(GoogleTest)
+include(${PROJECT_SOURCE_DIR}/cmake/CPM.cmake)
+CPMAddPackage(NAME
+    GTest
+    URL https://github.com/google/googletest/releases/download/v1.15.0/googletest-1.15.0.tar.gz
+)
 find_package(GTest REQUIRED)
 
 add_executable(tinydb_unittest

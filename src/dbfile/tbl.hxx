@@ -2,9 +2,11 @@
 #define TINYDB_DBFILE_TBL_HXX
 
 #include "modules.hxx"
+#include "coltype.hxx"
 #ifndef ENABLE_MODULE
 #include <cstdint>
 #include <iosfwd>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -15,7 +17,7 @@ TINYDB_EXPORT
 namespace tinydb::dbfile {
 
 using ColID = uint8_t;
-using EntrySiz = uint16_t;
+using EntrySiz = uint8_t;
 
 /**
  * @class ColumnMeta
@@ -24,7 +26,7 @@ using EntrySiz = uint16_t;
  */
 struct ColumnMeta {
     std::string m_name;
-    EntrySiz m_size;
+    column::ColType m_type;
     ColID m_col_id;
     EntrySiz m_offset;
 };
