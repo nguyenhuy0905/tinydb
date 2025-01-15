@@ -76,13 +76,18 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
 
         auto typenum = fill_var.operator()<column::IdType>(',');
 
-        // auto size =
-        fill_var.operator()<uint64_t>(',');
+        auto type = column::type_of(typenum).value();
+        auto size = fill_var.operator()<uint64_t>(',');
+        type = column::map_type(
+            type, [](auto t_scl) { return column::ColType{t_scl}; },
+            [&](column::TextType& _) mutable {
+                return column::ColType{column::TextType{size}};
+            });
 
         auto off = fill_var.operator()<uint8_t>(';');
 
         auto new_col = ColumnMeta{.m_name{std::move(colname)},
-                                  .m_type = column::type_of(typenum).value(),
+                                  .m_type = type,
                                   .m_col_id = id,
                                   .m_offset = off};
         new_tbl.add_column(std::move(new_col));
