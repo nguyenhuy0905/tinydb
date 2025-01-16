@@ -38,6 +38,10 @@
         {
             "name": "unit-test",
             "configurePreset": "unit-test-no-module"
+        },
+        {
+            "name": "debug-module",
+            "configurePreset": "debug-module"
         }
     ],
     "testPresets": [
