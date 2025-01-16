@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        cxx_compiler: [g++14, clang++18]
+        cxx_compiler: [g++-14, clang++-18]
 
     env:
       CXX: ${{ matrix.cxx_compiler }}
@@ -33,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        cxx_compiler: [clang++, g++14]
+        cxx_compiler: [clang++, g++-14]
 
     env:
       CXX: ${{ matrix.cxx_compiler }}
@@ -43,6 +43,10 @@ jobs:
 
     - name: Install Ninja
       run: brew install ninja
+
+    - name: Install latest clang
+      if: ${{ matrix.cxx_compiler }} == clang++
+      run: brew install llvm
 
     - run: cmake --workflow --preset debug 
 
