@@ -58,6 +58,7 @@ jobs:
     - name: Configure with unit test
       run: >
         cmake
+        -DCMAKE_CXX_STANDARD=23
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
