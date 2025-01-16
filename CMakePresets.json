@@ -1,0 +1,87 @@
+{
+    "version": 8,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 30,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "debug-module",
+            "displayName": "Debug build with Modules.",
+            "description": "You probably need libc++ and clang++ on Unix. Do so by changing tinydb_USE_LIBCXX to ON",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "0e5b6991-d74f-4b3d-a41c-cf096e0b2508",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_MODULE_STD": "ON",
+                "tinydb_ENABLE_ASAN": "ON",
+                "tinydb_ENABLE_MODULE": "ON",
+                "tinydb_WARNING_AS_ERR": "ON"
+            }
+        },
+        {
+            "name": "unit-test-no-module",
+            "displayName": "Debug build without Modules, and with unit test",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "tinydb_ENABLE_ASAN": "ON",
+                "tinydb_WARNING_AS_ERR": "ON",
+                "tinydb_ENABLE_UNIT_TEST": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "unit-test",
+            "configurePreset": "unit-test-no-module"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "unit",
+            "configurePreset": "unit-test-no-module",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {"stopOnFailure": true}
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "test",
+            "displayName": "Build without modules, and runs the unit test",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "unit-test-no-module"
+                },
+                {
+                    "type": "build",
+                    "name": "unit-test"
+                },
+                {
+                    "type": "test",
+                    "name": "unit"
+                }
+            ]
+        },
+        {
+            "name": "module-build-test",
+            "displayName": "Build with modules",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "debug-module"
+                },
+                {
+                    "type": "build",
+                    "name": "debug-module"
+                }
+            ]
+        }
+    ]
+}
