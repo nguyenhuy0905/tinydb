@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cctype>
 #include <cstdint>
+#include <expected>
 #include <print>
 #include <ranges>
 #include <string>

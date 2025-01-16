@@ -3,6 +3,7 @@
 
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
+#include <utility>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -72,6 +73,8 @@ constexpr auto scalar_size(ScalarColType t_type) -> uint8_t {
     case Float64:
         return sizeof(double);
         // the more type we have, the more we need to add.
+    default:
+        std::unreachable();
     }
 }
 
