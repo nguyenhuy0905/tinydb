@@ -175,7 +175,7 @@ constexpr auto type_id(const ColType& t_type) -> IdType {
     return map_type(
         t_type,
         [](ScalarColType t_scalar) { return static_cast<IdType>(t_scalar); },
-        [](const TextType& _) { return TextType::TYPE_ID; });
+        [](const TextType&) { return TextType::TYPE_ID; });
 }
 
 constexpr auto type_of(IdType t_num) -> std::optional<ColType> {

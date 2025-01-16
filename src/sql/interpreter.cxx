@@ -32,8 +32,8 @@ auto interpret(std::span<Token> t_tokens) -> InterpreterRetCode {
                                retval = Err;
                            };
                        },
-                       [&](const Literal& _) { retval = Err; },
-                       [&](const Symbol& _) { retval = Err; }},
+                       [&](const Literal&) { retval = Err; },
+                       [&](const Symbol&) { retval = Err; }},
                t_tokens[0]);
     return retval;
 }

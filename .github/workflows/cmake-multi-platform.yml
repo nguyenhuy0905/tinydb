@@ -18,7 +18,7 @@ jobs:
         cxx_compiler: [g++14, clang++18]
 
     env:
-      CXX: ${{ matrix.cxx }}
+      CXX: ${{ matrix.cxx_compiler }}
 
     steps:
     - uses: actions/checkout@v4
@@ -34,6 +34,9 @@ jobs:
     strategy:
       matrix:
         cxx_compiler: [clang++, g++14]
+
+    env:
+      CXX: ${{ matrix.cxx_compiler }}
 
     steps:
     - uses: actions/checkout@v4

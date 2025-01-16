@@ -107,7 +107,7 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
         auto size = fill_num.operator()<uint64_t>();
         type = column::map_type(
             type, [](auto t_scl) { return column::ColType{t_scl}; },
-            [&](column::TextType& _) mutable {
+            [&](column::TextType&) mutable {
                 return column::ColType{column::TextType{size}};
             });
 
