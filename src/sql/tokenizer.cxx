@@ -80,7 +80,7 @@ auto Tokenizer::tokenize(std::string_view input) -> TokenizerReturn {
     case State::Comment:
     case State::Word:
     case State::Number:
-        return handle_space(' ').transform([](auto _) { return; });
+        return handle_space(' ').transform([](auto) { return; });
     case State::Quote:
         return std::unexpected{TokenizerError::MissingQuote};
     default:
