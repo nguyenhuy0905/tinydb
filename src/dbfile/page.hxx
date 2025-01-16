@@ -246,6 +246,18 @@ class HeapMeta : public PageMixin {
         : PageMixin{t_page_num}, m_next_pg{t_next_pg},
           m_first_free{t_first_free} {}
 
+    [[nodiscard]] constexpr auto get_next_pg() const -> uint32_t {
+        return m_next_pg;
+    }
+
+    [[nodiscard]] constexpr auto get_first_free_off() const -> uint16_t {
+        return m_first_free;
+    }
+
+    // this class is getting messy. Cleanup needed probably.
+    // Given its name, it should only really be a "metadata holder", not the
+    // full-blown (de)allocator.
+
     /**
      * @param t_off The offset from the start of this page.
      * @param t_in The file/stream this HeapMeta is written in.
@@ -256,17 +268,64 @@ class HeapMeta : public PageMixin {
      * the stream. Let's assume that the stream we passed in is the correct one.
      */
     auto get_raw_bytes_at(std::istream& t_in,
-                          uint16_t t_off) -> std::vector<std::byte>;
+                          uint16_t t_off) const -> std::vector<std::byte>;
 
     /**
-     * @class AllocRetType.
-     * @brief Return type of calling HeapMeta::allocate.
+     * @class HeapPointer
+     * @brief It's a pointer.
      */
-    struct AllocRetType {
-        // the offset compared to the page this heap points to.
-        uint16_t offset;
-        // whether this allocate call fully allocated the memory needed.
-        bool fully_alloc;
+    class HeapPointer {
+      public:
+        /**
+         * @return The page number this heap pointer points to.
+         */
+        [[nodiscard]] constexpr auto get_pg_num() const noexcept -> uint32_t {
+            return m_pg_num;
+        }
+
+        /**
+         * @return The offset relative to the page number being pointed to.
+         */
+        [[nodiscard]] constexpr auto
+        get_local_offset() const noexcept -> uint32_t {
+            return m_off;
+        }
+
+        /**
+         * @return The absolute offset value.
+         */
+        [[nodiscard]] constexpr auto
+        get_total_offset() const noexcept -> uint64_t {
+            return static_cast<uint64_t>(m_pg_num) *
+                   static_cast<uint64_t>(m_off);
+        }
+
+        [[nodiscard]] constexpr auto is_valid() -> bool;
+
+      private:
+        constexpr HeapPointer() = default;
+        constexpr HeapPointer(uint32_t t_pg_num, uint16_t t_off)
+            : m_pg_num{t_pg_num}, m_off{t_off} {}
+        // offset 0: 4-byte page pointer.
+        uint32_t m_pg_num;
+        // offset 4: 2-byte relative offset pointer.
+        uint16_t m_off;
+        friend class HeapMeta;
+    };
+    static_assert(std::is_trivial_v<HeapPointer>);
+
+    /**
+     * @class AllocRetValue
+     * @brief Return value of HeapMeta::allocate
+     *
+     */
+    struct AllocRetVal {
+        // Pointer to the allocated space.
+        HeapPointer ptr;
+        // The amount allocated.
+        // Since a page is assumed to be 4096 bytes (holds true for all your
+        // computers probably), we only need an uint16 here.
+        uint16_t alloc_size;
     };
 
     /**
@@ -274,19 +333,19 @@ class HeapMeta : public PageMixin {
      * enough bytes, or the page doesn't have enough space.
      * NOT IMPLEMENTED YET.
      *
-     * @param t_in The file/stream this HeapMeta is written in.
+     * @param t_io The file/stream this HeapMeta is written in.
      * @param t_max_siz The maximum size needed.
      */
-    auto allocate(std::iostream& t_in, uint16_t t_max_siz) -> uint16_t;
+    auto allocate(std::iostream& t_io, uint16_t t_max_siz) -> AllocRetVal;
 
     /**
      * @brief Deallocates the memory fragment at the specified offset.
      * NOT IMPLEMENTED YET.
      *
-     * @param t_out 
-     * @param t_off 
+     * @param t_io
+     * @param t_off
      */
-    auto deallocate(std::iostream& t_out, uint16_t t_off) -> bool;
+    void deallocate(std::iostream& t_io, HeapPointer t_ptr);
 
   private:
     // offset 1: pointer to the next heap page.

@@ -77,6 +77,29 @@ void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in) {
                         sizeof(t_meta.m_first_free));
 }
 
+// I should really reorganize these stuff
+// NOLINTBEGIN
+
+/**
+ * @class HeapFragMeta
+ * @brief Forms a free list inside a heap page.
+ *
+ */
+struct HeapFragMeta {
+    // offset 0: 2-byte, offset of previous heap fragment.
+    // If there's no fragment before this, the value is nullopt, and is written
+    // as a 0 on disk.
+    // Next fragment is actually easy to get, given we know the size.
+    std::optional<uint16_t> prev;
+    // offset 2: 2-byte, size of this heap, not including the header.
+    // If the offset of this heap plus size equals 4095, this is the last heap
+    // fragment.
+    uint16_t size;
+    // offset 4: 1-byte, if this fragment is free.
+    bool is_free;
+};
+// NOLINTEND
+
 void write_to_impl(const HeapMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);
     t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::Heap));
