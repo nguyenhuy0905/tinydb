@@ -55,13 +55,13 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Configure
+    - name: Configure with unit test
       run: >
         cmake
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -Dtinydb_ENABLE_UNIT_TEST
+        -Dtinydb_ENABLE_UNIT_TEST=ON
         -S ${{ github.workspace }}
         -B ${{ steps.strings.outputs.build-output-dir }}
 
