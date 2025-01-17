@@ -18,6 +18,8 @@
 > [!NOTE]
 > A container may be provided in the future to help with all these very new
 > versions.
+> Also, there isn't a setup for packaging this project yet, so it's not possible
+> to run, say, `cmake --build build --target install`.
 
 - A C++ compiler that supports most of C++23. The newest versions of all major
 compilers would suffice.
@@ -33,15 +35,22 @@ compilers would suffice.
 - CMake 3.23+.
 
 > [!WARNING]
-> `apt` on stable Debian or any of its derivatives (say, Ubuntu or Mint) don't
-> supply this version of CMake. Debian sid (the bleeding-edge Debian) seems to
-> though.
-> Also, one techinically only needs 3.30+ if compiling using modules.
-> (Speculative) CMake 3.23 should be enough.
+> CMake 3.30+ to compile using modules (since `import std;` is used), or 3.31+
+> to compile with modules using `gcc`.
+> (Speculative) CMake 3.23 should be enough otherwise.
 
 - Optional: Ninja Build on Linux/Mac (faster build speed than Makefiles).
 - Optional: ccache (speeds up non-module builds, from the second build
 onwards).
+- Optional: `gcc` or `msvc` users may want to take a look at LLVM for
+all the sanitizers used in this project.
+  - AddressSanitizer (ASan) is available on all compilers.
+    - If available, it is recommended to compile with this sanitizer. Helps
+    tremendously with tracking memory bugs (say, use-after-free or memory leak).
+  - MemorySanitizer (MSan) or UndefinedBehaviorSanitizer (UBSan) only available
+  on LLVM (so, `clang`).
+  - If a package manager isn't available at the disposal, check out
+  [the release page of LLVM](https://github.com/llvm/llvm-project/releases).
 
 ### Building: Actually building the project
 
@@ -57,6 +66,77 @@ cmake --build --preset debug
 # if you want to build AND run the unit test
 cmake --workflow --preset debug
 ```
+
+## Editor setup
+
+- Should work on any editor, or at least those that support CMake.
+
+### Editor setup: No setup
+
+- This project is not dependent on any IDE. Which means you can use just about
+any text editor to edit the code.
+  - Even Notepad. Sure, no code highlight, no LSP, but you can still compile and
+  run the code.
+
+### Editor setup: Neovim
+
+- Use your favorite plugin manager to download `nvim-lspconfig`, `Mason`,
+`conform.nvim` and `nvim-lint`.
+After that, install `clangd`, `clang-format` and `clang-tidy` (either you
+already have this with your LLVM install, or you need to use `Mason`).
+- Then, configure `clangd` in `nvim-lspconfig`, `clang-format` in `conform` and
+`clang-tidy` in `nvim-lint`.
+  - A bit lazy here. Do a Google search for these plugins.
+  - Optional: use `Mason` to download `vale` and `markdownlint` if you plan to
+  write up the README of this project.
+
+### Editor setup: Code
+
+- Download the C/C++ language extension.
+- Download the CMake extension.
+  - Now you should have the CMake icon (a triangle) in the left bar.
+  - Go there and in the "Configure" tab, select "Debug build without Modules,
+  and with unit test".
+- Optional: find and download plugins for `markdownlint` and `vale` if you plan
+to write up the README of this project.
+
+### Editor setup: Visual studio
+
+> [!NOTE]
+> Should work as with any other CMake projects. Not tested yet.
+> Do a Google search on "visual studio cmake project."
+
+### Editor setup: Apple XCode
+
+> [!NOTE]
+> Should work as with any other CMake projects. Not tested yet.
+> Do a Google search on "xcode cmake project."
+
+- You can download `clang` with Homebrew (`brew install llvm`), and set up VS
+Code or Neovim using the preceding guides.
+
+### Editor setup: CLion
+
+> [!NOTE]
+> Should work as with any other CMake projects. Not tested yet.
+> Do a Google search on "clion cmake project."
+
+### Editor setup: Code::Blocks
+
+> [!NOTE]
+> Should work as with any other CMake projects. Not tested yet.
+> Do a Google search on "codeblocks cmake project."
+
+## Debugger setup
+
+- TLDR:
+  - If you use Visual Studio or any IDE, use their built-in debugger.
+  - If you use `libstdc++` (so, the default standard library on Linux), use `gdb`.
+    - Personal choice. `gdb` even allows you to "step back" the code.
+  - If you use `libc++` (default on Mac), use `lldb`.
+  - `gdb` and `lldb` are quite difficult to use, but the payoff should be well
+  worth it.
+    - "Step-back," memory watchpoint, multithreaded debugging, you name it.
 
 ## Contribute?
 
