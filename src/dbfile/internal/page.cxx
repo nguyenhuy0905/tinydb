@@ -4,7 +4,6 @@
 #include <bit>
 #include <iostream>
 #else
-// TODO: start throwing some module compat, starting from file page.hxx/cxx
 module;
 #include "general/sizes.hxx"
 export module tinydb.dbfile.internal.page;

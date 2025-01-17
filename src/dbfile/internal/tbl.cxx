@@ -16,9 +16,6 @@ import std;
 #include "dbfile/internal/tbl.hxx"
 #endif // !ENABLE_MODULE
 
-// TODO: change all reads and writes to use rdbuf instead of the stream
-// formatting.
-
 namespace tinydb::dbfile::internal {
 
 void TableMeta::write_to(std::ostream& t_out) {
