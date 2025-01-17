@@ -17,11 +17,7 @@ add_executable(tinydb_unittest
 target_link_libraries(tinydb_unittest
     PRIVATE
     tinydb_compile_opts
-    # tinydb_lib
     GTest::gtest_main
-    tinydb_tbl
-    tinydb_freelist
-    tinydb_general
     tinydb_dbfile
 )
 gtest_discover_tests(tinydb_unittest)
