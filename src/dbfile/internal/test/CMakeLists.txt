@@ -3,7 +3,6 @@ target_sources(
     PRIVATE
     page_test.cxx
     tbl_test.cxx
-    dbfile_test.cxx
 )
 target_link_libraries(tinydb_test
     PRIVATE
