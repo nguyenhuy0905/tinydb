@@ -52,6 +52,10 @@ all the sanitizers used in this project.
   - If a package manager isn't available at the disposal, check out
   [the release page of LLVM](https://github.com/llvm/llvm-project/releases).
 
+- Optional: Google Test.
+  - If you enable unit test without Google Test, the project is going to pull it
+  from the internet for you.
+
 ### Building: Actually building the project
 
 - Make sure you are in the project's root directory (or, the directory with
@@ -66,6 +70,10 @@ cmake --build --preset debug
 # if you want to build AND run the unit test
 cmake --workflow --preset debug
 ```
+
+- If you want more fine-grained configuration, using `ccmake` or `cmake-gui`
+is recommended.
+  - Or, write your own `CMakeUserPresets.json`.
 
 ## Editor setup
 
