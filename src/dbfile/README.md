@@ -14,3 +14,11 @@ job, really.
   - Also, this part used to be somewhat user-facing. Now that it's not, change
   all the `friend` functions into non-friend. `friend`s do you no good.
     - Can be done with a couple of getters/setters.
+
+- Finish the functionalities of the heap.
+  - `allocate`, `deallocate`.
+  - `deallocate` should also coalesce free fragments that are next to each
+  other.
+
+- Write up B+ Tree.
+  - What to do is specified later.
