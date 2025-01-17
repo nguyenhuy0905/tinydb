@@ -45,7 +45,9 @@ class PageMixin {
     /**
      * @return The page number of this page.
      */
-    [[nodiscard]] auto get_pg_num() -> uint32_t { return m_pg_num; }
+    [[nodiscard]] constexpr auto get_pg_num() const noexcept -> uint32_t {
+        return m_pg_num;
+    }
 
     // no need for virtual dtor here.
 
@@ -58,15 +60,16 @@ class PageMixin {
 };
 
 /**
- * @class PageMeta
- * @brief Type-erased page metadata.
+ * @class PageSerializer
+ * @brief Type-erased page metadata, useful for writing stuff into a stream.
+ * Pretty useless otherwise.
  *
  */
-class PageMeta {
+class PageSerializer {
   public:
     template <typename T>
         requires std::is_base_of_v<PageMixin, T>
-    explicit PageMeta(T&& t_page)
+    explicit PageSerializer(T&& t_page)
         : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
     /**
      * @brief Reads the data from the specified input stream, starting at the
@@ -82,8 +85,8 @@ class PageMeta {
     template <typename T>
         requires std::is_base_of_v<PageMixin, T>
     static auto construct_from(std::istream& t_in,
-                               uint32_t t_pg_num) -> PageMeta {
-        PageMeta ret{T{t_pg_num}};
+                               uint32_t t_pg_num) -> PageSerializer {
+        PageSerializer ret{T{t_pg_num}};
         ret.do_read_from(t_in);
         return ret;
     }
@@ -104,21 +107,17 @@ class PageMeta {
      */
     void do_write_to(std::ostream& t_out) { m_impl->do_write_to(t_out); }
 
-    /**
-     * @return The page number of this `PageMeta`.
-     */
-    auto get_pg_num() -> uint32_t { return m_impl->page_num(); }
-
     // special members
 
-    PageMeta(PageMeta&&) = default;
-    auto operator=(PageMeta&&) -> PageMeta& = default;
-    PageMeta(const PageMeta& t_meta) : m_impl{t_meta.m_impl->clone()} {}
-    auto operator=(const PageMeta& t_meta) -> PageMeta& {
+    PageSerializer(PageSerializer&&) = default;
+    auto operator=(PageSerializer&&) -> PageSerializer& = default;
+    PageSerializer(const PageSerializer& t_meta)
+        : m_impl{t_meta.m_impl->clone()} {}
+    auto operator=(const PageSerializer& t_meta) -> PageSerializer& {
         m_impl = t_meta.m_impl->clone();
         return *this;
     }
-    ~PageMeta() = default;
+    ~PageSerializer() = default;
 
   private:
     // NOLINTBEGIN(*special-member*)
@@ -133,7 +132,6 @@ class PageMeta {
         virtual void do_read_from(std::istream& t_in) = 0;
         virtual void do_write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
-        virtual auto page_num() -> uint32_t = 0;
         virtual ~PageConcept() = default;
     };
     // NOLINTEND(*special-member*)
@@ -163,7 +161,6 @@ class PageMeta {
         auto clone() -> std::unique_ptr<PageConcept> override {
             return std::make_unique<PageModel>(*this);
         }
-        auto page_num() -> uint32_t override { return m_page.get_pg_num(); }
         ~PageModel() override = default;
         T m_page;
     };
@@ -184,7 +181,9 @@ class FreePageMeta : public PageMixin {
     FreePageMeta(uint32_t t_page_num, uint32_t t_next_pg)
         : PageMixin{t_page_num}, m_next_pg{t_next_pg} {}
 
-    [[nodiscard]] auto get_next_pg() const -> uint32_t { return m_next_pg; }
+    [[nodiscard]] constexpr auto get_next_pg() const noexcept -> uint32_t {
+        return m_next_pg;
+    }
 
   private:
     // offset 1: pointer to next page. Set to 0 if this is the last free page.
@@ -234,8 +233,7 @@ class BTreeInternalMeta : public PageMixin {
     static constexpr uint16_t DEFAULT_FREE_OFF = 5;
 
     friend void read_from(BTreeInternalMeta& t_meta, std::istream& t_in);
-    friend void write_to(const BTreeInternalMeta& t_meta,
-                              std::ostream& t_out);
+    friend void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
 };
 
 class HeapMeta : public PageMixin {
@@ -246,11 +244,12 @@ class HeapMeta : public PageMixin {
         : PageMixin{t_page_num}, m_next_pg{t_next_pg},
           m_first_free{t_first_free} {}
 
-    [[nodiscard]] constexpr auto get_next_pg() const -> uint32_t {
+    [[nodiscard]] constexpr auto get_next_pg() const noexcept -> uint32_t {
         return m_next_pg;
     }
 
-    [[nodiscard]] constexpr auto get_first_free_off() const -> uint16_t {
+    [[nodiscard]] constexpr auto
+    get_first_free_off() const noexcept -> uint16_t {
         return m_first_free;
     }
 
@@ -328,25 +327,6 @@ class HeapMeta : public PageMixin {
         uint16_t alloc_size;
     };
 
-    /**
-     * @brief Allocates as much memory as possible until either we receive
-     * enough bytes, or the page doesn't have enough space.
-     * NOT IMPLEMENTED YET.
-     *
-     * @param t_io The file/stream this HeapMeta is written in.
-     * @param t_max_siz The maximum size needed.
-     */
-    auto allocate(std::iostream& t_io, uint16_t t_max_siz) -> AllocRetVal;
-
-    /**
-     * @brief Deallocates the memory fragment at the specified offset.
-     * NOT IMPLEMENTED YET.
-     *
-     * @param t_io
-     * @param t_off
-     */
-    void deallocate(std::iostream& t_io, HeapPointer t_ptr);
-
   private:
     // offset 1: pointer to the next heap page.
     //   Default to 0, which means this heap page is the last one.
@@ -361,8 +341,27 @@ class HeapMeta : public PageMixin {
 
     friend void read_from(HeapMeta& t_meta, std::istream& t_in);
     friend void write_to(const HeapMeta& t_meta, std::ostream& t_out);
+    /**
+     * @brief Allocates as much memory as possible until either we receive
+     * enough bytes, or the page doesn't have enough space.
+     * NOT IMPLEMENTED YET.
+     *
+     * @param t_io The file/stream this HeapMeta is written in.
+     * @param t_max_siz The maximum size needed.
+     */
+    friend auto allocate(HeapMeta& t_meta, std::iostream& t_io,
+                         uint16_t t_max_siz) -> AllocRetVal;
+
+    /**
+     * @brief Deallocates the memory fragment at the specified offset.
+     * NOT IMPLEMENTED YET.
+     *
+     * @param t_io
+     * @param t_off
+     */
+    void deallocate(HeapMeta& t_meta, std::iostream& t_io, HeapPointer t_ptr);
 };
 
-} // namespace tinydb::dbfile
+} // namespace tinydb::dbfile::internal
 
 #endif // !TINYDB_DBFILE_PAGE_HXX

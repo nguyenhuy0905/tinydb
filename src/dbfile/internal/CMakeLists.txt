@@ -7,6 +7,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     tbl.hxx
     SOURCE_FILES
     page.cxx
+    page_serialize.cxx
     btree.cxx
     freelist.cxx
     tbl.cxx
