@@ -1,7 +1,7 @@
 #ifndef TINYDB_DBFILE_PAGE_HXX
 #define TINYDB_DBFILE_PAGE_HXX
 
-#include "modules.hxx"
+#include "general/modules.hxx"
 #ifndef ENABLE_MODULE
 #include <cassert>
 #include <cstdint>
@@ -12,7 +12,7 @@
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 /**
  * @brief A flag that each page has.

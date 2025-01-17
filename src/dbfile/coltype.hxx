@@ -1,7 +1,7 @@
 #ifndef TINYDB_DBFILE_COLTYPE_HXX
 #define TINYDB_DBFILE_COLTYPE_HXX
 
-#include "modules.hxx"
+#include "general/modules.hxx"
 #ifndef ENABLE_MODULE
 #include <utility>
 #include <cstddef>

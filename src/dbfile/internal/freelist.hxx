@@ -1,15 +1,15 @@
 #ifndef TINYDB_DBFILE_FREELIST_HXX
 #define TINYDB_DBFILE_FREELIST_HXX
 
-#include "modules.hxx"
+#include "general/modules.hxx"
 #ifndef ENABLE_MODULE
-#include "page.hxx"
+#include "dbfile/internal/page.hxx"
 #include <cstdint>
 #include <iosfwd>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 /**
  * @class FreeListMeta

@@ -1,8 +1,8 @@
 #ifndef TINYDB_DBFILE_TBL_HXX
 #define TINYDB_DBFILE_TBL_HXX
 
-#include "modules.hxx"
-#include "coltype.hxx"
+#include "general/modules.hxx"
+#include "dbfile/coltype.hxx"
 #ifndef ENABLE_MODULE
 #include <cstdint>
 #include <iosfwd>
@@ -14,7 +14,7 @@
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT 
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 using ColID = uint8_t;
 using EntrySiz = uint8_t;

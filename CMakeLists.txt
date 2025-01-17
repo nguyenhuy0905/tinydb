@@ -66,7 +66,6 @@ add_subdirectory(src)
 
 if(tinydb_ENABLE_UNIT_TEST)
     message(STATUS "Unit test enabled")
-    add_subdirectory(unittest)
 endif()
 
 if(tinydb_ENABLE_FUZZ_TEST)

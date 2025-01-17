@@ -1,8 +1,8 @@
 #ifndef ENABLE_MODULE
 #include "dbfile.hxx"
 #include "version.hxx"
-#include "freelist.hxx"
-#include "tbl.hxx"
+#include "dbfile/internal/freelist.hxx"
+#include "dbfile/internal/tbl.hxx"
 #include <bit>
 #include <iostream>
 #else
@@ -10,9 +10,9 @@ module;
 #include "version.hxx"
 #include <cstdint>
 export module tinydb.dbfile;
-import tinydb.dbfile.page;
-import tinydb.dbfile.freelist;
-import tinydb.dbfile.tbl;
+import tinydb.dbfile.internal.page;
+import tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.tbl;
 import std;
 #include "dbfile.hxx"
 #endif // !ENABLE_MODULE
@@ -20,7 +20,7 @@ import std;
 
 namespace tinydb::dbfile {
 
-DbFile::DbFile(FreeListMeta&& t_fl, TableMeta&& t_tbl,
+DbFile::DbFile(internal::FreeListMeta&& t_fl, internal::TableMeta&& t_tbl,
                std::unique_ptr<std::iostream>&& t_io)
     : m_tbl{std::move(t_tbl)}, m_rw{std::move(t_io)},
       m_freelist{std::move(t_fl)} {}
@@ -43,8 +43,8 @@ void DbFile::write_init() {
 }
 
 auto DbFile::construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile {
-    auto freelist = FreeListMeta::construct_from(*t_io);
-    auto tbl = TableMeta::read_from(*t_io);
+    auto freelist = internal::FreeListMeta::construct_from(*t_io);
+    auto tbl = internal::TableMeta::read_from(*t_io);
     return DbFile{std::move(freelist), std::move(tbl), std::move(t_io)};
 }
 

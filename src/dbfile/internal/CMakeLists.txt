@@ -1,0 +1,24 @@
+add_library(tinydb_dbfile_internal)
+tinydb_target_module_if_enabled(tinydb_dbfile_internal
+    HEADER_FILES
+    page.hxx
+    btree.hxx
+    freelist.hxx
+    tbl.hxx
+    SOURCE_FILES
+    page.cxx
+    btree.cxx
+    freelist.cxx
+    tbl.cxx
+    MODULE_FILES
+    page.cxx
+    # btree.cxx
+    freelist.cxx
+    tbl.cxx
+)
+target_link_libraries(tinydb_dbfile_internal 
+    PUBLIC
+    tinydb_general
+    PRIVATE
+    tinydb_compile_opts
+)

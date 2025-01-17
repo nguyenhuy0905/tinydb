@@ -3,8 +3,8 @@
 
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
-#include "freelist.hxx"
-#include "tbl.hxx"
+#include "dbfile/internal/freelist.hxx"
+#include "dbfile/internal/tbl.hxx"
 #include <iosfwd>
 #include <memory>
 #endif
@@ -28,11 +28,11 @@ class DbFile {
     void add_column(std::string&& t_name);
 
   private:
-    DbFile(FreeListMeta&& t_fl, TableMeta&& t_tbl,
+    DbFile(internal::FreeListMeta&& t_fl, internal::TableMeta&& t_tbl,
            std::unique_ptr<std::iostream>&& t_io);
-    TableMeta m_tbl;
+    internal::TableMeta m_tbl;
     std::unique_ptr<std::iostream> m_rw;
-    FreeListMeta m_freelist;
+    internal::FreeListMeta m_freelist;
     // for now there's no need for heap yet.
 };
 

@@ -1,20 +1,20 @@
 #ifndef ENABLE_MODULE
-#include "freelist.hxx"
-#include "offsets.hxx"
-#include "page.hxx"
-#include "sizes.hxx"
+#include "dbfile/internal/freelist.hxx"
+#include "general/offsets.hxx"
+#include "dbfile/internal/page.hxx"
+#include "general/sizes.hxx"
 #include <bit>
 #include <iostream>
 #else
 module;
-#include "offsets.hxx"
-export module tinydb.dbfile.freelist;
-import tinydb.dbfile.page;
+#include "general/offsets.hxx"
+export module tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.page;
 import std;
-#include "freelist.hxx"
+#include "dbfile/internal/freelist.hxx"
 #endif // !ENABLE_MODULE
 
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 auto FreeListMeta::default_init(uint32_t t_first_free_pg,
                                 std::ostream& t_out) -> FreeListMeta {

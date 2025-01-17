@@ -1,19 +1,19 @@
 #ifndef ENABLE_MODULE
-#include "page.hxx"
-#include "sizes.hxx"
+#include "dbfile/internal/page.hxx"
+#include "general/sizes.hxx"
 #include <bit>
 #include <iostream>
 #else
 // TODO: start throwing some module compat, starting from file page.hxx/cxx
 module;
-#include "sizes.hxx"
-export module tinydb.dbfile.page;
+#include "general/sizes.hxx"
+export module tinydb.dbfile.internal.page;
 import std;
-#include "page.hxx"
+#include "dbfile/internal/page.hxx"
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);

@@ -1,7 +1,7 @@
 #ifndef ENABLE_MODULE
-#include "tbl.hxx"
-#include "coltype.hxx"
-#include "offsets.hxx"
+#include "dbfile/internal/tbl.hxx"
+#include "dbfile/coltype.hxx"
+#include "general/offsets.hxx"
 #include <iostream>
 #include <optional>
 #include <print>
@@ -9,17 +9,17 @@
 #include <sstream>
 #else
 module;
-#include "offsets.hxx"
+#include "general/offsets.hxx"
 #include <cstdint>
-export module tinydb.dbfile.tbl;
+export module tinydb.dbfile.internal.tbl;
 import std;
-#include "tbl.hxx"
+#include "dbfile/internal/tbl.hxx"
 #endif // !ENABLE_MODULE
 
 // TODO: change all reads and writes to use rdbuf instead of the stream
 // formatting.
 
-namespace tinydb::dbfile {
+namespace tinydb::dbfile::internal {
 
 void TableMeta::write_to(std::ostream& t_out) {
     t_out.seekp(TBL_OFF);
