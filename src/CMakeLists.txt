@@ -26,12 +26,14 @@ if(tinydb_ENABLE_UNIT_TEST)
             URL https://github.com/google/googletest/releases/download/v1.15.0/googletest-1.15.0.tar.gz
         )
     endif()
-    add_executable(tinydb_test dummy.cxx)
+    # target_sources this one.
+    add_executable(tinydb_test)
     target_link_libraries(tinydb_test
         PRIVATE
-        tinydb_dbfile_internal_test
         GTest::gtest_main
     )
+    include(GoogleTest)
+    gtest_discover_tests(tinydb_test)
 endif()
 
 add_subdirectory(general)
