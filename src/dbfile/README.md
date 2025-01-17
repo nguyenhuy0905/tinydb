@@ -1,0 +1,16 @@
+# Tinydb's underlying storage mechanism
+
+- In this directory, there are 3 parts:
+  - The source files, intended to be the user-facing API. Depends on `internal`.
+  - `internal`, NOT intended to be user-facing API. Depends on the `coltype.hxx`
+  source file.
+  - `test`, unit test. Depends on everything preceding.
+
+## Todo
+
+- Reorganize some parts of `page.hxx`. Some classes (specifically, `HeapMeta`)
+shouldn't need to know about `allocate` or `deallocate`; that's the `DbFile`'s
+job, really.
+  - Also, this part used to be somewhat user-facing. Now that it's not, change
+  all the `friend` functions into non-friend. `friend`s do you no good.
+    - Can be done with a couple of getters/setters.
