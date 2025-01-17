@@ -38,7 +38,7 @@ void DbFile::write_init() {
     constexpr uint32_t initial_size = 1;
     m_rw->rdbuf()->sputn(std::bit_cast<const char*>(&initial_size),
                          sizeof(initial_size));
-    m_freelist.write_to(*m_rw);
+    m_freelist.do_write_to(*m_rw);
     m_tbl.write_to(*m_rw);
 }
 

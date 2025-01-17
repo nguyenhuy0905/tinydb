@@ -84,7 +84,7 @@ class PageMeta {
     static auto construct_from(std::istream& t_in,
                                uint32_t t_pg_num) -> PageMeta {
         PageMeta ret{T{t_pg_num}};
-        ret.read_from(t_in);
+        ret.do_read_from(t_in);
         return ret;
     }
     /**
@@ -94,7 +94,7 @@ class PageMeta {
      * @param t_in The given stream.
      *   The stream must inherit from `std::istream`.
      */
-    void read_from(std::istream& t_in) { m_impl->read_from(t_in); }
+    void do_read_from(std::istream& t_in) { m_impl->do_read_from(t_in); }
     /**
      * @brief Writes the content of the page this `PageMeta` holds into the
      * given stream.
@@ -102,7 +102,7 @@ class PageMeta {
      * @param t_out The given stream.
      *   The stream must inherit from `std::ostream`
      */
-    void write_to(std::ostream& t_out) { m_impl->write_to(t_out); }
+    void do_write_to(std::ostream& t_out) { m_impl->do_write_to(t_out); }
 
     /**
      * @return The page number of this `PageMeta`.
@@ -130,8 +130,8 @@ class PageMeta {
      *
      */
     struct PageConcept {
-        virtual void read_from(std::istream& t_in) = 0;
-        virtual void write_to(std::ostream& t_out) const = 0;
+        virtual void do_read_from(std::istream& t_in) = 0;
+        virtual void do_write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
         virtual auto page_num() -> uint32_t = 0;
         virtual ~PageConcept() = default;
@@ -152,13 +152,13 @@ class PageMeta {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
         explicit PageModel(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}
-        void read_from(std::istream& t_in) override {
+        void do_read_from(std::istream& t_in) override {
             // it seems to not be possible to just name this `read_from` due to
             // conflicting names.
-            read_from_impl(m_page, t_in);
+            read_from(m_page, t_in);
         }
-        void write_to(std::ostream& t_out) const override {
-            write_to_impl(m_page, t_out);
+        void do_write_to(std::ostream& t_out) const override {
+            write_to(m_page, t_out);
         }
         auto clone() -> std::unique_ptr<PageConcept> override {
             return std::make_unique<PageModel>(*this);
@@ -192,8 +192,8 @@ class FreePageMeta : public PageMixin {
     //   page in memory order.
     uint32_t m_next_pg;
 
-    friend void read_from_impl(FreePageMeta& t_meta, std::istream& t_in);
-    friend void write_to_impl(const FreePageMeta& t_meta, std::ostream& t_out);
+    friend void read_from(FreePageMeta& t_meta, std::istream& t_in);
+    friend void write_to(const FreePageMeta& t_meta, std::ostream& t_out);
 };
 
 class BTreeLeafMeta : public PageMixin {
@@ -212,8 +212,8 @@ class BTreeLeafMeta : public PageMixin {
     uint16_t m_first_free;
     static constexpr uint16_t DEFAULT_FREE_OFF = 5;
 
-    friend void read_from_impl(BTreeLeafMeta& t_meta, std::istream& t_in);
-    friend void write_to_impl(const BTreeLeafMeta& t_meta, std::ostream& t_out);
+    friend void read_from(BTreeLeafMeta& t_meta, std::istream& t_in);
+    friend void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out);
 };
 
 class BTreeInternalMeta : public PageMixin {
@@ -233,8 +233,8 @@ class BTreeInternalMeta : public PageMixin {
     uint16_t m_first_free;
     static constexpr uint16_t DEFAULT_FREE_OFF = 5;
 
-    friend void read_from_impl(BTreeInternalMeta& t_meta, std::istream& t_in);
-    friend void write_to_impl(const BTreeInternalMeta& t_meta,
+    friend void read_from(BTreeInternalMeta& t_meta, std::istream& t_in);
+    friend void write_to(const BTreeInternalMeta& t_meta,
                               std::ostream& t_out);
 };
 
@@ -359,8 +359,8 @@ class HeapMeta : public PageMixin {
     uint16_t m_first_free;
     static constexpr uint16_t DEFAULT_FREE_OFF = 7;
 
-    friend void read_from_impl(HeapMeta& t_meta, std::istream& t_in);
-    friend void write_to_impl(const HeapMeta& t_meta, std::ostream& t_out);
+    friend void read_from(HeapMeta& t_meta, std::istream& t_in);
+    friend void write_to(const HeapMeta& t_meta, std::ostream& t_out);
 };
 
 } // namespace tinydb::dbfile

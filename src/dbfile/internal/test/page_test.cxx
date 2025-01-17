@@ -14,7 +14,7 @@ TEST(simple_page, init) {
     std::stringstream test_stream{std::string(2 * SIZEOF_PAGE, '\0')};
     test_stream.exceptions(std::stringstream::failbit);
     // hook this up into gdb to test the return value.
-    init1.write_to(test_stream);
+    init1.do_write_to(test_stream);
     auto init2 = PageMeta::construct_from<FreePageMeta>(test_stream, 1);
     // test cloning
     auto init3 = init1;
@@ -43,7 +43,7 @@ TEST(free_list, init) {
     // And, page 1 should be a free page, whose next free page is page 2.
     freelist.deallocate_page(test_stream, std::move(btlpage));
     FreePageMeta dealloc_page{1};
-    read_from_impl(dealloc_page, test_stream);
+    read_from(dealloc_page, test_stream);
 }
 #else
 import std;

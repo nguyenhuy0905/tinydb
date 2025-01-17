@@ -44,7 +44,7 @@ class FreeListMeta {
     static auto default_init(uint32_t t_first_free_pg,
                              std::ostream& t_in) -> FreeListMeta;
 
-    void write_to(std::ostream& t_out);
+    void do_write_to(std::ostream& t_out);
 
     /**
      * @brief Allocates a page of the specified page type, and formats the page
@@ -67,7 +67,7 @@ class FreeListMeta {
         requires std::is_base_of_v<PageMixin, T>
     auto allocate_page(std::iostream& t_io, Args... t_args) -> T {
         auto page = T{next_free_page(t_io), t_args...};
-        write_to_impl(page, t_io);
+        write_to(page, t_io);
         return page;
     }
 
