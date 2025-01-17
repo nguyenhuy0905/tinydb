@@ -22,3 +22,6 @@ target_link_libraries(tinydb_dbfile_internal
     PRIVATE
     tinydb_compile_opts
 )
+if(tinydb_ENABLE_UNIT_TEST)
+    add_subdirectory(test)
+endif()

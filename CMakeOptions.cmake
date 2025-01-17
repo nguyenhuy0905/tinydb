@@ -106,4 +106,7 @@ tinydb_local_config()
 # this has to stay here for ctest to more conveniently work
 if(tinydb_ENABLE_UNIT_TEST)
     include(CTest)
+    # Probably gonna have to break this down once the codebase grows.
+    # For now I only need to test dbfile.
+    add_test(NAME tinydb_test COMMAND ${CMAKE_BINARY_DIR}/src/tinydb_test)
 endif()

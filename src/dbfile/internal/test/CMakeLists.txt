@@ -1,0 +1,13 @@
+add_library(tinydb_dbfile_internal_test)
+target_sources(
+    tinydb_dbfile_internal_test
+    PRIVATE
+    page_test.cxx
+    tbl_test.cxx
+    dbfile_test.cxx
+)
+target_link_libraries(tinydb_dbfile_internal_test
+    PRIVATE
+    tinydb_compile_opts
+    tinydb_dbfile_internal
+)

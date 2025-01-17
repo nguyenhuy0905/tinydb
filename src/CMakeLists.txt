@@ -16,6 +16,24 @@ target_link_libraries(tinydb
     PUBLIC
     tinydb_dbfile)
 
+# unit test
+if(tinydb_ENABLE_UNIT_TEST)
+    include(${PROJECT_SOURCE_DIR}/cmake/CPM.cmake)
+    find_package(GTest)
+    if(NOT GTest_FOUND)
+        CPMAddPackage(
+            GTest
+            URL https://github.com/google/googletest/releases/download/v1.15.0/googletest-1.15.0.tar.gz
+        )
+    endif()
+    add_executable(tinydb_test dummy.cxx)
+    target_link_libraries(tinydb_test
+        PRIVATE
+        tinydb_dbfile_internal_test
+        GTest::gtest_main
+    )
+endif()
+
 add_subdirectory(general)
 add_subdirectory(sql)
 add_subdirectory(dbfile)
