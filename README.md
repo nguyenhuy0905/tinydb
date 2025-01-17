@@ -30,14 +30,14 @@ compilers would suffice.
 > Extended testing on which compiler versions are the absolute minimum hasn't
 > been done.
 
-- CMake 3.30+.
+- CMake 3.23+.
 
 > [!WARNING]
 > `apt` on stable Debian or any of its derivatives (say, Ubuntu or Mint) don't
 > supply this version of CMake. Debian sid (the bleeding-edge Debian) seems to
 > though.
 > Also, one techinically only needs 3.30+ if compiling using modules.
-> A less-strict version requirement is going to be added.
+> (Speculative) CMake 3.23 should be enough.
 
 - Optional: Ninja Build on Linux/Mac (faster build speed than Makefiles).
 - Optional: ccache (speeds up non-module builds, from the second build

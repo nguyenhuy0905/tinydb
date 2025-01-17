@@ -3,15 +3,10 @@
 # ##############################################################################
 
 # module support starts at 3.28, but we need 3.30 to import std
-cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
-  # This specific value changes as experimental support evolves. See
-  # `Help/dev/experimental.rst` in the CMake source corresponding to
-  # your CMake build for the exact value to use.
-  "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 project(
     tinydb
-    VERSION 0.1.0
+    VERSION 0.0.1
     LANGUAGES C CXX
     HOMEPAGE_URL
         "https://github.com/nguyenhuy0905/tinydb"
