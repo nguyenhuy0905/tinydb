@@ -75,6 +75,23 @@ cmake --workflow --preset debug
 is recommended.
   - Or, write your own `CMakeUserPresets.json`.
 
+### Building: Build with `import std`
+
+- Note, unless you use the latest version of CMake (by building from source),
+gcc is not supported.
+  - If you do, go to the CMake's GitHub page, at path `Help/dev/experimental.rst`,
+  and find new experimental code for `import std`.
+- If you want to build with modules (which also has `import std`), configure
+with the following options:
+  - `CMAKE_CXX_EXTENSIONS=ON`.
+  - `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD="0e5b6991-d74f-4b3d-a41c-cf096e0b2508"`
+  - `CMAKE_CXX_MODULE_STD=ON`
+  - `tinydb_ENABLE_MODULE=ON`
+  - If you use clang:
+    - `CMAKE_CXX_FLAGS="-stdlib=libc++"`
+    - `CMAKE_CXX_LINKER_FLAGS="-stdlib=libc++ -lc++abi"`
+  - If you use msvc: you don't need to do anything else, hopefully.
+
 ## Editor setup
 
 - Should work on any editor, or at least those that support CMake.
