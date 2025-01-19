@@ -3,9 +3,10 @@
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULE
-#include "dbfile/internal/page.hxx"
+#include "dbfile/internal/page_base.hxx"
 #include <cstdint>
 #include <iosfwd>
+#include <type_traits>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
