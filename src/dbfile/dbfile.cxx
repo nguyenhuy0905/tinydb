@@ -1,8 +1,8 @@
 #ifndef ENABLE_MODULE
 #include "dbfile.hxx"
-#include "version.hxx"
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/tbl.hxx"
+#include "version.hxx"
 #include <bit>
 #include <iostream>
 #else
@@ -17,13 +17,7 @@ import std;
 #include "dbfile.hxx"
 #endif // !ENABLE_MODULE
 
-
 namespace tinydb::dbfile {
-
-DbFile::DbFile(internal::FreeListMeta&& t_fl, internal::TableMeta&& t_tbl,
-               std::unique_ptr<std::iostream>&& t_io)
-    : m_tbl{std::move(t_tbl)}, m_rw{std::move(t_io)},
-      m_freelist{std::move(t_fl)} {}
 
 void DbFile::write_init() {
     m_rw->seekp(0);
@@ -45,7 +39,7 @@ void DbFile::write_init() {
 auto DbFile::construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile {
     auto freelist = internal::FreeListMeta::construct_from(*t_io);
     auto tbl = internal::TableMeta::read_from(*t_io);
-    return DbFile{std::move(freelist), std::move(tbl), std::move(t_io)};
+    return DbFile{std::move(tbl), std::move(freelist), std::move(t_io)};
 }
 
 } // namespace tinydb::dbfile
