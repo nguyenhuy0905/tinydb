@@ -2,6 +2,7 @@
 #include "dbfile/internal/freelist.hxx"
 #include "general/offsets.hxx"
 #include "dbfile/internal/page_impl.hxx"
+#include "dbfile/internal/page_serialize.hxx"
 #include "general/sizes.hxx"
 #include <bit>
 #include <iostream>
@@ -44,8 +45,9 @@ void FreeListMeta::do_write_to(std::ostream& t_out) {
 
 auto FreeListMeta::next_free_page(std::iostream& t_io) -> uint32_t {
     auto old_first_free = m_first_free_pg;
-    FreePageMeta fpage{m_first_free_pg};
-    read_from(fpage, t_io);
+    // FreePageMeta fpage{m_first_free_pg};
+    // read_from(fpage, t_io);
+    auto fpage = read_from<FreePageMeta>(old_first_free, t_io);
     auto new_first_free = fpage.get_next_pg();
 
     if (new_first_free != 0) {
@@ -86,8 +88,9 @@ void FreeListMeta::deallocate_page(std::iostream& t_io, PageMixin&& t_meta) {
     while (curr_free_pg < pgnum) {
         prev_free_pg = curr_free_pg;
         // not best performance-wise. May need to improve later.
-        FreePageMeta freepg{curr_free_pg};
-        read_from(freepg, t_io);
+        // FreePageMeta freepg{curr_free_pg};
+        // read_from(freepg, t_io);
+        auto freepg = read_from<FreePageMeta>(curr_free_pg, t_io);
         curr_free_pg = freepg.get_pg_num();
     }
     // the same as inserting a node to a linked list.

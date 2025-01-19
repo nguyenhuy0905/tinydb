@@ -4,16 +4,18 @@
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_base.hxx"
+#include "dbfile/internal/page_impl.hxx"
 #include <cassert>
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
 #include <type_traits>
-#include <vector>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
+
+template <typename T> auto read_from(uint32_t t_pg_num, std::istream& t_in) -> T;
 
 /**
  * @class PageSerializer
@@ -40,8 +42,8 @@ class PageSerializer {
      */
     template <typename T>
         requires std::is_base_of_v<PageMixin, T>
-    static auto construct_from(std::istream& t_in,
-                               uint32_t t_pg_num) -> PageSerializer {
+    static auto construct_from(std::istream& t_in, uint32_t t_pg_num)
+        -> PageSerializer {
         PageSerializer ret{T{t_pg_num}};
         ret.do_read_from(t_in);
         return ret;
@@ -109,9 +111,10 @@ class PageSerializer {
         void do_read_from(std::istream& t_in) override {
             // it seems to not be possible to just name this `read_from` due to
             // conflicting names.
-            read_from(m_page, t_in);
+            m_page = read_from<T>(m_page.get_pg_num(), t_in);
         }
         void do_write_to(std::ostream& t_out) const override {
+            // write_to(m_page, t_out);
             write_to(m_page, t_out);
         }
         auto clone() -> std::unique_ptr<PageConcept> override {
@@ -124,6 +127,12 @@ class PageSerializer {
 
     std::unique_ptr<PageConcept> m_impl;
 };
+
+template <> auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in) -> FreePageMeta;
+template <> auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in) -> BTreeLeafMeta;
+template <>
+auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in) -> BTreeInternalMeta;
+template <> auto read_from<HeapMeta>(uint32_t t_pg_num, std::istream& t_in) -> HeapMeta;
 
 } // namespace tinydb::dbfile::internal
 

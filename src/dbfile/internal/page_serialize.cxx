@@ -21,51 +21,55 @@ void write_to(const FreePageMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
     t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::Free));
 
-    auto pgnum = t_meta.get_pg_num();
-    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&pgnum),
-                         sizeof(pgnum));
+    auto next_pg = t_meta.get_next_pg();
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&next_pg), sizeof(next_pg));
 }
 
-void read_from(FreePageMeta& t_meta, std::istream& t_in) {
-    t_in.seekg(t_meta.get_pg_num() * SIZEOF_PAGE);
-    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
-    if (pagetype != static_cast<pt_num>(PageType::Free)) {
-        // I should return something more meaningful here.
-        return;
-    }
+template <>
+auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> FreePageMeta {
+    t_in.seekg(t_pg_num * SIZEOF_PAGE);
+    t_in.rdbuf()->sbumpc();
+    // TODO: think of a new checking mechanism
+
+    // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    // if (pagetype != static_cast<pt_num>(PageType::Free)) {
+    //     // I should return something more meaningful here.
+    //     return;
+    // }
 
     uint32_t next_pg{0};
-    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&next_pg),
-                        sizeof(next_pg));
-    t_meta = FreePageMeta{t_meta.get_pg_num(), pagetype};
+    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&next_pg), sizeof(next_pg));
+    return FreePageMeta{t_pg_num, next_pg};
 }
 
 void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
     t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::BTreeLeaf));
     auto nrows = t_meta.get_n_rows();
-    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nrows),
-                         sizeof(nrows));
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nrows), sizeof(nrows));
     auto first_free = t_meta.get_first_free();
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&first_free),
                          sizeof(first_free));
 }
 
-void read_from(BTreeLeafMeta& t_meta, std::istream& t_in) {
-    t_in.seekg(t_meta.get_pg_num() * SIZEOF_PAGE);
-    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
-    if (pagetype != static_cast<pt_num>(PageType::BTreeLeaf)) {
-        // I should return something more meaningful here.
-        return;
-    }
+template <>
+auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> BTreeLeafMeta {
+    t_in.seekg(t_pg_num * SIZEOF_PAGE);
+
+    t_in.rdbuf()->sbumpc();
+    // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    // if (pagetype != static_cast<pt_num>(PageType::BTreeLeaf)) {
+    //     // I should return something more meaningful here.
+    //     return;
+    // }
 
     uint16_t nrows{0};
-    t_in.rdbuf()->sputn(std::bit_cast<char*>(&nrows),
-                        sizeof(nrows));
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&nrows), sizeof(nrows));
     uint16_t first_free{0};
-    t_in.rdbuf()->sputn(std::bit_cast<char*>(&first_free),
-                        sizeof(first_free));
-    t_meta = BTreeLeafMeta{t_meta.get_pg_num(), nrows, first_free};
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&first_free), sizeof(first_free));
+    return BTreeLeafMeta{t_pg_num, nrows, first_free};
 }
 
 void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out) {
@@ -135,4 +139,4 @@ void read_from(HeapMeta& t_meta, std::istream& t_in) {
                         sizeof(t_meta.m_first_free));
 }
 
-} // namespace tinydb::dbfile
+} // namespace tinydb::dbfile::internal

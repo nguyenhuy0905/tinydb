@@ -43,8 +43,9 @@ TEST(free_list, init) {
     // deallocation. Also hook this to GDB. The first free page should be 1.
     // And, page 1 should be a free page, whose next free page is page 2.
     freelist.deallocate_page(test_stream, std::move(btlpage));
-    FreePageMeta dealloc_page{1};
-    read_from(dealloc_page, test_stream);
+    // FreePageMeta dealloc_page{1};
+    // read_from(dealloc_page, test_stream);
+    [[maybe_unused]] auto dealloc_page = read_from<FreePageMeta>(1, test_stream);
 }
 #else
 import std;
