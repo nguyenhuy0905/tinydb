@@ -3,7 +3,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     HEADER_FILES
     page_base.hxx
     page_serialize.hxx
-    page_impl.hxx
+    page_meta.hxx
     btree.hxx
     freelist.hxx
     tbl.hxx
@@ -17,7 +17,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     MODULE_FILES
     page.cxx
     page_base.cxx
-    page_impl.cxx
+    page_meta.cxx
     page_serialize.cxx
     # btree.cxx
     freelist.cxx

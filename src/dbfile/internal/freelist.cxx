@@ -1,7 +1,7 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "general/offsets.hxx"
-#include "dbfile/internal/page_impl.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/page_serialize.hxx"
 #include "general/sizes.hxx"
 #include <bit>

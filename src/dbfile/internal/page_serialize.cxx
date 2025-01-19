@@ -1,6 +1,6 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_serialize.hxx"
-#include "dbfile/internal/page_impl.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
 #include <iostream>
@@ -9,7 +9,7 @@ module;
 #include "general/sizes.hxx"
 export module tinydb.dbfile.internal.page:serialize;
 export import :base;
-export import :impl;
+export import :meta;
 import std;
 #include "dbfile/internal/page_serialize.hxx"
 #endif // !ENABLE_MODULE

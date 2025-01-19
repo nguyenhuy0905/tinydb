@@ -1,7 +1,7 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_serialize.hxx"
-#include "dbfile/internal/page_impl.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
 #include <gtest/gtest.h>

@@ -4,7 +4,7 @@
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_base.hxx"
-#include "dbfile/internal/page_impl.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include <cassert>
 #include <cstdint>
 #include <iosfwd>
