@@ -18,7 +18,7 @@ if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
-if(CMAKE_CXX_COMPILER_SUPPORTS_CXX_STDLIB_MODULE_IMPORT) 
+if(CMAKE_CXX_COMPILER_SUPPORTS_CXX_STDLIB_MODULE_IMPORT)
     message(STATUS "C++23 module import support enabled")
 else()
     message(STATUS "C++23 module import support not enabled")
@@ -30,11 +30,6 @@ if(NOT CMAKE_C_STANDARD AND NOT MSVC)
     set(CMAKE_C_STANDARD_REQUIRED ON)
 endif()
 
-# turn off compiler extensions
-message(STATUS "Turn off ${CMAKE_CXX_COMPILER_ID} extensions")
-message(STATUS "Turn off ${CMAKE_C_COMPILER_ID} extensions")
-set(CMAKE_C_EXTENSIONS ON)
-set(CMAKE_CXX_EXTENSIONS ON)
 # hide as much as I can
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)

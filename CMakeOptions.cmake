@@ -47,8 +47,6 @@ option(tinydb_ENABLE_ASAN "Link libASan to executable" OFF)
 option(tinydb_ENABLE_UBSAN "Link libUBSan to executable" OFF)
 option(tinydb_ENABLE_MSAN "Link libMSan to executable" OFF)
 option(tinydb_ENABLE_TSAN "Link libTSan to executable" OFF)
-cmake_dependent_option(tinydb_USE_LIBCXX "Use libc++ instead" OFF
-                       "\"${CMAKE_CXX_COMPILER_ID}\" MATCHES \".*Clang\"" OFF)
 
 # options to include more subdirs
 option(tinydb_ENABLE_UNIT_TEST

@@ -2,6 +2,7 @@
 #define TINYDB_DBFILE_COLTYPE_HXX
 
 #include "general/modules.hxx"
+#include <cstdint>
 #ifndef ENABLE_MODULE
 #include <utility>
 #include <cstddef>

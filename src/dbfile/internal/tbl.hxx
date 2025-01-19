@@ -3,6 +3,7 @@
 
 #include "general/modules.hxx"
 #include "dbfile/coltype.hxx"
+#include <cstdint>
 #ifndef ENABLE_MODULE
 #include <cstdint>
 #include <iosfwd>

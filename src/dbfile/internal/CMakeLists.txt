@@ -12,12 +12,13 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     freelist.cxx
     tbl.cxx
     MODULE_FILES
-    page.cxx
+    # page.cxx
+    page_serialize.cxx
     # btree.cxx
     freelist.cxx
     tbl.cxx
 )
-target_link_libraries(tinydb_dbfile_internal 
+target_link_libraries(tinydb_dbfile_internal
     PUBLIC
     tinydb_general
     PRIVATE
