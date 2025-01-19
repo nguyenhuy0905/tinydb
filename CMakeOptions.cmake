@@ -97,7 +97,8 @@ endif()
 include(cmake/ProjectConfig.cmake)
 message(STATUS "Configuring project-specific options.")
 if(tinydb_ENABLE_PCH)
-    set_pch_options(PCH <memory> <string> <print> <expected> <variant> <vector> <ranges> <iostream> <fstream>)
+    set_pch_options(PCH <memory> <string> <print> <expected> <variant> <vector>
+        <ranges> <iostream> <fstream>)
 endif()
 tinydb_local_config()
 
