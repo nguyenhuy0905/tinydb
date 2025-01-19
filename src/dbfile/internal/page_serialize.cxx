@@ -73,25 +73,30 @@ auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
 }
 
 void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out) {
-    t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);
+    t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
     t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::BTreeInternal));
-    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_n_keys),
-                         sizeof(t_meta.m_n_keys));
-    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_first_free),
-                         sizeof(t_meta.m_first_free));
+    auto nkeys = t_meta.get_n_keys();
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nkeys), sizeof(nkeys));
+    auto first_free = t_meta.get_first_free_off();
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&first_free),
+                         sizeof(first_free));
 }
 
-void read_from(BTreeInternalMeta& t_meta, std::istream& t_in) {
-    t_in.seekg(t_meta.m_pg_num * SIZEOF_PAGE);
-    auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
-    if (pagetype != static_cast<pt_num>(PageType::BTreeInternal)) {
-        // I should return something more meaningful here.
-        return;
-    }
-    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_n_keys),
-                        sizeof(t_meta.m_n_keys));
-    t_in.rdbuf()->sputn(std::bit_cast<char*>(&t_meta.m_first_free),
-                        sizeof(t_meta.m_first_free));
+template <>
+auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> BTreeInternalMeta {
+    t_in.seekg(t_pg_num * SIZEOF_PAGE);
+    t_in.rdbuf()->sbumpc();
+    // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    // if (pagetype != static_cast<pt_num>(PageType::BTreeInternal)) {
+    //     // I should return something more meaningful here.
+    //     return;
+    // }
+    uint16_t nkeys{0};
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&nkeys), sizeof(nkeys));
+    uint16_t first_free{0};
+    t_in.rdbuf()->sputn(std::bit_cast<char*>(&first_free), sizeof(first_free));
+    return BTreeInternalMeta{t_pg_num, nkeys, first_free};
 }
 
 // I should really reorganize these stuff

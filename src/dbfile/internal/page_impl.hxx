@@ -35,8 +35,6 @@ class FreePageMeta : public PageMixin {
     uint32_t m_next_pg;
 
 };
-
-void read_from(FreePageMeta& t_meta, std::istream& t_in);
 void write_to(const FreePageMeta& t_meta, std::ostream& t_out);
 
 class BTreeLeafMeta : public PageMixin {
@@ -64,7 +62,6 @@ class BTreeLeafMeta : public PageMixin {
     static constexpr uint16_t DEFAULT_FREE_OFF = 5;
 
 };
-void read_from(BTreeLeafMeta& t_meta, std::istream& t_in);
 void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out);
 
 class BTreeInternalMeta : public PageMixin {
@@ -76,6 +73,14 @@ class BTreeInternalMeta : public PageMixin {
         : PageMixin{t_page_num}, m_n_keys{t_n_keys},
           m_first_free{t_first_free} {}
 
+    [[nodiscard]] constexpr auto get_n_keys() const noexcept -> uint16_t {
+        return m_n_keys;
+    }
+
+    [[nodiscard]] constexpr auto get_first_free_off() const noexcept -> uint16_t {
+        return m_first_free;
+    }
+
   private:
     // offset 1: number of keys currently stored inside this internal node.
     uint16_t m_n_keys;
@@ -84,9 +89,8 @@ class BTreeInternalMeta : public PageMixin {
     uint16_t m_first_free;
     static constexpr uint16_t DEFAULT_FREE_OFF = 5;
 
-    friend void read_from(BTreeInternalMeta& t_meta, std::istream& t_in);
-    friend void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
 };
+void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
 
 class HeapMeta : public PageMixin {
   public:
