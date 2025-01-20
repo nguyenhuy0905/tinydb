@@ -55,6 +55,10 @@ class PageMixin {
     // NOLINTEND(*non-private*)
 };
 
-}
+template <typename Pg>
+concept IsPageMeta =
+    requires { std::is_base_of_v<PageMixin, std::remove_cvref_t<Pg>>; };
+
+} // namespace tinydb::dbfile::internal
 
 #endif // !TINYDB_DBFILE_INTERNAL_PAGE_BASE_HXX

@@ -15,7 +15,8 @@
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
-template <typename T> auto read_from(uint32_t t_pg_num, std::istream& t_in) -> T;
+template <typename T>
+auto read_from(uint32_t t_pg_num, std::istream& t_in) -> T;
 
 /**
  * @class PageSerializer
@@ -25,10 +26,9 @@ template <typename T> auto read_from(uint32_t t_pg_num, std::istream& t_in) -> T
  */
 class PageSerializer {
   public:
-    template <typename T>
-        requires std::is_base_of_v<PageMixin, T>
-    explicit PageSerializer(T&& t_page)
-        : m_impl{new PageModel<T>(std::forward<T>(t_page))} {}
+    explicit PageSerializer(IsPageMeta auto&& t_page)
+        : m_impl{new PageModel<std::remove_cvref_t<decltype(t_page)>>(
+              std::forward<decltype(t_page)>(t_page))} {}
     /**
      * @brief Reads the data from the specified input stream, starting at the
      * specified page number (usually 4096 * page number bytes).
@@ -40,8 +40,7 @@ class PageSerializer {
      *   Or, an exception if the stream is configured to throw, and a read error
      *   occurs.
      */
-    template <typename T>
-        requires std::is_base_of_v<PageMixin, T>
+    template <IsPageMeta T>
     static auto construct_from(std::istream& t_in, uint32_t t_pg_num)
         -> PageSerializer {
         PageSerializer ret{T{t_pg_num}};
@@ -102,9 +101,7 @@ class PageSerializer {
      * @brief The inner type that holds the actual page metadata.
      *
      */
-    template <typename T>
-        requires std::is_base_of_v<PageMixin, T>
-    struct PageModel : PageConcept {
+    template <IsPageMeta T> struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
         explicit PageModel(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}
@@ -128,11 +125,17 @@ class PageSerializer {
     std::unique_ptr<PageConcept> m_impl;
 };
 
-template <> auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in) -> FreePageMeta;
-template <> auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in) -> BTreeLeafMeta;
 template <>
-auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in) -> BTreeInternalMeta;
-template <> auto read_from<HeapMeta>(uint32_t t_pg_num, std::istream& t_in) -> HeapMeta;
+auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> FreePageMeta;
+template <>
+auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> BTreeLeafMeta;
+template <>
+auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in)
+    -> BTreeInternalMeta;
+template <>
+auto read_from<HeapMeta>(uint32_t t_pg_num, std::istream& t_in) -> HeapMeta;
 
 } // namespace tinydb::dbfile::internal
 
