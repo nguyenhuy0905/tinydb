@@ -4,12 +4,11 @@
 #include "general/modules.hxx"
 #include <cstdint>
 #ifndef ENABLE_MODULE
-#include <utility>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #endif // !ENABLE_MODULE
 
@@ -48,7 +47,7 @@ enum class ScalarColType : uint16_t {
     Float64,
 };
 
-using IdType = std::underlying_type_t<ScalarColType>;
+using coltype_num_t = std::underlying_type_t<ScalarColType>;
 
 /**
  * @return The byte size of the specified scalar type.
@@ -87,7 +86,7 @@ constexpr auto scalar_size(ScalarColType t_type) -> uint8_t {
  *
  */
 struct TextType {
-    static constexpr IdType TYPE_ID =
+    static constexpr coltype_num_t TYPE_ID =
         static_cast<std::underlying_type_t<ScalarColType>>(
             ScalarColType::Float64) +
         1;
@@ -111,16 +110,19 @@ concept FTextMap = requires(F f, TextType tt) { std::invoke(f, tt); };
  * @brief Applies the correct map function to the type variant passed in.
  * Both functions t_f_scalar and t_f_text should return the same type.
  *
+ * @tparam Col Anything of ColType. Can be ColType, const ColType& or ColType&&,
+ * or whatever qualifiers there are.
  * @param t_type The variant
  * @param t_f_scalar Callable object/function to operate on if column type holds
  * a scalar type.
  * @param t_f_text Callable object/function to operate on if column type holds
  * the text type.
- * @return
+ * @return The return type of t_f_scalar and t_f_text.
  */
-template <FScalarMap F1, FTextMap F2>
-constexpr auto map_type(ColType& t_type, F1 t_f_scalar,
-                        F2 t_f_text) -> decltype(auto) {
+template <class Col>
+    requires std::is_same_v<std::remove_cvref_t<Col>, ColType>
+constexpr auto map_type(Col& t_type, FScalarMap auto t_f_scalar,
+                        FTextMap auto t_f_text) -> decltype(auto) {
     // std::invoke nicely handles a couple extra cases, eg, if a function
     // pointer is passed, I need to deref the pointer then call the function in
     // the syntax (*f)(args...).
@@ -128,39 +130,18 @@ constexpr auto map_type(ColType& t_type, F1 t_f_scalar,
         overload{[&](ScalarColType t_scalar) {
                      return std::invoke(t_f_scalar, t_scalar);
                  },
-                 [&](TextType& t_txt) { return std::invoke(t_f_text, t_txt); }},
+                 // TextType& and const TextType& are different things,
+                 // so just let auto find the right type.
+                 [&](auto& t_txt) { return std::invoke(t_f_text, t_txt); }},
         t_type);
-}
-
-/**
- * @brief Applies the correct map function to the type variant passed in.
- * Both functions t_f_scalar and t_f_text should return the same type.
- *
- * @param t_type The variant
- * @param t_f_scalar Callable object/function to operate on if column type holds
- * a scalar type.
- * @param t_f_text Callable object/function to operate on if column type holds
- * the text type.
- * @return
- */
-template <FScalarMap F1, FTextMap F2>
-constexpr auto map_type(const ColType& t_type, F1 t_f_scalar,
-                        F2 t_f_text) -> decltype(auto) {
-    // std::invoke nicely handles a couple extra cases, eg, if a function
-    // pointer is passed, I need to deref the pointer then call the function in
-    // the syntax (*f)(args...).
-    return std::visit(overload{[&](ScalarColType t_scalar) {
-                                   return std::invoke(t_f_scalar, t_scalar);
-                               },
-                               [&](const TextType& t_txt) {
-                                   return std::invoke(t_f_text, t_txt);
-                               }},
-                      t_type);
 }
 
 /**
  * @return The size of the type.
  * @param t_type The type.
+ *
+ * @details The return value is 64 bytes to accomodate the actual size of
+ * TextType.
  */
 constexpr auto type_size(const ColType& t_type) -> uint64_t {
     return map_type(
@@ -175,14 +156,26 @@ constexpr auto type_size(const ColType& t_type) -> uint64_t {
  * @param t_type The ColType passed in.
  * @return The type id of the specified column type.
  */
-constexpr auto type_id(const ColType& t_type) -> IdType {
+constexpr auto type_id(const ColType& t_type) -> coltype_num_t {
     return map_type(
         t_type,
-        [](ScalarColType t_scalar) { return static_cast<IdType>(t_scalar); },
+        [](ScalarColType t_scalar) {
+            return static_cast<coltype_num_t>(t_scalar);
+        },
         [](const TextType&) { return TextType::TYPE_ID; });
 }
 
-constexpr auto type_of(IdType t_num) -> std::optional<ColType> {
+/**
+ * @brief Basically the reverse of type_id.
+ *
+ * @param t_num The numeric representation of a column type.
+ * @return The appropriate column type.
+ *   - For TextType, the struct contains a TextType of size 1 as
+ *   the default.
+ *   - If t_num isn't a valid numeric representation of any column type,
+ *   std::nullopt is returned.
+ */
+constexpr auto type_of(coltype_num_t t_num) -> std::optional<ColType> {
     using enum ScalarColType;
     if (t_num >= type_id(Int8) && t_num <= type_id(Float64)) {
         return ScalarColType{t_num};

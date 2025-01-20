@@ -98,7 +98,7 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
 
         auto id = fill_num.operator()<ColID>();
 
-        auto typenum = fill_num.operator()<column::IdType>();
+        auto typenum = fill_num.operator()<column::coltype_num_t>();
 
         auto type = column::type_of(typenum).value();
         auto size = fill_num.operator()<uint64_t>();
