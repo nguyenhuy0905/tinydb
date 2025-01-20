@@ -6,7 +6,6 @@
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include <cassert>
-#include <cstdint>
 #include <iosfwd>
 #include <memory>
 #include <type_traits>
