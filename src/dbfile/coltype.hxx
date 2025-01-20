@@ -121,8 +121,8 @@ concept FTextMap = requires(F f, TextType tt) { std::invoke(f, tt); };
  */
 template <class Col>
     requires std::is_same_v<std::remove_cvref_t<Col>, ColType>
-constexpr auto map_type(Col& t_type, FScalarMap auto t_f_scalar,
-                        FTextMap auto t_f_text) -> decltype(auto) {
+constexpr auto map_type(Col& t_type, FScalarMap auto&& t_f_scalar,
+                        FTextMap auto&& t_f_text) -> decltype(auto) {
     // std::invoke nicely handles a couple extra cases, eg, if a function
     // pointer is passed, I need to deref the pointer then call the function in
     // the syntax (*f)(args...).
