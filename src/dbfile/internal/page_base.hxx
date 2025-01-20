@@ -10,6 +10,13 @@
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
+// general numeric type
+
+// Page pointer.
+using page_ptr_t = uint32_t;
+// Offset relative to the start of a page.
+using page_off_t = uint16_t;
+
 /**
  * @brief A flag that each page has.
  * Determines how a page is formatted.
@@ -26,8 +33,8 @@ enum class PageReadError : uint8_t {
 };
 
 // PageType's underlying number type.
-using pt_num = std::underlying_type_t<PageType>;
-using err_num = std::underlying_type_t<PageReadError>;
+using pt_num_t = std::underlying_type_t<PageType>;
+using err_num_t = std::underlying_type_t<PageReadError>;
 
 /**
  * @class PageMixin

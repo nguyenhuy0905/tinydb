@@ -1,5 +1,6 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_serialize.hxx"
+#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
@@ -19,14 +20,14 @@ namespace tinydb::dbfile::internal {
 
 void write_to(const FreePageMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
-    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::Free));
+    t_out.rdbuf()->sputc(static_cast<pt_num_t>(PageType::Free));
 
     auto next_pg = t_meta.get_next_pg();
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&next_pg), sizeof(next_pg));
 }
 
 template <>
-auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in)
+auto read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> FreePageMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
     t_in.rdbuf()->sbumpc();
@@ -45,7 +46,7 @@ auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in)
 
 void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
-    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::BTreeLeaf));
+    t_out.rdbuf()->sputc(static_cast<pt_num_t>(PageType::BTreeLeaf));
     auto nrows = t_meta.get_n_rows();
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nrows), sizeof(nrows));
     auto first_free = t_meta.get_first_free();
@@ -54,7 +55,7 @@ void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out) {
 }
 
 template <>
-auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
+auto read_from<BTreeLeafMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> BTreeLeafMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
 
@@ -74,7 +75,7 @@ auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
 
 void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
-    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::BTreeInternal));
+    t_out.rdbuf()->sputc(static_cast<pt_num_t>(PageType::BTreeInternal));
     auto nkeys = t_meta.get_n_keys();
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nkeys), sizeof(nkeys));
     auto first_free = t_meta.get_first_free_off();
@@ -83,7 +84,7 @@ void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out) {
 }
 
 template <>
-auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in)
+auto read_from<BTreeInternalMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> BTreeInternalMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
     t_in.rdbuf()->sbumpc();
@@ -124,7 +125,7 @@ struct HeapFragMeta {
 
 void write_to(const HeapMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.m_pg_num * SIZEOF_PAGE);
-    t_out.rdbuf()->sputc(static_cast<pt_num>(PageType::Heap));
+    t_out.rdbuf()->sputc(static_cast<pt_num_t>(PageType::Heap));
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_next_pg),
                          sizeof(t_meta.m_next_pg));
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_meta.m_first_free),
@@ -134,7 +135,7 @@ void write_to(const HeapMeta& t_meta, std::ostream& t_out) {
 void read_from(HeapMeta& t_meta, std::istream& t_in) {
     t_in.seekg(t_meta.m_pg_num * SIZEOF_PAGE);
     auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
-    if (pagetype != static_cast<pt_num>(PageType::Heap)) {
+    if (pagetype != static_cast<pt_num_t>(PageType::Heap)) {
         // I should return something more meaningful here.
         return;
     }
