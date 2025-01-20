@@ -16,7 +16,7 @@ TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 template <typename T>
-auto read_from(uint32_t t_pg_num, std::istream& t_in) -> T;
+auto read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
 
 /**
  * @class PageSerializer
@@ -41,7 +41,7 @@ class PageSerializer {
      *   occurs.
      */
     template <IsPageMeta T>
-    static auto construct_from(std::istream& t_in, uint32_t t_pg_num)
+    static auto construct_from(std::istream& t_in, page_ptr_t t_pg_num)
         -> PageSerializer {
         PageSerializer ret{T{t_pg_num}};
         ret.do_read_from(t_in);
@@ -124,18 +124,6 @@ class PageSerializer {
 
     std::unique_ptr<PageConcept> m_impl;
 };
-
-template <>
-auto read_from<FreePageMeta>(uint32_t t_pg_num, std::istream& t_in)
-    -> FreePageMeta;
-template <>
-auto read_from<BTreeLeafMeta>(uint32_t t_pg_num, std::istream& t_in)
-    -> BTreeLeafMeta;
-template <>
-auto read_from<BTreeInternalMeta>(uint32_t t_pg_num, std::istream& t_in)
-    -> BTreeInternalMeta;
-template <>
-auto read_from<HeapMeta>(uint32_t t_pg_num, std::istream& t_in) -> HeapMeta;
 
 } // namespace tinydb::dbfile::internal
 
