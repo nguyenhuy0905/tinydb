@@ -154,4 +154,9 @@ auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta {
     return {t_pg_num, nextpg, first_free};
 }
 
+static_assert(PageSerializable<FreePageMeta>);
+static_assert(PageSerializable<BTreeLeafMeta>);
+static_assert(PageSerializable<BTreeInternalMeta>);
+static_assert(PageSerializable<HeapMeta>);
+
 } // namespace tinydb::dbfile::internal
