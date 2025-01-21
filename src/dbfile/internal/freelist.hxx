@@ -13,8 +13,8 @@ TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 /**
- * @class FreeListMeta
- * @brief Contains metadata about the freelist of a database file.
+ * @class FreeList
+ * @brief Contains data about the freelist of a database file.
  * @details The streams passed into any function of this class are expected to
  * be the same, or at the very least, point to the same file/string.
  *
@@ -22,7 +22,7 @@ namespace tinydb::dbfile::internal {
  * file.
  *
  */
-class FreeListMeta {
+class FreeList {
   public:
     // This should be written into the header of the database file.
     // This is constant-sized so I expect this to be written before the table
@@ -34,7 +34,7 @@ class FreeListMeta {
      *
      * @param t_in The specified database file.
      */
-    static auto construct_from(std::istream& t_in) -> FreeListMeta;
+    static auto construct_from(std::istream& t_in) -> FreeList;
 
     /**
      * @brief Default-initializes a FreeListMeta, and writes its content to the
@@ -42,8 +42,8 @@ class FreeListMeta {
      *
      * @param t_in The specified database file.
      */
-    static auto default_init(uint32_t t_first_free_pg,
-                             std::ostream& t_in) -> FreeListMeta;
+    static auto default_init(uint32_t t_first_free_pg, std::ostream& t_in)
+        -> FreeList;
 
     void do_write_to(std::ostream& t_out);
 
@@ -81,9 +81,9 @@ class FreeListMeta {
      * really only care about the page number.
      */
     void deallocate_page(std::iostream& t_io, PageMixin&& t_meta);
-    
+
   private:
-    FreeListMeta(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
+    FreeList(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
     // first free page.
     uint32_t m_first_free_pg;
     static constexpr uint16_t FREELIST_OFF = 10;
@@ -96,6 +96,6 @@ class FreeListMeta {
     [[nodiscard]] auto next_free_page(std::iostream& t_io) -> uint32_t;
 };
 
-} // namespace tinydb::dbfile
+} // namespace tinydb::dbfile::internal
 
 #endif // !TINYDB_DBFILE_FREELIST_HXX

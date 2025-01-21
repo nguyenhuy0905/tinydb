@@ -37,7 +37,7 @@ void DbFile::write_init() {
 }
 
 auto DbFile::construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile {
-    auto freelist = internal::FreeListMeta::construct_from(*t_io);
+    auto freelist = internal::FreeList::construct_from(*t_io);
     auto tbl = internal::TableMeta::read_from(*t_io);
     return DbFile{std::move(tbl), std::move(freelist), std::move(t_io)};
 }

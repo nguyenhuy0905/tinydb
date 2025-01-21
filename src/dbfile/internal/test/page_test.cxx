@@ -30,8 +30,8 @@ TEST(free_list, init) {
     test_stream.seekp(sizeoff);
     test_stream.write(std::bit_cast<const char*>(&filesize), sizeof(filesize));
     // hook to GDB to check. These 2 should be the same.
-    [[maybe_unused]] auto freelist = FreeListMeta::default_init(1, test_stream);
-    [[maybe_unused]] auto f2 = FreeListMeta::construct_from(test_stream);
+    [[maybe_unused]] auto freelist = FreeList::default_init(1, test_stream);
+    [[maybe_unused]] auto f2 = FreeList::construct_from(test_stream);
     // hook to GDB to check. This one's m_page_num should be 1.
     [[maybe_unused]] auto btlpage =
         freelist.allocate_page<BTreeLeafMeta>(test_stream);

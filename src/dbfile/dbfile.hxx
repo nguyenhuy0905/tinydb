@@ -60,13 +60,13 @@ class DbFile {
   private:
     template <class T1, class T2>
         requires std::is_same_v<T1, internal::TableMeta> &&
-                     std::is_same_v<T2, internal::FreeListMeta>
+                     std::is_same_v<T2, internal::FreeList>
     DbFile(T1&& t_tbl, T2&& t_fl, std::unique_ptr<std::iostream> t_io)
         : m_tbl{std::forward<T1>(t_tbl)}, m_rw{std::move(t_io)},
           m_freelist{std::forward<T2>(t_fl)} {}
     internal::TableMeta m_tbl;
     std::unique_ptr<std::iostream> m_rw;
-    internal::FreeListMeta m_freelist;
+    internal::FreeList m_freelist;
     // for now there's no need for heap yet.
 };
 

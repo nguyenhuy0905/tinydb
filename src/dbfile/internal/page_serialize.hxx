@@ -33,7 +33,7 @@ auto read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
 // specialization.
 
 template <typename Pg>
-concept Serializable =
+concept PageSerializable =
     requires(Pg page, page_ptr_t pagenum, std::iostream stream) {
         {
             // namespace is specified, so that no random read_from's and
@@ -52,7 +52,7 @@ concept Serializable =
  */
 class PageSerializer {
   public:
-    explicit PageSerializer(Serializable auto&& t_page)
+    explicit PageSerializer(PageSerializable auto&& t_page)
         : m_impl{new PageModel<std::remove_cvref_t<decltype(t_page)>>(
               std::forward<decltype(t_page)>(t_page))} {}
     /**
@@ -66,7 +66,7 @@ class PageSerializer {
      *   Or, an exception if the stream is configured to throw, and a read error
      *   occurs.
      */
-    template <Serializable T>
+    template <PageSerializable T>
     static auto construct_from(std::istream& t_in, page_ptr_t t_pg_num)
         -> PageSerializer {
         PageSerializer ret{T{t_pg_num}};
@@ -127,7 +127,7 @@ class PageSerializer {
      * @brief The inner type that holds the actual page metadata.
      *
      */
-    template <Serializable T> struct PageModel : PageConcept {
+    template <PageSerializable T> struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
         explicit PageModel(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}
