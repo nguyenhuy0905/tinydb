@@ -5,7 +5,6 @@
 #include <cstdint>
 #ifndef ENABLE_MODULE
 #include <type_traits>
-#include <iosfwd>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
@@ -29,17 +28,17 @@ enum class PageType : uint8_t {
     Heap,
 };
 
-enum class PageReadError : uint8_t {
+enum class PageReadErrCode : uint8_t {
     WrongPageType = 1,
 };
 
 // PageType's underlying number type.
 using pt_num_t = std::underlying_type_t<PageType>;
-using err_num_t = std::underlying_type_t<PageReadError>;
+using err_num_t = std::underlying_type_t<PageReadErrCode>;
 
 /**
  * @class PageMixin
- * @brief Any page should inherit this, publicly.
+ * @brief Any page metadata should inherit this, publicly.
  * @details Adds page number functionality into any page.
  *
  */
