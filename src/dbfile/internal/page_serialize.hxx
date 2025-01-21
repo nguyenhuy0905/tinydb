@@ -14,8 +14,35 @@
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
+/**
+ * @brief Specialize this method for each serializable type. This includes page
+ * metadata or the actual data of a page.
+ *
+ * @details Assuming no other page was overwritten, the Serializable object
+ * returned must be the exact same as the one used to call write_to.
+ *
+ * @tparam T
+ * @param t_pg_num
+ * @param t_in
+ * @return
+ */
 template <typename T>
 auto read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
+
+// technically, write_to could be a templated function, relying on template
+// specialization.
+
+template <typename Pg>
+concept Serializable =
+    requires(Pg page, page_ptr_t pagenum, std::iostream stream) {
+        {
+            // namespace is specified, so that no random read_from's and
+            // write_to's qualify. Must be a template specialization of
+            // read_from.
+            tinydb::dbfile::internal::read_from<Pg>(pagenum, stream)
+        } -> std::convertible_to<Pg>;
+        tinydb::dbfile::internal::write_to(page, stream);
+    };
 
 /**
  * @class PageSerializer
@@ -25,7 +52,7 @@ auto read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
  */
 class PageSerializer {
   public:
-    explicit PageSerializer(IsPageMeta auto&& t_page)
+    explicit PageSerializer(Serializable auto&& t_page)
         : m_impl{new PageModel<std::remove_cvref_t<decltype(t_page)>>(
               std::forward<decltype(t_page)>(t_page))} {}
     /**
@@ -39,7 +66,7 @@ class PageSerializer {
      *   Or, an exception if the stream is configured to throw, and a read error
      *   occurs.
      */
-    template <IsPageMeta T>
+    template <Serializable T>
     static auto construct_from(std::istream& t_in, page_ptr_t t_pg_num)
         -> PageSerializer {
         PageSerializer ret{T{t_pg_num}};
@@ -100,7 +127,7 @@ class PageSerializer {
      * @brief The inner type that holds the actual page metadata.
      *
      */
-    template <IsPageMeta T> struct PageModel : PageConcept {
+    template <Serializable T> struct PageModel : PageConcept {
         template <typename Tp>
             requires std::convertible_to<Tp, T>
         explicit PageModel(Tp&& t_page) : m_page(std::forward<Tp>(t_page)) {}

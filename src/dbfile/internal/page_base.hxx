@@ -5,6 +5,7 @@
 #include <cstdint>
 #ifndef ENABLE_MODULE
 #include <type_traits>
+#include <iosfwd>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
@@ -61,10 +62,6 @@ class PageMixin {
     uint32_t m_pg_num;
     // NOLINTEND(*non-private*)
 };
-
-template <typename Pg>
-concept IsPageMeta =
-    requires { std::is_base_of_v<PageMixin, std::remove_cvref_t<Pg>>; };
 
 } // namespace tinydb::dbfile::internal
 
