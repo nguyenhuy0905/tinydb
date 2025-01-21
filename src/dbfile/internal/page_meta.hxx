@@ -127,7 +127,6 @@ class HeapMeta : public PageMixin {
     page_off_t m_first_free;
 };
 
-void read_from(HeapMeta& t_meta, std::istream& t_in);
 void write_to(const HeapMeta& t_meta, std::ostream& t_out);
 
 } // namespace tinydb::dbfile::internal
