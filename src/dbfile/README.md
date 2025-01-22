@@ -20,5 +20,9 @@ job, really.
   - `deallocate` should also coalesce free fragments that are next to each
   other.
 
+- Move decl of `Ptr` from inside the `dbfile/internal/heap.hxx` to a new header
+file inside the `dbfile/internal` directory. `Ptr` is needed in some more places.
+- Write the heap (generic allocator, aka, "bad" allocator).
+- Change TextType to simply hold a pointer.
 - Write up B+ Tree.
   - What to do is specified later.
