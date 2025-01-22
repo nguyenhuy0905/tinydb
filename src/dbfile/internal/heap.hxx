@@ -2,118 +2,131 @@
 #define TINYDB_DBFILE_INTERNAL_HEAP_HXX
 
 #include "modules.hxx"
-#include <type_traits>
 #ifndef ENABLE_MODULE
-#include "dbfile/coltype.hxx"
 #include "dbfile/internal/page_base.hxx"
-#include "dbfile/internal/page_meta.hxx"
-#include "general/sizes.hxx"
-#include <compare>
-#include <variant>
-#include <vector>
+#include <array>
+#include <iosfwd>
+#include <span>
+#include <utility>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 /**
- * @class AllocPtr
- * @brief Represents a pointer to a heap-allocated block.
+ * @class Ptr
+ * @brief Points to some position. That's why it's named a pointer, duh.
  *
  */
-struct AllocPtr {
-    // the page number.
-    page_ptr_t page;
-    // the offset relative to the page.
+struct Ptr {
+    // offset 0: 4-byte page pointer.
+    // offset 4: 2-byte offset relative to the start of the page.
+    //   - The offset points to AFTER the required header of a fragment, which
+    //   is 5 bytes in size.
+    // offset 6: 2-byte size-of fragment, excluding the header stuff.
+    // The header is at least 5 bytes, a fragment is at least 16 bytes. So size
+    // is at least 11 bytes.
+
+    page_ptr_t pagenum;
+    // the offset points to offset 5 of a fragment, since that's where the
+    // non-header data starts.
     page_off_t offset;
-    // the size of this pointer.
-    page_off_t size;
 };
 
 /**
- * @brief Compares two `AllocPtr`s.
+ * @brief Gets the pointer at the specified position.
  *
- * @param l
- * @param r
- * @return
+ * @param t_pos The pointer to the position to read the pointer.
+ * @param t_in The stream to read from.
  */
-[[nodiscard]] constexpr auto operator<=>(AllocPtr l, AllocPtr r) noexcept
-    -> std::strong_ordering {
-    if (l.page < r.page) {
-        return std::strong_ordering::less;
-    }
-    if (l.page > r.page) {
-        return std::strong_ordering::greater;
-    }
-    if (l.offset < r.offset) {
-        return std::strong_ordering::less;
-    }
-    return std::strong_ordering::greater;
+auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
+
+/**
+ * @brief Useful for null-checking I suppose?
+ *
+ * @return If 2 AllocPtrs are the same.
+ */
+[[nodiscard]] auto operator==(const Ptr& lhs, const Ptr& rhs) -> bool {
+    return (lhs.pagenum == rhs.pagenum) && (lhs.offset == rhs.offset);
 }
 
 /**
- * @class ChainedAllocPtr
- * @brief A singly-linked list of fragment pointers.
- *
+ * @brief Bad.
  */
-struct ChainedAllocPtr {
-    AllocPtr current;
-    AllocPtr next;
-};
-
-static_assert(std::is_trivial_v<AllocPtr>);
-static_assert(std::is_trivial_v<ChainedAllocPtr>);
-
-using AllocPtrType = std::variant<AllocPtr, ChainedAllocPtr>;
-using alloc_ptr_id_t = uint8_t;
-
-/**
- * @param t_typ Type of alloc pointer.
- * @return Type ID of the alloc pointer.
- */
-[[nodiscard]] constexpr auto get_ptr_type_id(const AllocPtrType& t_typ) noexcept
-    -> alloc_ptr_id_t {
-    // I dunno if I should be very consistent about reference vs value.
-    // AllocPtr is 8 bytes (64 bits), which fits a "normal" pointer (void*).
-    // ChainedAllocPtr contains 2 AllocPtrs, so it doesn't fit.
-    // This is unlikely to gain me any performance, since this part of
-    // the code is not a hot one.
-    return std::visit(
-        overload{[](AllocPtr) { return static_cast<alloc_ptr_id_t>(0); },
-                 [](const ChainedAllocPtr&) {
-                     return static_cast<alloc_ptr_id_t>(1);
-                 }},
-        t_typ);
-}
+static constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
 
 /**
  * @class Heap
- * @brief Manages all the heap space.
+ * @brief "Generic allocator," you may say. As opposed to the nice-and-efficient
+ * block allocator that is FreeList. I know, naming scheme is a bit scuffed.
  *
  */
 class Heap {
+  private:
+    static constexpr uint8_t SIZEOF_BIN = 8;
+
   public:
-    // TODO: heap and heap page.
+    Heap() = default;
 
     /**
-     * @brief Allocates some amount of fragments.
-     * @details
+     * @brief Reads the data from a stream and returns the Heap.
      *
-     * @param t_size The total size to allocate.
+     * @param t_in The stream to read from.
      */
-    auto allocate_big(uint64_t t_size) -> std::vector<ChainedAllocPtr>;
-    /**
-     * @brief Allocates one fragment.
-     * @param t_size The size to allocate.
-     */
-    auto allocate_small(page_off_t t_size) -> AllocPtr;
+    static auto do_read_from(std::istream& t_in) -> Heap;
 
-    static constexpr page_off_t MAX_SMALL_ALLOC_SIZE =
-        SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF;
+    [[nodiscard]] constexpr auto get_bins() noexcept
+        -> std::span<Ptr, SIZEOF_BIN> {
+        return std::span<Ptr, SIZEOF_BIN>{m_bins.begin(), SIZEOF_BIN};
+    }
+
+    /**
+     * @brief Allocates a large enough chunk of memory. t_size must be smaller
+     * than or equal to 2048.
+     *
+     * @param t_size Size of allocation.
+     * @param t_io The stream to deal with.
+     */
+    [[nodiscard]] auto malloc(page_off_t t_size, std::iostream& t_io) -> Ptr;
+    /**
+     * @brief Frees the memory pointed to by the pointer, and writes the pointer
+     * to NullPtr.
+     *
+     * @param t_ptr Pointer to memory to be freed.
+     * @param t_io The stream to deal with.
+     */
+    void free(Ptr& t_ptr, std::iostream& t_io);
 
   private:
-    HeapMeta m_meta;
+    // 16 (2^4), 32, 64, all the way to 2048 (2^11)
+    explicit Heap(std::span<Ptr, SIZEOF_BIN> t_bins) noexcept
+        // I hate this, but here is the TL;DR:
+        //   - index_sequence simply creates an,
+        //   well, index sequence. In this case, from 0 to 7
+        //   (make_index_sequence<8>).
+        //
+        //   - The variadic template expands, in
+        //   particular, t_bins[Idx]... expands into t_bins[0], t_bins[1],...,
+        //   t_bins[7].
+        //
+        //   - Sticky note to myself:
+        //   https://en.cppreference.com/w/cpp/utility/integer_sequence
+        : m_bins{[&]<std::size_t... Idx>(std::index_sequence<Idx...>) {
+              return std::array<Ptr, SIZEOF_BIN>{{t_bins[Idx]...}};
+          }(std::make_index_sequence<SIZEOF_BIN>())} {}
+    // offset 0 to 63: 8 pointers to memory fragments of specified sizes. These
+    // fragments are memory-aligned.
+    //   - If you read the comment on how "allocation is faster" with the
+    //   artificially forced memory alignment, this is kind of the answer.
+    //   Instead of needing up to, say, a couple thousand bin sizes, we can
+    //   limit to 8.
+    std::array<Ptr, SIZEOF_BIN> m_bins;
+
+    static_assert(std::is_trivial_v<std::array<Ptr, SIZEOF_BIN>>);
 };
+// I wonder if all the bins in Heap are garbage with the default
+// constructor.
+static_assert(std::is_trivial_v<Heap>);
 
 } // namespace tinydb::dbfile::internal
 
