@@ -1,6 +1,7 @@
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_HXX
 
+#include "sizes.hxx"
 #include "general/modules.hxx"
 #include <cstdint>
 #ifndef ENABLE_MODULE
@@ -113,6 +114,14 @@ class HeapMeta : public PageMixin {
     [[nodiscard]] constexpr auto get_first_free_off() const noexcept
         -> page_off_t {
         return m_first_free;
+    }
+
+    constexpr auto update_first_free(page_off_t t_val) {
+        if(t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE) {
+            // TODO: throw something more useful.
+            throw 1;
+        }
+        m_first_free = t_val;
     }
 
   private:

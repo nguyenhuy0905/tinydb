@@ -6,6 +6,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     page_meta.hxx
     btree.hxx
     freelist.hxx
+    heap.hxx
     tbl.hxx
     SOURCE_FILES
     page_base.cxx
@@ -14,6 +15,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     btree.cxx
     freelist.cxx
     tbl.cxx
+    heap.cxx
     MODULE_FILES
     page.cxx
     page_base.cxx
@@ -22,6 +24,7 @@ tinydb_target_module_if_enabled(tinydb_dbfile_internal
     # btree.cxx
     freelist.cxx
     tbl.cxx
+    heap.cxx
 )
 target_link_libraries(tinydb_dbfile_internal
     PUBLIC

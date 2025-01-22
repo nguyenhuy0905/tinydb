@@ -1,5 +1,6 @@
 #ifndef ENABLE_MODULE
 #include "dbfile.hxx"
+#include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/tbl.hxx"
 #include "version.hxx"
@@ -7,6 +8,7 @@
 #include <iostream>
 #else
 module;
+#include "dbfile/coltype.hxx"
 #include "version.hxx"
 #include <cstdint>
 export module tinydb.dbfile;

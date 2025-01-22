@@ -10,6 +10,7 @@
 #else
 module;
 #include "general/offsets.hxx"
+#include "dbfile/coltype.hxx"
 #include <cstdint>
 export module tinydb.dbfile.internal.tbl;
 import std;

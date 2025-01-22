@@ -7,7 +7,7 @@
 #include <iostream>
 #else
 module;
-#include "general/sizes.hxx"
+#include <cstdint>
 export module tinydb.dbfile.internal.page:serialize;
 export import :base;
 export import :meta;

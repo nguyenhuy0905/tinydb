@@ -1,18 +1,25 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/heap.hxx"
+#include "dbfile/coltype.hxx"
+#include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_base.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <variant>
 #else
 module;
+#include "dbfile/coltype.hxx"
 #include "general/sizes.hxx"
 #include <cstdint>
-export module tinydb.dbfile.internal:heap;
-import tinydb.dbfile.internal.page:base;
+export module tinydb.dbfile.internal.heap;
+import tinydb.dbfile.internal.page;
+import tinydb.dbfile.internal.freelist;
 import std;
+#include "dbfile/internal/heap.hxx"
 #endif // !ENABLE_MODULE
 
 namespace {
@@ -23,8 +30,8 @@ constexpr uint8_t USED_FRAG_ID = 1;
 
 namespace tinydb::dbfile::internal {
 
-auto read_ptr_from(const Ptr& t_ptr, std::istream& t_in) -> Ptr {
-    t_in.seekg(t_ptr.pagenum * SIZEOF_PAGE + t_ptr.offset);
+auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
+    t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
     Ptr ret{};
     rdbuf.sgetn(std::bit_cast<char*>(&ret.pagenum), sizeof(ret.pagenum));
@@ -32,7 +39,20 @@ auto read_ptr_from(const Ptr& t_ptr, std::istream& t_in) -> Ptr {
     return ret;
 }
 
+auto write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
+    t_out.seekp(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
+    auto& rdbuf = *t_out.rdbuf();
+    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.pagenum),
+                sizeof(t_ptr.pagenum));
+    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.offset),
+                sizeof(t_ptr.offset));
+}
+
+// More stuff from the bins:
+//   - The pointers in the bins are pointing to FreeFragments. Obviously.
+
 struct FreeFragment {
+    static constexpr page_off_t SIZE = 15;
     // offset 7: 8-byte AllocPtr.
     // chains into a linked list by Heap.
     // With that in mind, a fragment must be at least 15 bytes in size.
@@ -48,6 +68,7 @@ struct FreeFragment {
 };
 
 struct UsedFragment {
+    static constexpr page_off_t HEADER_SIZE = 7;
     // there's nothing here.
     // offset 7 until (7 + AllocPtr::size): the data.
     // For "large" data, that a fragment cannot fully keep,
@@ -78,6 +99,30 @@ struct Fragment {
     page_off_t size;
     static constexpr page_off_t FRAGMENT_HEADER_SIZE = 7;
 };
+
+void write_frag_to(const Fragment& t_frag, const Ptr& t_ptr,
+                   std::ostream& t_out) {
+    t_out.seekp(t_ptr.pagenum * SIZEOF_PAGE + t_ptr.offset);
+    auto& rdbuf = *t_out.rdbuf();
+    rdbuf.sputc(std::visit(overload{[&](const FreeFragment&) { return '\0'; },
+                                    [&](const UsedFragment&) { return '\1'; }},
+                           t_frag.frag));
+    rdbuf.sputn(std::bit_cast<const char*>(&t_frag.prev_local_frag),
+                sizeof(t_frag.prev_local_frag));
+    rdbuf.sputn(std::bit_cast<const char*>(&t_frag.next_local_frag),
+                sizeof(t_frag.next_local_frag));
+    rdbuf.sputn(std::bit_cast<const char*>(&t_frag.size), sizeof(t_frag.size));
+    std::visit(overload{[&](const FreeFragment& frag) {
+                            constexpr uint8_t DEFAULT_OFF = 7;
+                            write_ptr_to(Ptr{.pagenum = t_ptr.pagenum,
+                                             .offset = static_cast<page_off_t>(
+                                                 t_ptr.offset + DEFAULT_OFF)},
+                                         frag.next_frag, t_out);
+                        },
+                        [&](const UsedFragment&) {}},
+               t_frag.frag);
+}
+
 // variant isn't trivial.
 static_assert(!std::is_trivial_v<Fragment>);
 
@@ -112,6 +157,39 @@ auto read_frag_from(const Ptr& frag_pos, std::istream& t_in) -> Fragment {
             t_in)}};
     }
     return ret;
+}
+
+auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
+    -> Ptr {
+    if (t_size > SIZEOF_PAGE / 2 || t_size < std::pow(2, 4)) {
+        return NullPtr;
+    }
+
+    auto bin_num = static_cast<uint8_t>(std::log2(t_size) + 1);
+    Ptr ret = m_bins.at(bin_num);
+    if (ret != NullPtr) {
+        Fragment read_frag = read_frag_from(m_bins.at(bin_num), t_io);
+        auto free_frag = std::get<FreeFragment>(read_frag.frag);
+        m_bins.at(bin_num) = free_frag.next_frag;
+        return ret;
+    }
+    // ret == NullPtr
+    auto new_heap_pg = t_fl.allocate_page<HeapMeta>(t_io);
+    auto new_frag = Fragment{
+        .frag = UsedFragment{},
+        .prev_local_frag = 0,
+        .next_local_frag = 0,
+        .size = static_cast<page_off_t>(std::pow(2, bin_num)),
+    };
+    auto ret_ptr = Ptr{.pagenum = new_heap_pg.get_pg_num(),
+                       .offset = HeapMeta::DEFAULT_FREE_OFF};
+    write_frag_to(new_frag, ret_ptr, t_io);
+    // update the heap page.
+    new_heap_pg.update_first_free(static_cast<page_off_t>(
+        new_heap_pg.get_pg_num() + UsedFragment::HEADER_SIZE + new_frag.size));
+    write_to(new_heap_pg, t_io);
+
+    return NullPtr;
 }
 
 } // namespace tinydb::dbfile::internal

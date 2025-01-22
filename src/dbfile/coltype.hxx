@@ -3,14 +3,12 @@
 
 #include "general/modules.hxx"
 #include <cstdint>
-#ifndef ENABLE_MODULE
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <type_traits>
 #include <utility>
 #include <variant>
-#endif // !ENABLE_MODULE
 
 namespace {
 
@@ -20,7 +18,6 @@ template <class... Ts> struct overload : Ts... {
 
 } // namespace
 
-TINYDB_EXPORT
 namespace tinydb::dbfile::column {
 
 // TODO: I'm planning to move column type definitions to here. I don't want the

@@ -4,6 +4,7 @@
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_base.hxx"
+#include "dbfile/internal/freelist.hxx"
 #include <array>
 #include <iosfwd>
 #include <span>
@@ -53,7 +54,7 @@ auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
 /**
  * @brief Bad.
  */
-static constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
+constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
 
 /**
  * @class Heap
@@ -63,6 +64,7 @@ static constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  */
 class Heap {
   private:
+    // 16 (2^4), 32, 64, all the way to 2048 (2^11)
     static constexpr uint8_t SIZEOF_BIN = 8;
 
   public:
@@ -87,7 +89,7 @@ class Heap {
      * @param t_size Size of allocation.
      * @param t_io The stream to deal with.
      */
-    [[nodiscard]] auto malloc(page_off_t t_size, std::iostream& t_io) -> Ptr;
+    [[nodiscard]] auto malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io) -> Ptr;
     /**
      * @brief Frees the memory pointed to by the pointer, and writes the pointer
      * to NullPtr.
@@ -98,7 +100,6 @@ class Heap {
     void free(Ptr& t_ptr, std::iostream& t_io);
 
   private:
-    // 16 (2^4), 32, 64, all the way to 2048 (2^11)
     explicit Heap(std::span<Ptr, SIZEOF_BIN> t_bins) noexcept
         // I hate this, but here is the TL;DR:
         //   - index_sequence simply creates an,
