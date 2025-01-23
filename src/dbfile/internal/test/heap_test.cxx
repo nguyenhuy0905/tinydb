@@ -21,6 +21,9 @@ TEST(default_heap, test) {
         // AFAIK, std::array is always default-initialized if no argument is
         // specified. Default-initialized for Ptr should be all zeros.
         ASSERT_EQ(ptr, NullPtr);
+        // way too careful here, but, to make sure operator== doesn't change the
+        // values.
+        ASSERT_EQ(ptr, NullPtr);
     }
     std::stringstream test_stream{std::string(SIZEOF_PAGE * 3, '\0')};
     write_heap_to(default_init_heap, test_stream);
@@ -62,6 +65,9 @@ TEST(initialized_heap, test) {
              std::views::transform([&](auto num) {
                  return std::make_pair(inits.at(num), bins[num]);
              })) {
+        ASSERT_EQ(inits_ptr, bins_ptr);
+        // way too careful here, but, to make sure operator== doesn't change the
+        // values.
         ASSERT_EQ(inits_ptr, bins_ptr);
     }
 
