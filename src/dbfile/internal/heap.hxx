@@ -3,8 +3,8 @@
 
 #include "modules.hxx"
 #ifndef ENABLE_MODULE
-#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/freelist.hxx"
+#include "dbfile/internal/page_base.hxx"
 #include <array>
 #include <iosfwd>
 #include <span>
@@ -22,16 +22,11 @@ namespace tinydb::dbfile::internal {
 struct Ptr {
     // offset 0: 4-byte page pointer.
     // offset 4: 2-byte offset relative to the start of the page.
-    //   - The offset points to AFTER the required header of a fragment, which
-    //   is 5 bytes in size.
-    // offset 6: 2-byte size-of fragment, excluding the header stuff.
-    // The header is at least 5 bytes, a fragment is at least 16 bytes. So size
-    // is at least 11 bytes.
+    // The position is thus (pagenum * SIZEOF_PAGE) + offset
 
     page_ptr_t pagenum;
-    // the offset points to offset 5 of a fragment, since that's where the
-    // non-header data starts.
     page_off_t offset;
+    static constexpr page_off_t SIZE = sizeof(pagenum) + sizeof(offset);
 };
 
 /**
@@ -47,7 +42,7 @@ auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
  *
  * @return If 2 AllocPtrs are the same.
  */
-[[nodiscard]] auto operator==(const Ptr& lhs, const Ptr& rhs) -> bool {
+[[nodiscard]] constexpr auto operator==(const Ptr& lhs, const Ptr& rhs) -> bool {
     return (lhs.pagenum == rhs.pagenum) && (lhs.offset == rhs.offset);
 }
 
@@ -63,43 +58,12 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  *
  */
 class Heap {
-  private:
+  public:
     // 16 (2^4), 32, 64, all the way to 2048 (2^11)
     static constexpr uint8_t SIZEOF_BIN = 8;
 
-  public:
     Heap() = default;
 
-    /**
-     * @brief Reads the data from a stream and returns the Heap.
-     *
-     * @param t_in The stream to read from.
-     */
-    static auto do_read_from(std::istream& t_in) -> Heap;
-
-    [[nodiscard]] constexpr auto get_bins() noexcept
-        -> std::span<Ptr, SIZEOF_BIN> {
-        return std::span<Ptr, SIZEOF_BIN>{m_bins.begin(), SIZEOF_BIN};
-    }
-
-    /**
-     * @brief Allocates a large enough chunk of memory. t_size must be smaller
-     * than or equal to 2048.
-     *
-     * @param t_size Size of allocation.
-     * @param t_io The stream to deal with.
-     */
-    [[nodiscard]] auto malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io) -> Ptr;
-    /**
-     * @brief Frees the memory pointed to by the pointer, and writes the pointer
-     * to NullPtr.
-     *
-     * @param t_ptr Pointer to memory to be freed.
-     * @param t_io The stream to deal with.
-     */
-    void free(Ptr& t_ptr, std::iostream& t_io);
-
-  private:
     explicit Heap(std::span<Ptr, SIZEOF_BIN> t_bins) noexcept
         // I hate this, but here is the TL;DR:
         //   - index_sequence simply creates an,
@@ -115,6 +79,43 @@ class Heap {
         : m_bins{[&]<std::size_t... Idx>(std::index_sequence<Idx...>) {
               return std::array<Ptr, SIZEOF_BIN>{{t_bins[Idx]...}};
           }(std::make_index_sequence<SIZEOF_BIN>())} {}
+
+    template <typename... SpanArgs>
+        requires requires(SpanArgs... args) {
+            std::span<Ptr, SIZEOF_BIN>{args...};
+        }
+    explicit Heap(SpanArgs... args)
+        : m_bins{[&]() {
+              std::span<Ptr, SIZEOF_BIN> t_bins{args...};
+              return [&]<std::size_t... Idx>(std::index_sequence<Idx...>) {
+                  return std::array<Ptr, SIZEOF_BIN>{t_bins[Idx]...};
+              }(std::make_index_sequence<SIZEOF_BIN>());
+          }()} {}
+
+    [[nodiscard]] constexpr auto get_bins() const noexcept
+        -> std::span<const Ptr, SIZEOF_BIN> {
+        return std::span<const Ptr, SIZEOF_BIN>{m_bins.begin(), SIZEOF_BIN};
+    }
+
+    /**
+     * @brief Allocates a large enough chunk of memory. t_size must be smaller
+     * than or equal to 2048.
+     *
+     * @param t_size Size of allocation.
+     * @param t_io The stream to deal with.
+     */
+    [[nodiscard]] auto malloc(page_off_t t_size, FreeList& t_fl,
+                              std::iostream& t_io) -> Ptr;
+    /**
+     * @brief Frees the memory pointed to by the pointer, and writes the pointer
+     * to NullPtr.
+     *
+     * @param t_ptr Pointer to memory to be freed.
+     * @param t_io The stream to deal with.
+     */
+    void free(Ptr& t_ptr, std::iostream& t_io);
+
+  private:
     // offset 0 to 63: 8 pointers to memory fragments of specified sizes. These
     // fragments are memory-aligned.
     //   - If you read the comment on how "allocation is faster" with the
@@ -125,9 +126,15 @@ class Heap {
 
     static_assert(std::is_trivial_v<std::array<Ptr, SIZEOF_BIN>>);
 };
-// I wonder if all the bins in Heap are garbage with the default
-// constructor.
-static_assert(std::is_trivial_v<Heap>);
+
+/**
+ * @brief Reads from a stream and gets the heap.
+ *
+ * @param t_in The input stream.
+ */
+auto read_heap_from(std::istream& t_in) -> Heap;
+
+void write_heap_to(const Heap& t_heap, std::ostream& t_out);
 
 } // namespace tinydb::dbfile::internal
 
