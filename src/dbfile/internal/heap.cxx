@@ -1,7 +1,8 @@
+#include "offsets.hxx"
 #ifndef ENABLE_MODULE
-#include "dbfile/internal/heap.hxx"
 #include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
+#include "dbfile/internal/heap.hxx"
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
@@ -159,6 +160,27 @@ auto read_frag_from(const Ptr& frag_pos, std::istream& t_in) -> Fragment {
     return ret;
 }
 
+void write_heap_to(const Heap& t_heap, std::ostream& t_out) {
+    t_out.seekp(HEAP_OFF);
+    std::span bins = t_heap.get_bins();
+    Ptr write_pos{.pagenum = 0, .offset = HEAP_OFF};
+    for (auto& ptr : bins) {
+        write_ptr_to(write_pos, ptr, t_out);
+        write_pos.offset += Ptr::SIZE;
+    }
+}
+
+auto read_heap_from(std::istream& t_in) -> Heap {
+    t_in.seekg(HEAP_OFF);
+    Ptr pos{.pagenum = 0, .offset = HEAP_OFF};
+    std::array<Ptr, Heap::SIZEOF_BIN> arr{};
+    for (uint8_t i = 0; i < Heap::SIZEOF_BIN; ++i) {
+        arr.at(i) = read_ptr_from(pos, t_in);
+        pos.offset += Ptr::SIZE;
+    }
+    return Heap{arr.begin(), Heap::SIZEOF_BIN};
+}
+
 auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
     -> Ptr {
     if (t_size > SIZEOF_PAGE / 2 || t_size < std::pow(2, 4)) {
@@ -191,5 +213,36 @@ auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
 
     return NullPtr;
 }
+
+// namespace {
+//
+// template <typename DirF>
+//     requires requires(const Fragment frag, DirF f, page_off_t num) {
+//         // basically either gives back frag.prev_local_frag or
+//         // frag.next_local_frag.
+//         num = f(frag);
+//     }
+// [[maybe_unused]]
+// auto coalesce(DirF t_callable, Fragment& t_curr_free, const Ptr& t_pos,
+//               std::iostream& t_io) -> Ptr {
+//     // TODO: write a coalesce function.
+//
+//     return NullPtr;
+// }
+// auto coalesce_next(Fragment& t_curr_free, const Ptr& t_pos,
+//                    std::iostream& t_io) {
+//     return coalesce([](const Fragment& frag) { return frag.next_local_frag;
+//     },
+//                     t_curr_free, t_pos, t_io);
+// }
+//
+// auto coalesce_prev(Fragment& t_curr_free, const Ptr& t_pos,
+//                    std::iostream& t_io) {
+//     return coalesce([](const Fragment& frag) { return frag.prev_local_frag;
+//     },
+//                     t_curr_free, t_pos, t_io);
+// }
+//
+// } // namespace
 
 } // namespace tinydb::dbfile::internal
