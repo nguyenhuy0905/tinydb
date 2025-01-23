@@ -27,6 +27,9 @@ namespace {
 [[maybe_unused]]
 constexpr uint8_t FREE_FRAG_ID = 0;
 constexpr uint8_t USED_FRAG_ID = 1;
+// since we started at 2^4
+constexpr uint8_t START_POW = 4;
+
 } // namespace
 
 namespace tinydb::dbfile::internal {
@@ -192,6 +195,11 @@ auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
     if (ret != NullPtr) {
         Fragment read_frag = read_frag_from(m_bins.at(bin_num), t_io);
         auto free_frag = std::get<FreeFragment>(read_frag.frag);
+        write_frag_to(Fragment{.frag = UsedFragment{},
+                               .prev_local_frag = read_frag.prev_local_frag,
+                               .next_local_frag = read_frag.next_local_frag,
+                               .size = t_size},
+                      m_bins.at(bin_num), t_io);
         m_bins.at(bin_num) = free_frag.next_frag;
         return ret;
     }
@@ -211,11 +219,9 @@ auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
         new_heap_pg.get_pg_num() + UsedFragment::HEADER_SIZE + new_frag.size));
     write_to(new_heap_pg, t_io);
 
-    return NullPtr;
+    return ret_ptr;
 }
 
-// namespace {
-//
 // template <typename DirF>
 //     requires requires(const Fragment frag, DirF f, page_off_t num) {
 //         // basically either gives back frag.prev_local_frag or
@@ -242,7 +248,5 @@ auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
 //     },
 //                     t_curr_free, t_pos, t_io);
 // }
-//
-// } // namespace
 
 } // namespace tinydb::dbfile::internal

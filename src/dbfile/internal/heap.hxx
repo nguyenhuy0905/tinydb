@@ -42,7 +42,8 @@ auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
  *
  * @return If 2 AllocPtrs are the same.
  */
-[[nodiscard]] constexpr auto operator==(const Ptr& lhs, const Ptr& rhs) -> bool {
+[[nodiscard]] constexpr auto operator==(const Ptr& lhs, const Ptr& rhs)
+    -> bool {
     return (lhs.pagenum == rhs.pagenum) && (lhs.offset == rhs.offset);
 }
 
@@ -57,12 +58,10 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  * block allocator that is FreeList. I know, naming scheme is a bit scuffed.
  *
  */
-class Heap {
-  public:
-    // 16 (2^4), 32, 64, all the way to 2048 (2^11)
-    static constexpr uint8_t SIZEOF_BIN = 8;
-
-    Heap() = default;
+struct Heap {
+    Heap() : m_bins{} {}
+    // 16 (2^4), 32, 64, all the way to 4096 (2^12)
+    static constexpr uint8_t SIZEOF_BIN = 9;
 
     explicit Heap(std::span<Ptr, SIZEOF_BIN> t_bins) noexcept
         // I hate this, but here is the TL;DR:
@@ -115,7 +114,6 @@ class Heap {
      */
     void free(Ptr& t_ptr, std::iostream& t_io);
 
-  private:
     // offset 0 to 63: 8 pointers to memory fragments of specified sizes. These
     // fragments are memory-aligned.
     //   - If you read the comment on how "allocation is faster" with the
