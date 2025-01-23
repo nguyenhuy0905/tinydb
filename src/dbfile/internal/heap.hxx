@@ -58,7 +58,8 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  * block allocator that is FreeList. I know, naming scheme is a bit scuffed.
  *
  */
-struct Heap {
+class Heap {
+  public:
     Heap() : m_bins{} {}
     // 16 (2^4), 32, 64, all the way to 4096 (2^12)
     static constexpr uint8_t SIZEOF_BIN = 9;
@@ -114,6 +115,17 @@ struct Heap {
      */
     void free(Ptr& t_ptr, std::iostream& t_io);
 
+  private:
+    struct Fragment;
+    void write_frag_to(const Fragment&, const Ptr&, std::ostream&);
+    /**
+     * @brief Reads and returns a fragment at the pointed memory location.
+     * @param frag_pos The pointer to the memory location to read.
+     * @param t_in The stream to read from.
+     * @return The fragment read. Or throws an exception if I/O exception is
+     * enabled.
+     */
+    auto read_frag_from(const Ptr&, std::istream&) -> Fragment;
     // offset 0 to 63: 8 pointers to memory fragments of specified sizes. These
     // fragments are memory-aligned.
     //   - If you read the comment on how "allocation is faster" with the
