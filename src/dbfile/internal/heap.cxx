@@ -1,4 +1,5 @@
 #include "offsets.hxx"
+#include <cassert>
 #ifndef ENABLE_MODULE
 #include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
@@ -184,13 +185,20 @@ auto read_heap_from(std::istream& t_in) -> Heap {
     return Heap{arr.begin(), Heap::SIZEOF_BIN};
 }
 
+// TODO:
+// Again, back to free list allocator.
+// I need to rewrite the malloc function also.
+// Lucky this one I wrote is short.
+auto insert_frag_to_bin(Heap& t_heap, Fragment& t_frag, const Ptr& t_frag_pos,
+                        std::iostream& t_io);
+
 auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
     -> Ptr {
-    if (t_size > SIZEOF_PAGE / 2 || t_size < std::pow(2, 4)) {
+    if (t_size > SIZEOF_PAGE || t_size < std::pow(2, START_POW)) {
         return NullPtr;
     }
 
-    auto bin_num = static_cast<uint8_t>(std::log2(t_size) + 1);
+    auto bin_num = static_cast<uint8_t>(std::log2(t_size) + 1 - START_POW);
     Ptr ret = m_bins.at(bin_num);
     if (ret != NullPtr) {
         Fragment read_frag = read_frag_from(m_bins.at(bin_num), t_io);
@@ -200,6 +208,12 @@ auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
                                .next_local_frag = read_frag.next_local_frag,
                                .size = t_size},
                       m_bins.at(bin_num), t_io);
+        // cut the fragment if possible.
+        // So, if the size left is
+        if (read_frag.size - Fragment::FRAGMENT_HEADER_SIZE <
+            FreeFragment::SIZE + std::pow(2, START_POW)) {
+        }
+
         m_bins.at(bin_num) = free_frag.next_frag;
         return ret;
     }
