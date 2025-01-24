@@ -1,12 +1,15 @@
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_HXX
 
-#include "sizes.hxx"
-#include "general/modules.hxx"
-#include <cstdint>
+#include "modules.hxx"
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/page_base.hxx"
+#include "sizes.hxx"
+#include <cassert>
+#include <cstdint>
 #include <iosfwd>
+#include <type_traits>
+#include <utility>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
@@ -99,13 +102,17 @@ void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
 
 class HeapMeta : public PageMixin {
   public:
-    static constexpr page_off_t DEFAULT_FREE_OFF = 7;
+    static constexpr page_off_t DEFAULT_FREE_OFF = 15;
     explicit HeapMeta(page_ptr_t t_page_num)
-        : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF} {}
+        : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF},
+          m_min{
+              std::make_pair(SIZEOF_PAGE - DEFAULT_FREE_OFF, DEFAULT_FREE_OFF)},
+          m_max{m_min} {}
     HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg,
-             page_off_t t_first_free)
+             page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_min,
+             std::pair<page_off_t, page_off_t> t_max)
         : PageMixin{t_page_num}, m_next_pg{t_next_pg},
-          m_first_free{t_first_free} {}
+          m_first_free{t_first_free}, m_min{t_min}, m_max{t_max} {}
 
     [[nodiscard]] constexpr auto get_next_pg() const noexcept -> page_ptr_t {
         return m_next_pg;
@@ -116,8 +123,30 @@ class HeapMeta : public PageMixin {
         return m_first_free;
     }
 
+    [[nodiscard]] constexpr auto get_min_pair() const noexcept
+        -> const std::pair<page_off_t, page_off_t>& {
+        return m_min;
+    }
+
+    [[nodiscard]] constexpr auto get_max_pair() const noexcept
+        -> const std::pair<page_off_t, page_off_t>& {
+        return m_max;
+    }
+
+    constexpr auto update_min_pair(page_off_t t_size, page_off_t t_off) {
+        assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
+        assert(t_size <= m_max.first);
+        m_min = std::make_pair(t_size, t_off);
+    }
+
+    constexpr auto update_max_size(page_off_t t_size, page_off_t t_off) {
+        assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
+        assert(t_size >= m_min.first);
+        m_max = std::make_pair(t_size, t_off);
+    }
+
     constexpr auto update_first_free(page_off_t t_val) {
-        if(t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE) {
+        if (t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE) {
             // TODO: throw something more useful.
             throw 1;
         }
@@ -125,15 +154,23 @@ class HeapMeta : public PageMixin {
     }
 
   private:
-    // offset 1: pointer to the next heap page.
+    // offset 1: 4-byte pointer to the next heap page.
     //   Default to 0, which means this heap page is the last one.
     //   In that case, if a new heap page is needed, a new heap page will be
     //   allocated from the free list.
     page_ptr_t m_next_pg;
-    // offset 5: the first free fragment.
+    // offset 5: 2-byte local offset to first free fragment.
     //   By default, the first free fragment is at offset 7.
     //   And, there's always one fragment at offset 7.
     page_off_t m_first_free;
+    // offset 7: 2-byte minimum heap size.
+    // offset 9: 2-byte minimum heap local offset.
+    std::pair<page_off_t, page_off_t> m_min;
+    // offset 11: 2-byte maximum heap size.
+    // offset 13: 2-byte maximum heap local offset.
+    std::pair<page_off_t, page_off_t> m_max;
+
+    static_assert(!std::is_trivially_copyable_v<decltype(m_min)>);
 };
 
 void write_to(const HeapMeta& t_meta, std::ostream& t_out);

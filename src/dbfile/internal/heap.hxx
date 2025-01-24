@@ -5,10 +5,8 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_base.hxx"
-#include <array>
+#include "dbfile/internal/page_meta.hxx"
 #include <iosfwd>
-#include <span>
-#include <utility>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
@@ -28,6 +26,8 @@ struct Ptr {
     page_off_t offset;
     static constexpr page_off_t SIZE = sizeof(pagenum) + sizeof(offset);
 };
+
+static_assert(std::is_trivial_v<Ptr>);
 
 /**
  * @brief Gets the pointer at the specified position.
@@ -60,48 +60,15 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  */
 class Heap {
   public:
-    Heap() : m_bins{} {}
-    // 16 (2^4), 32, 64, all the way to 4096 (2^12)
-    static constexpr uint8_t SIZEOF_BIN = 9;
-
-    explicit Heap(std::span<Ptr, SIZEOF_BIN> t_bins) noexcept
-        // I hate this, but here is the TL;DR:
-        //   - index_sequence simply creates an,
-        //   well, index sequence. In this case, from 0 to 7
-        //   (make_index_sequence<8>).
-        //
-        //   - The variadic template expands, in
-        //   particular, t_bins[Idx]... expands into t_bins[0], t_bins[1],...,
-        //   t_bins[7].
-        //
-        //   - Sticky note to myself:
-        //   https://en.cppreference.com/w/cpp/utility/integer_sequence
-        : m_bins{[&]<std::size_t... Idx>(std::index_sequence<Idx...>) {
-              return std::array<Ptr, SIZEOF_BIN>{{t_bins[Idx]...}};
-          }(std::make_index_sequence<SIZEOF_BIN>())} {}
-
-    template <typename... SpanArgs>
-        requires requires(SpanArgs... args) {
-            std::span<Ptr, SIZEOF_BIN>{args...};
-        }
-    explicit Heap(SpanArgs... args)
-        : m_bins{[&]() {
-              std::span<Ptr, SIZEOF_BIN> t_bins{args...};
-              return [&]<std::size_t... Idx>(std::index_sequence<Idx...>) {
-                  return std::array<Ptr, SIZEOF_BIN>{t_bins[Idx]...};
-              }(std::make_index_sequence<SIZEOF_BIN>());
-          }()} {}
-
-    [[nodiscard]] constexpr auto get_bins() const noexcept
-        -> std::span<const Ptr, SIZEOF_BIN> {
-        return std::span<const Ptr, SIZEOF_BIN>{m_bins.begin(), SIZEOF_BIN};
-    }
-
+    Heap() = default;
+    explicit Heap(page_ptr_t t_first_heap_pg)
+        : m_first_heap_page{t_first_heap_pg} {}
     /**
      * @brief Allocates a large enough chunk of memory. t_size must be smaller
      * than or equal to 2048.
      *
      * @param t_size Size of allocation.
+     * @param t_fl In case we need to allocate a new page.
      * @param t_io The stream to deal with.
      */
     [[nodiscard]] auto malloc(page_off_t t_size, FreeList& t_fl,
@@ -111,31 +78,23 @@ class Heap {
      * to NullPtr.
      *
      * @param t_ptr Pointer to memory to be freed.
+     * @param t_fl In case we need to deallocate a page.
      * @param t_io The stream to deal with.
      */
-    void free(Ptr& t_ptr, std::iostream& t_io);
+    void free(Ptr& t_ptr, FreeList& t_fl, std::iostream& t_io);
 
   private:
-    struct Fragment;
-    void write_frag_to(const Fragment&, const Ptr&, std::ostream&);
-    /**
-     * @brief Reads and returns a fragment at the pointed memory location.
-     * @param frag_pos The pointer to the memory location to read.
-     * @param t_in The stream to read from.
-     * @return The fragment read. Or throws an exception if I/O exception is
-     * enabled.
-     */
-    auto read_frag_from(const Ptr&, std::istream&) -> Fragment;
-    // offset 0 to 63: 8 pointers to memory fragments of specified sizes. These
-    // fragments are memory-aligned.
-    //   - If you read the comment on how "allocation is faster" with the
-    //   artificially forced memory alignment, this is kind of the answer.
-    //   Instead of needing up to, say, a couple thousand bin sizes, we can
-    //   limit to 8.
-    std::array<Ptr, SIZEOF_BIN> m_bins;
+    // offset 0: 4-byte pointer to the first heap.
+    page_ptr_t m_first_heap_page{0};
 
-    static_assert(std::is_trivial_v<std::array<Ptr, SIZEOF_BIN>>);
+    struct Fragment;
+    static void write_frag_to(const Fragment&, std::ostream&);
+    static auto read_frag_from(const Ptr&, std::istream&) -> Fragment;
+
+    friend void write_heap_to(const Heap& t_heap, std::ostream& t_out);
 };
+
+static_assert(!std::is_trivially_constructible_v<Heap>);
 
 /**
  * @brief Reads from a stream and gets the heap.
@@ -143,8 +102,6 @@ class Heap {
  * @param t_in The input stream.
  */
 auto read_heap_from(std::istream& t_in) -> Heap;
-
-void write_heap_to(const Heap& t_heap, std::ostream& t_out);
 
 } // namespace tinydb::dbfile::internal
 

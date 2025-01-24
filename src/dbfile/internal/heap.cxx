@@ -1,21 +1,17 @@
 #include "offsets.hxx"
-#include <cassert>
 #ifndef ENABLE_MODULE
-#include "dbfile/coltype.hxx"
-#include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/heap.hxx"
-#include "dbfile/internal/page_base.hxx"
-#include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include <variant>
 #else
 module;
 #include "dbfile/coltype.hxx"
 #include "general/sizes.hxx"
+#include <cassert>
 #include <cstdint>
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.internal.page;
@@ -27,8 +23,10 @@ import std;
 namespace {
 [[maybe_unused]]
 constexpr uint8_t FREE_FRAG_ID = 0;
+[[maybe_unused]]
 constexpr uint8_t USED_FRAG_ID = 1;
 // since we started at 2^4
+[[maybe_unused]]
 constexpr uint8_t START_POW = 4;
 
 } // namespace
@@ -53,198 +51,86 @@ auto write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
                 sizeof(t_ptr.offset));
 }
 
-// More stuff from the bins:
-//   - The pointers in the bins are pointing to FreeFragments. Obviously.
-
 struct Heap::Fragment {
-    struct FreeFragment {
-        static constexpr page_off_t SIZE = 15;
-        // offset 7: 8-byte AllocPtr.
-        // chains into a linked list by Heap.
-        // With that in mind, a fragment must be at least 15 bytes in size.
-        // Memory alignment kicks in. Each fragment must be at least 16 bytes.
-        //
-        // By "memory alignment," I mean the fragments' sizes must be a power
-        // of 2.
-        //
-        // Technically memory alignment isn't necessary if we are dealing with
-        // writing into streams and stuff here. You could say this is kind of
-        // memory-wasteful, but it makes allocations faster. Typical time-space
-        // tradeoff.
-        Ptr next_frag;
+    enum class FragType : char { // char so that I don't have to cast.
+        Free = 0,
+        Used,
+        Chained,
     };
+    // offset 0: 1-byte fragment type:
+    //   - 0 if free.
+    //   - 1 if used.
+    //   - 2 if used AND contains a pointer to another heap.
+    //     - To deal with super-duper large data.
+    // offset 1: 2-byte size.
+    //   - Remember that a page can only be 4096 bytes long.
 
-    struct UsedFragment {
-        static constexpr page_off_t HEADER_SIZE = 7;
-        // there's nothing here.
-        // offset 7 until (7 + AllocPtr::size): the data.
-        // For "large" data, that a fragment cannot fully keep,
-        // another 8 bytes should be reserved for an AllocPtr.
-    };
-    using FragType = std::variant<FreeFragment, UsedFragment>;
-    static_assert(std::is_trivial_v<FreeFragment> &&
-                  std::is_trivial_v<UsedFragment>);
-    // offset 0: 1-byte, fragment type:
-    //   - 0 == FreeFragment
-    //   - 1 == UsedFragment
-    // offset 1: 2-byte local offset pointer to the previous fragment.
-    // offset 3: 2-byte local offset pointer to the next fragment.
-    // offset 5: 2-byte size of fragment.
-
-    FragType frag;
-    // naming is confusing here.
-    // This forms a linked list with fragments INSIDE one page.
-    // prev_local_frag is 0 when there isn't any fragment before this one in its
-    // page.
-    // next_local_frag is 0 when there isn't any fragment after this one in its
-    // page.
-    page_off_t prev_local_frag;
-    page_off_t next_local_frag;
+    // pointer to the start of the header.
+    // Not written into the database file.
+    Ptr pos;
     page_off_t size;
-    static constexpr page_off_t FRAGMENT_HEADER_SIZE = 7;
+    FragType type;
+    static constexpr page_off_t HEADER_SIZE = sizeof(type) + sizeof(size);
 };
 
-void Heap::write_frag_to(const Fragment& t_frag, const Ptr& t_ptr,
-                         std::ostream& t_out) {
-    t_out.seekp(t_ptr.pagenum * SIZEOF_PAGE + t_ptr.offset);
+void Heap::write_frag_to(const Heap::Fragment& t_frag, std::ostream& t_out) {
+    t_out.seekp(t_frag.pos.pagenum * SIZEOF_PAGE + t_frag.pos.offset);
     auto& rdbuf = *t_out.rdbuf();
-    rdbuf.sputc(std::visit(
-        overload{[&](const Fragment::FreeFragment&) { return '\0'; },
-                 [&](const Fragment::UsedFragment&) { return '\1'; }},
-        t_frag.frag));
-    rdbuf.sputn(std::bit_cast<const char*>(&t_frag.prev_local_frag),
-                sizeof(t_frag.prev_local_frag));
-    rdbuf.sputn(std::bit_cast<const char*>(&t_frag.next_local_frag),
-                sizeof(t_frag.next_local_frag));
+    // type
+    rdbuf.sputc(static_cast<std::underlying_type_t<decltype(t_frag.type)>>(
+        t_frag.type));
+    // ptr
+    write_ptr_to(Ptr{.pagenum = t_frag.pos.pagenum,
+                     .offset = static_cast<page_off_t>(t_frag.pos.offset +
+                                                       sizeof(t_frag.type))},
+                 t_frag.pos, t_out);
+    // size
+    t_out.seekp(static_cast<std::streamoff>(t_frag.pos.pagenum * SIZEOF_PAGE +
+                                            t_frag.pos.offset +
+                                            // Ptr in-memory is 8 bytes due to
+                                            // alignment, but we only need 6.
+                                            sizeof(t_frag.type) + Ptr::SIZE));
     rdbuf.sputn(std::bit_cast<const char*>(&t_frag.size), sizeof(t_frag.size));
-    std::visit(overload{[&](const Fragment::FreeFragment& frag) {
-                            constexpr uint8_t DEFAULT_OFF = 7;
-                            write_ptr_to(Ptr{.pagenum = t_ptr.pagenum,
-                                             .offset = static_cast<page_off_t>(
-                                                 t_ptr.offset + DEFAULT_OFF)},
-                                         frag.next_frag, t_out);
-                        },
-                        [&](const Fragment::UsedFragment&) {}},
-               t_frag.frag);
 }
 
-auto Heap::read_frag_from(const Ptr& frag_pos, std::istream& t_in) -> Fragment {
-    t_in.seekg(frag_pos.pagenum * SIZEOF_PAGE + frag_pos.offset);
-    auto ret = Fragment{};
+auto Heap::read_frag_from(const Ptr& t_pos, std::istream& t_in)
+    -> Heap::Fragment {
+    t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
-    auto fragtype = static_cast<uint8_t>(rdbuf.sbumpc());
-    // page_off_t prevlocal{0};
-    rdbuf.sgetn(std::bit_cast<char*>(&ret.prev_local_frag),
-                sizeof(ret.prev_local_frag));
-    // page_off_t nextlocal{0};
-    rdbuf.sgetn(std::bit_cast<char*>(&ret.next_local_frag),
-                sizeof(ret.next_local_frag));
-    rdbuf.sgetn(std::bit_cast<char*>(&ret.size), sizeof(ret.size));
 
-    if (fragtype == USED_FRAG_ID) {
-        ret.frag = Fragment::UsedFragment{};
-    } else {
-        ret.frag = Fragment::FreeFragment{.next_frag{read_ptr_from(
-            Ptr{.pagenum = frag_pos.pagenum,
-                .offset = static_cast<page_off_t>(
-                    frag_pos.offset + Fragment::FRAGMENT_HEADER_SIZE)},
-            t_in)}};
-    }
-    return ret;
+    Heap::Fragment::FragType type{
+        static_cast<std::underlying_type_t<Heap::Fragment::FragType>>(
+            rdbuf.sbumpc())};
+
+    auto ptr =
+        read_ptr_from(Ptr{.pagenum = t_pos.pagenum,
+                          .offset = static_cast<page_off_t>(t_pos.offset + 1)},
+                      t_in);
+    t_in.seekg(
+        static_cast<std::streamoff>(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset +
+                                    sizeof(Heap::Fragment::type) + Ptr::SIZE));
+
+    page_off_t size{};
+    rdbuf.sgetn(std::bit_cast<char*>(&size), sizeof(size));
+
+    return {.pos = ptr, .size = size, .type = type};
 }
 
 void write_heap_to(const Heap& t_heap, std::ostream& t_out) {
     t_out.seekp(HEAP_OFF);
-    std::span bins = t_heap.get_bins();
-    Ptr write_pos{.pagenum = 0, .offset = HEAP_OFF};
-    for (auto& ptr : bins) {
-        write_ptr_to(write_pos, ptr, t_out);
-        write_pos.offset += Ptr::SIZE;
-    }
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_heap.m_first_heap_page),
+                         sizeof(t_heap.m_first_heap_page));
 }
 
 auto read_heap_from(std::istream& t_in) -> Heap {
     t_in.seekg(HEAP_OFF);
-    Ptr pos{.pagenum = 0, .offset = HEAP_OFF};
-    std::array<Ptr, Heap::SIZEOF_BIN> arr{};
-    for (uint8_t i = 0; i < Heap::SIZEOF_BIN; ++i) {
-        arr.at(i) = read_ptr_from(pos, t_in);
-        pos.offset += Ptr::SIZE;
-    }
-    return Heap{arr.begin(), Heap::SIZEOF_BIN};
+    page_ptr_t first_heap{};
+    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&first_heap), sizeof(first_heap));
+    return Heap{first_heap};
 }
 
+// TODO: write Heap::malloc, then Heap::free
 auto Heap::malloc(page_off_t t_size, FreeList& t_fl, std::iostream& t_io)
-    -> Ptr {
-    // TODO: rewrite malloc into a free list allocator.    
-    if (t_size > SIZEOF_PAGE || t_size < std::pow(2, START_POW)) {
-        return NullPtr;
-    }
-
-    auto bin_num = static_cast<uint8_t>(std::log2(t_size) + 1 - START_POW);
-    Ptr ret = m_bins.at(bin_num);
-    if (ret != NullPtr) {
-        Fragment read_frag = read_frag_from(m_bins.at(bin_num), t_io);
-        auto free_frag = std::get<Fragment::FreeFragment>(read_frag.frag);
-        write_frag_to(Fragment{.frag = Fragment::UsedFragment{},
-                               .prev_local_frag = read_frag.prev_local_frag,
-                               .next_local_frag = read_frag.next_local_frag,
-                               .size = t_size},
-                      m_bins.at(bin_num), t_io);
-        // cut the fragment if possible.
-        // So, if the size left is
-        if (read_frag.size - Fragment::FRAGMENT_HEADER_SIZE <
-            Fragment::FreeFragment::SIZE + std::pow(2, START_POW)) {
-        }
-
-        m_bins.at(bin_num) = free_frag.next_frag;
-        return ret;
-    }
-    // ret == NullPtr
-    auto new_heap_pg = t_fl.allocate_page<HeapMeta>(t_io);
-    auto new_frag = Fragment{
-        .frag = Fragment::UsedFragment{},
-        .prev_local_frag = 0,
-        .next_local_frag = 0,
-        .size = static_cast<page_off_t>(std::pow(2, bin_num)),
-    };
-    auto ret_ptr = Ptr{.pagenum = new_heap_pg.get_pg_num(),
-                       .offset = HeapMeta::DEFAULT_FREE_OFF};
-    write_frag_to(new_frag, ret_ptr, t_io);
-    // update the heap page.
-    new_heap_pg.update_first_free(static_cast<page_off_t>(
-        new_heap_pg.get_pg_num() + Fragment::UsedFragment::HEADER_SIZE +
-        new_frag.size));
-    write_to(new_heap_pg, t_io);
-
-    return ret_ptr;
-}
-
-// template <typename DirF>
-//     requires requires(const Fragment frag, DirF f, page_off_t num) {
-//         // basically either gives back frag.prev_local_frag or
-//         // frag.next_local_frag.
-//         num = f(frag);
-//     }
-// [[maybe_unused]]
-// auto coalesce(DirF t_callable, Fragment& t_curr_free, const Ptr& t_pos,
-//               std::iostream& t_io) -> Ptr {
-//     // TODO: write a coalesce function.
-//
-//     return NullPtr;
-// }
-// auto coalesce_next(Fragment& t_curr_free, const Ptr& t_pos,
-//                    std::iostream& t_io) {
-//     return coalesce([](const Fragment& frag) { return frag.next_local_frag;
-//     },
-//                     t_curr_free, t_pos, t_io);
-// }
-//
-// auto coalesce_prev(Fragment& t_curr_free, const Ptr& t_pos,
-//                    std::iostream& t_io) {
-//     return coalesce([](const Fragment& frag) { return frag.prev_local_frag;
-//     },
-//                     t_curr_free, t_pos, t_io);
-// }
+    -> Ptr {}
 
 } // namespace tinydb::dbfile::internal
