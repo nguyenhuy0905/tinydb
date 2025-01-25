@@ -4,9 +4,11 @@
 #include "dbfile/internal/page_meta.hxx"
 #include "general/sizes.hxx"
 #include <bit>
+#include <cassert>
 #include <iostream>
 #else
 module;
+#include <cassert>
 #include <cstdint>
 export module tinydb.dbfile.internal.page:serialize;
 export import :base;
@@ -30,7 +32,9 @@ template <>
 auto read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> FreePageMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
-    t_in.rdbuf()->sbumpc();
+    [[maybe_unused]]
+    auto pagetype = t_in.rdbuf()->sbumpc();
+    assert(pagetype == static_cast<pt_num_t>(PageType::Free));
     // TODO: think of a new checking mechanism
 
     // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
@@ -59,8 +63,9 @@ auto read_from<BTreeLeafMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> BTreeLeafMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
 
-    t_in.rdbuf()->sbumpc();
-    // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    [[maybe_unused]]
+    auto pagetype = t_in.rdbuf()->sbumpc();
+    assert(pagetype == static_cast<pt_num_t>(PageType::BTreeLeaf));
     // if (pagetype != static_cast<pt_num>(PageType::BTreeLeaf)) {
     //     // I should return something more meaningful here.
     //     return;
@@ -87,7 +92,9 @@ template <>
 auto read_from<BTreeInternalMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> BTreeInternalMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
-    t_in.rdbuf()->sbumpc();
+    [[maybe_unused]]
+    auto pagetype = t_in.rdbuf()->sbumpc();
+    assert(pagetype == static_cast<pt_num_t>(PageType::BTreeInternal));
     // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
     // if (pagetype != static_cast<pt_num>(PageType::BTreeInternal)) {
     //     // I should return something more meaningful here.
@@ -126,46 +133,50 @@ struct HeapFragMeta {
 void write_to(const HeapMeta& t_meta, std::ostream& t_out) {
     t_out.seekp(t_meta.get_pg_num() * SIZEOF_PAGE);
     auto& rdbuf = *t_out.rdbuf();
-    rdbuf.sputc(static_cast<pt_num_t>(PageType::Heap));
+    rdbuf.sputc(static_cast<char>(PageType::Heap));
     auto nextpg = t_meta.get_next_pg();
     rdbuf.sputn(std::bit_cast<const char*>(&nextpg), sizeof(nextpg));
     auto first_free = t_meta.get_first_free_off();
     rdbuf.sputn(std::bit_cast<const char*>(&first_free), sizeof(first_free));
     auto min_pair = t_meta.get_min_pair();
     rdbuf.sputn(std::bit_cast<const char*>(&min_pair.first),
-                sizeof(&min_pair.first));
+                sizeof(min_pair.first));
     rdbuf.sputn(std::bit_cast<const char*>(&min_pair.second),
-                sizeof(&min_pair.second));
+                sizeof(min_pair.second));
     auto max_pair = t_meta.get_max_pair();
     rdbuf.sputn(std::bit_cast<const char*>(&max_pair.first),
-                sizeof(&max_pair.first));
+                sizeof(max_pair.first));
     rdbuf.sputn(std::bit_cast<const char*>(&max_pair.second),
-                sizeof(&max_pair.second));
+                sizeof(max_pair.second));
 }
 
 template <>
 auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta {
     t_in.seekg(t_pg_num * SIZEOF_PAGE);
     auto& rdbuf = *t_in.rdbuf();
-    rdbuf.sbumpc();
+    // rdbuf.sbumpc();
 
-    // auto pagetype = static_cast<uint8_t>(t_in.rdbuf()->sbumpc());
+    [[maybe_unused]]
+    auto pagetype = rdbuf.sbumpc();
+    assert(pagetype == static_cast<pt_num_t>(PageType::Heap));
     // if (pagetype != static_cast<pt_num_t>(PageType::Heap)) {
     //     // I should return something more meaningful here.
     //     return;
     // }
 
     page_ptr_t nextpg{0};
-    rdbuf.sputn(std::bit_cast<char*>(&nextpg), sizeof(nextpg));
+    rdbuf.sgetn(std::bit_cast<char*>(&nextpg), sizeof(nextpg));
     page_off_t first_free{0};
-    rdbuf.sputn(std::bit_cast<char*>(&first_free), sizeof(first_free));
+    rdbuf.sgetn(std::bit_cast<char*>(&first_free), sizeof(first_free));
     std::pair<page_off_t, page_off_t> min_pair{0, 0};
-    rdbuf.sputn(std::bit_cast<char*>(&min_pair.first), sizeof(min_pair.first));
-    rdbuf.sputn(std::bit_cast<char*>(&min_pair.second), sizeof(min_pair.second));
+    rdbuf.sgetn(std::bit_cast<char*>(&min_pair.first), sizeof(min_pair.first));
+    rdbuf.sgetn(std::bit_cast<char*>(&min_pair.second),
+                sizeof(min_pair.second));
 
     std::pair<page_off_t, page_off_t> max_pair{0, 0};
-    rdbuf.sputn(std::bit_cast<char*>(&max_pair.first), sizeof(max_pair.first));
-    rdbuf.sputn(std::bit_cast<char*>(&max_pair.second), sizeof(max_pair.second));
+    rdbuf.sgetn(std::bit_cast<char*>(&max_pair.first), sizeof(max_pair.first));
+    rdbuf.sgetn(std::bit_cast<char*>(&max_pair.second),
+                sizeof(max_pair.second));
     return {t_pg_num, nextpg, first_free, min_pair, max_pair};
 }
 
