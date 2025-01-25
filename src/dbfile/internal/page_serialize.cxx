@@ -10,6 +10,7 @@
 module;
 #include <cassert>
 #include <cstdint>
+#include "general/sizes.hxx"
 export module tinydb.dbfile.internal.page:serialize;
 export import :base;
 export import :meta;

@@ -1,10 +1,10 @@
-#include "page_base.hxx"
 #ifndef ENABLE_MODULE
-#include "dbfile/coltype.hxx"
-#include "offsets.hxx"
 #include "dbfile/internal/heap.hxx"
+#include "dbfile/coltype.hxx"
+#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_serialize.hxx"
 #include "general/sizes.hxx"
+#include "offsets.hxx"
 #include <bit>
 #include <cassert>
 #include <cmath>
@@ -16,9 +16,10 @@
 module;
 #include "dbfile/coltype.hxx"
 #include "general/sizes.hxx"
-#include "offsets.hxx"
+#include "general/offsets.hxx"
 #include <cassert>
 #include <cstdint>
+#include <type_traits>
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
