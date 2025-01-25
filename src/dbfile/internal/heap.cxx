@@ -8,35 +8,21 @@
 #include <bit>
 #include <cassert>
 #include <cmath>
-#include <cstdint>
 #include <iostream>
 #include <utility>
 #include <variant>
 #else
 module;
 #include "dbfile/coltype.hxx"
-#include "general/sizes.hxx"
 #include "general/offsets.hxx"
+#include "general/sizes.hxx"
 #include <cassert>
-#include <cstdint>
-#include <type_traits>
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
 import std;
 #include "dbfile/internal/heap.hxx"
 #endif // !ENABLE_MODULE
-
-namespace {
-[[maybe_unused]]
-constexpr uint8_t FREE_FRAG_ID = 0;
-[[maybe_unused]]
-constexpr uint8_t USED_FRAG_ID = 1;
-// since we started at 2^4
-[[maybe_unused]]
-constexpr uint8_t START_POW = 4;
-
-} // namespace
 
 namespace tinydb::dbfile::internal {
 
@@ -72,12 +58,12 @@ void Heap::write_frag_to(const Heap::Fragment& t_frag, std::ostream& t_out) {
                                             sizeof(t_frag.type) + Ptr::SIZE));
     rdbuf.sputn(std::bit_cast<const char*>(&t_frag.size), sizeof(t_frag.size));
     std::visit(
-        overload{[&](const Heap::Fragment::FreeFragExtra& t_free_extra) {
+        overload{[&](const Fragment::FreeFragExtra& t_free_extra) {
                      rdbuf.sputn(std::bit_cast<const char*>(&t_free_extra.next),
                                  sizeof(t_free_extra.next));
                  },
-                 [&](const Heap::Fragment::UsedFragExtra&) {},
-                 [&](const Heap::Fragment::ChainedFragExtra& t_chain_extra) {
+                 [&](const Fragment::UsedFragExtra&) {},
+                 [&](const Fragment::ChainedFragExtra& t_chain_extra) {
                      write_ptr_to(
                          Ptr{.pagenum = t_frag.pos.pagenum,
                              .offset = static_cast<page_off_t>(
@@ -89,17 +75,17 @@ void Heap::write_frag_to(const Heap::Fragment& t_frag, std::ostream& t_out) {
 }
 
 auto Heap::read_frag_from(const Ptr& t_pos, std::istream& t_in)
-    -> Heap::Fragment {
+    -> Fragment {
     t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
 
-    Heap::Fragment::FragType type{
-        static_cast<std::underlying_type_t<Heap::Fragment::FragType>>(
+    Fragment::FragType type{
+        static_cast<std::underlying_type_t<Fragment::FragType>>(
             rdbuf.sbumpc())};
 
     Ptr curr_pos{.pagenum = t_pos.pagenum,
                  .offset = static_cast<page_off_t>(
-                     t_pos.offset + sizeof(Heap::Fragment::type) + Ptr::SIZE)};
+                     t_pos.offset + sizeof(Fragment::type) + Ptr::SIZE)};
     t_in.seekg(static_cast<std::streamoff>(curr_pos.pagenum * SIZEOF_PAGE +
                                            curr_pos.offset));
 
@@ -107,20 +93,20 @@ auto Heap::read_frag_from(const Ptr& t_pos, std::istream& t_in)
     rdbuf.sgetn(std::bit_cast<char*>(&size), sizeof(size));
     curr_pos.offset += sizeof(size);
 
-    Heap::Fragment::FragExtra extra{Heap::Fragment::UsedFragExtra{}};
-    switch (Heap::Fragment::FragType{type}) {
-        using enum Heap::Fragment::FragType;
+    Fragment::FragExtra extra{Fragment::UsedFragExtra{}};
+    switch (Fragment::FragType{type}) {
+        using enum Fragment::FragType;
     case Free: {
         page_off_t next{};
         rdbuf.sgetn(std::bit_cast<char*>(&next), sizeof(next));
-        extra = Heap::Fragment::FreeFragExtra{.next = next};
+        extra = Fragment::FreeFragExtra{.next = next};
         break;
     }
     case Used:
         break;
     case Chained: {
         Ptr next = read_ptr_from(curr_pos, t_in);
-        extra = Heap::Fragment::ChainedFragExtra{.next = next};
+        extra = Fragment::ChainedFragExtra{.next = next};
         break;
     }
     default:
@@ -130,7 +116,7 @@ auto Heap::read_frag_from(const Ptr& t_pos, std::istream& t_in)
     return {.pos{t_pos},
             .extra{extra},
             .size = size,
-            .type = Heap::Fragment::FragType{type}};
+            .type = Fragment::FragType{type}};
 }
 
 void write_heap_to(const Heap& t_heap, std::ostream& t_out) {
@@ -167,7 +153,7 @@ struct Heap::FindHeapRetVal {
  * @return
  */
 auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
-                                  std::iostream& t_io) -> Heap::FindHeapRetVal {
+                                  std::iostream& t_io) -> FindHeapRetVal {
     assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
     auto alloc_new_heap_pg = [&]() {
         auto ret = t_fl.allocate_page<HeapMeta>(t_io);
