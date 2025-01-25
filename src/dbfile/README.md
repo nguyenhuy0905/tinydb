@@ -15,10 +15,13 @@ job, really.~~
   all the `friend` functions into non-friend. `friend`s do you no good.
     - Can be done with a couple of getters/setters.~~ Done.
 
-- Move decl of `Ptr` from inside the `dbfile/internal/heap.hxx` to a new header
-file inside the `dbfile/internal` directory. `Ptr` is needed in some more places.
+~~- Move decl of `Ptr` from inside the `dbfile/internal/heap.hxx` to a new header
+file inside the `dbfile/internal` directory. `Ptr` is needed in some more places.~~
+
 - Finish the functionalities of the heap.
-  - `malloc`, `free`.
+  - ~~`malloc`~~, `free`.
+    - Damn, a "generic" allocator is harder to write than I thought. Still, it isn't
+    too much. Wait until I start writing the B+ Tree.
   - `free` should also coalesce free fragments that are next to each
   other, if it can create a combined fragment whose size is a power of 2.
 - Change TextType to simply hold a pointer (so, it's 6 bytes in size).
@@ -36,7 +39,8 @@ file inside the `dbfile/internal` directory. `Ptr` is needed in some more places
     - This does mean I may need a pointer-to-row type. Which also means this row
     shouldn't have a key.
     - Reach: later on, I can abstract this away. But, not until I have a working
-    B+ Tree.
+    B+ Tree. By abstracting away, I mean the program automatically detects that
+    you need more memory than 1022 bytes, and allocates.
   - `add_row`, `delete_row`, `get_row`.
     - Pre and post conditions will be defined later.
 - Maybe add a fixed-length string type, for anything fewer-than-64-characters.
@@ -45,3 +49,4 @@ file inside the `dbfile/internal` directory. `Ptr` is needed in some more places
   - Maybe I shouldn't hardcode the value 64 bytes either. Let's say, `sizeof(size_t)`.
 - Also, maybe not hard-code 4096 as page size either. I can use something like
 `getconf PAGESIZE` on Unix systems. On Windows though.
+- Make a B+ Tree hash table for secondary keys functionality.
