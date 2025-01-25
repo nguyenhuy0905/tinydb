@@ -31,6 +31,11 @@ class FreePageMeta : public PageMixin {
         return m_next_pg;
     }
 
+    constexpr auto update_next_pg(page_ptr_t t_next) noexcept {
+        assert(t_next != NULL_PAGE);
+        m_next_pg = t_next;
+    }
+
   private:
     // offset 1: pointer to next page. Set to 0 if this is the last free page.
     //   If set to 0, the next free page should be the page right below this
@@ -131,6 +136,11 @@ class HeapMeta : public PageMixin {
     [[nodiscard]] constexpr auto get_max_pair() const noexcept
         -> const std::pair<page_off_t, page_off_t>& {
         return m_max;
+    }
+
+    constexpr auto update_next_pg(page_ptr_t t_next) noexcept {
+        assert(t_next != NULL_PAGE);
+        m_next_pg = t_next;
     }
 
     constexpr auto update_min_pair(page_off_t t_size, page_off_t t_off) {

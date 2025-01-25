@@ -86,7 +86,6 @@ class FreeList {
     FreeList(uint32_t t_first_free_pg) : m_first_free_pg{t_first_free_pg} {}
     // first free page.
     uint32_t m_first_free_pg;
-    static constexpr uint16_t FREELIST_OFF = 10;
 
     /**
      * @brief Returns the current `m_first_free_pg`, reads the stream passed in,

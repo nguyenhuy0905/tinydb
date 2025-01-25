@@ -155,15 +155,14 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
         auto ret = t_fl.allocate_page<HeapMeta>(t_io);
         // initialize the only fragment, which is 4081 bytes long (including the
         // header stuff).
-        write_frag_to(Fragment{.pos{.pagenum = ret.get_pg_num(),
-                                    .offset = HeapMeta::DEFAULT_FREE_OFF},
-                               .extra{Fragment::FreeFragExtra{
-                                   .next = Heap::Fragment::NULL_FRAG_PTR}},
-                               .size = SIZEOF_PAGE -
-                                       HeapMeta::DEFAULT_FREE_OFF -
-                                       Fragment::FREE_FRAG_HEADER_SIZE,
-                               .type = Fragment::FragType::Free},
-                      t_io);
+        Fragment write_to{.pos{.pagenum = ret.get_pg_num(),
+                               .offset = HeapMeta::DEFAULT_FREE_OFF},
+                          .extra{Fragment::FreeFragExtra{
+                              .next = Heap::Fragment::NULL_FRAG_PTR}},
+                          .size = SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
+                                  Fragment::FREE_FRAG_HEADER_SIZE,
+                          .type = Fragment::FragType::Free};
+        write_frag_to(write_to, t_io);
         return ret;
     };
     auto get_free_extra = [](Fragment& t_frag) -> Fragment::FreeFragExtra& {
@@ -184,18 +183,27 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     auto max_pair = heap_meta.get_max_pair();
     auto min_pair = heap_meta.get_min_pair();
     auto pagenum = heap_meta.get_pg_num();
-    // this one is to update the heap page later on
-    // this name is terrible. I should have created a struct that has fields
-    // size and offset.
-    while (max_pair.first < t_size && pagenum != NULL_PAGE) {
-        heap_meta = read_from<HeapMeta>(pagenum, t_io);
-        max_pair = heap_meta.get_max_pair();
-        pagenum = heap_meta.get_pg_num();
-    }
-    // if we don't even have a large enough fragment to use, ask the freelist
-    // for a new heap page. Pretty much "inventing" `mmap()` here.
-    if (pagenum == NULL_PAGE) {
-        heap_meta = alloc_new_heap_pg();
+    {
+        // this one is to update the heap page later on
+        // this name is terrible. I should have created a struct that has fields
+        // size and offset.
+        while (max_pair.first < t_size && pagenum != NULL_PAGE) {
+            pagenum = heap_meta.get_next_pg();
+            if(pagenum == NULL_PAGE) {
+                break;
+            }
+            heap_meta = read_from<HeapMeta>(pagenum, t_io);
+            max_pair = heap_meta.get_max_pair();
+        }
+        // if we don't even have a large enough fragment to use, ask the
+        // freelist for a new heap page. Pretty much "inventing" `mmap()` here.
+        if (pagenum == NULL_PAGE) {
+            auto prev_heap = heap_meta;
+            heap_meta = alloc_new_heap_pg();
+            pagenum = heap_meta.get_pg_num();
+            prev_heap.update_next_pg(pagenum);
+            write_to(prev_heap, t_io);
+        }
     }
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
@@ -343,7 +351,7 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     write_to(heap_meta, t_io);
     // in case m_first_heap_page is updated
     write_heap_to(*this, t_io);
-    
+
     return std::make_pair(ret_frag, ret_off);
 }
 

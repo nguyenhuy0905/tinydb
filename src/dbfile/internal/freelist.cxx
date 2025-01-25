@@ -1,8 +1,8 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
-#include "general/offsets.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/page_serialize.hxx"
+#include "general/offsets.hxx"
 #include "general/sizes.hxx"
 #include <bit>
 #include <iostream>
@@ -17,28 +17,33 @@ import std;
 
 namespace tinydb::dbfile::internal {
 
-auto FreeList::default_init(uint32_t t_first_free_pg,
-                                std::ostream& t_out) -> FreeList {
+auto FreeList::default_init(page_ptr_t t_first_free_pg, std::ostream& t_out)
+    -> FreeList {
     auto ret = FreeList{t_first_free_pg};
-    t_out.seekp(FREELIST_OFF);
+    t_out.seekp(DBFILE_SIZE_OFF);
+    // page number starts at 0, but database file size starts at 1.
+    auto filesize = t_first_free_pg + 1;
+    t_out.rdbuf()->sputn(std::bit_cast<const char*>(&filesize),
+                         sizeof(filesize));
+    t_out.seekp(SIZEOF_PAGE * t_first_free_pg);
+    FreePageMeta fpage{t_first_free_pg};
+    write_to(fpage, t_out);
+    t_out.seekp(FREELIST_PTR_OFF);
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&t_first_free_pg),
                          sizeof(t_first_free_pg));
-    t_out.seekp(SIZEOF_PAGE * t_first_free_pg);
-    auto fpage = FreePageMeta{t_first_free_pg};
-    write_to(fpage, t_out);
 
     return ret;
 }
 
 auto FreeList::construct_from(std::istream& t_in) -> FreeList {
     uint32_t first_free{0};
-    t_in.seekg(FREELIST_OFF);
+    t_in.seekg(FREELIST_PTR_OFF);
     t_in.rdbuf()->sgetn(std::bit_cast<char*>(&first_free), sizeof(first_free));
     return FreeList{first_free};
 }
 
 void FreeList::do_write_to(std::ostream& t_out) {
-    t_out.seekp(tinydb::FREELIST_PTR_OFF);
+    t_out.seekp(FREELIST_PTR_OFF);
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&m_first_free_pg),
                          sizeof(m_first_free_pg));
 }
@@ -64,8 +69,10 @@ auto FreeList::next_free_page(std::iostream& t_io) -> uint32_t {
                         sizeof(filesize));
     FreePageMeta newfree{filesize - 1, 0};
     write_to(newfree, t_io);
-
+    fpage.update_next_pg(filesize - 1);
+    write_to(fpage, t_io);
     m_first_free_pg = filesize - 1;
+    do_write_to(t_io);
 
     return old_first_free;
 }
@@ -98,4 +105,4 @@ void FreeList::deallocate_page(std::iostream& t_io, PageMixin&& t_meta) {
     write_to(FreePageMeta{pgnum, curr_free_pg}, t_io);
 }
 
-} // namespace tinydb::dbfile
+} // namespace tinydb::dbfile::internal

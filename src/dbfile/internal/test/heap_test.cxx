@@ -1,9 +1,7 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/heap.hxx"
-#include "general/offsets.hxx"
 #include "general/sizes.hxx"
-#include <bit>
 #include <gtest/gtest.h>
 #include <print>
 #include <sstream>
@@ -19,10 +17,7 @@ TEST(heap, init) {
     std::stringstream test_stream{std::string(SIZEOF_PAGE * numpages, '\0')};
     test_stream.exceptions(std::stringstream::failbit);
     auto fl = FreeList::default_init(first_pg, test_stream);
-    test_stream.seekp(DBFILE_SIZE_OFF);
-    test_stream.rdbuf()->sputn(std::bit_cast<const char*>(&first_pg),
-                               sizeof(first_pg));
-    fl.do_write_to(test_stream);
+    // fl.do_write_to(test_stream);
     Heap test_heap{0};
     // NOLINTBEGIN(*magic-number*)
     std::pair<Heap::Fragment, page_off_t> frag1{};
@@ -36,6 +31,15 @@ TEST(heap, init) {
     std::println("frag2 - pagenum: {} - offset: {} - size: {}",
                  frag2.first.pos.pagenum, frag2.first.pos.offset,
                  frag2.first.size);
+    // to force another free page allocation
+    auto frag3 = test_heap.malloc(4000, false, fl, test_stream);
+    std::println("frag3 - pagenum: {} - offset: {} - size: {}",
+                 frag3.first.pos.pagenum, frag3.first.pos.offset,
+                 frag3.first.size);
+    auto frag4 = test_heap.malloc(30, false, fl, test_stream);
+    std::println("frag4 - pagenum: {} - offset: {} - size: {}",
+                 frag4.first.pos.pagenum, frag4.first.pos.offset,
+                 frag4.first.size);
     // NOLINTEND(*magic-number*)
 }
 
