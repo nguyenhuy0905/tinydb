@@ -1,6 +1,7 @@
-#include "offsets.hxx"
+#include "page_base.hxx"
 #ifndef ENABLE_MODULE
 #include "dbfile/coltype.hxx"
+#include "offsets.hxx"
 #include "dbfile/internal/heap.hxx"
 #include "dbfile/internal/page_serialize.hxx"
 #include "general/sizes.hxx"
@@ -15,6 +16,7 @@
 module;
 #include "dbfile/coltype.hxx"
 #include "general/sizes.hxx"
+#include "offsets.hxx"
 #include <cassert>
 #include <cstdint>
 export module tinydb.dbfile.internal.heap;
@@ -143,14 +145,29 @@ auto read_heap_from(std::istream& t_in) -> Heap {
     return Heap{first_heap};
 }
 
-// TODO: write Heap::malloc, then Heap::free
-auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
-                  std::iostream& t_io) -> std::pair<Fragment, page_off_t> {
-    // TODO: break down this giant function.
+struct Heap::FindHeapRetVal {
+    HeapMeta heap_pg;
+    std::pair<page_off_t, page_off_t> max_pair;
+    std::pair<page_off_t, page_off_t> min_pair;
+};
 
-    // if we are requesting a chained fragment, we need a bit more room.
+/**
+ * @brief Finds the first heap page whose maximum fragment size is large enough
+ * to accomodate an allocation of size t_size. If no such heap page is found, a
+ * new heap page is requested from t_fl.
+ * If a new heap page is requested, t_fl will initialize the allocated heap page
+ * and write the page info into the stream t_io.
+ *
+ * TODO: document heap helper functions
+ *
+ * @param t_size
+ * @param t_fl
+ * @param t_io
+ * @return
+ */
+auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
+                                  std::iostream& t_io) -> Heap::FindHeapRetVal {
     assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
-    // helper lambda in case we don't have enough heap space for now.
     auto alloc_new_heap_pg = [&]() {
         auto ret = t_fl.allocate_page<HeapMeta>(t_io);
         // initialize the only fragment, which is 4081 bytes long (including the
@@ -165,11 +182,6 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
         write_frag_to(write_to, t_io);
         return ret;
     };
-    auto get_free_extra = [](Fragment& t_frag) -> Fragment::FreeFragExtra& {
-        assert(std::get_if<Fragment::FreeFragExtra>(&t_frag.extra) != nullptr);
-        return std::get<Fragment::FreeFragExtra>(t_frag.extra);
-    };
-
     auto heap_meta = [&]() {
         if (m_first_heap_page == NULL_PAGE) {
             auto ret = alloc_new_heap_pg();
@@ -189,7 +201,7 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
         // size and offset.
         while (max_pair.first < t_size && pagenum != NULL_PAGE) {
             pagenum = heap_meta.get_next_pg();
-            if(pagenum == NULL_PAGE) {
+            if (pagenum == NULL_PAGE) {
                 break;
             }
             heap_meta = read_from<HeapMeta>(pagenum, t_io);
@@ -205,6 +217,42 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
             write_to(prev_heap, t_io);
         }
     }
+    return {.heap_pg = heap_meta, .max_pair = max_pair, .min_pair = min_pair};
+}
+
+struct Heap::FindFragRetVal {
+    Fragment ret_frag;
+    Fragment next;
+    Fragment prev;
+    page_off_t ret_off{};
+};
+
+/**
+ * @brief Find the first-fit fragment. If the first-fit fragment is the largest
+ * fragment in the page, update the max-pair of the page. Similarly for smallest
+ * fragment and min-pair.
+ *
+ * TODO: document heap helper functions
+ *
+ * @details Since min_pair and max_pair may be in an indeterminate state here,
+ * meaning we can't really call update_min_pair or update_max_pair without an
+ * error, we need to take their pairs by reference.
+ *
+ * And would you look at that. The function signature is ugly as fuck.
+ *
+ * @param t_size The allocation size.
+ * @param is_chained
+ * @param t_max_pair
+ * @param t_min_pair
+ * @param t_meta
+ * @param t_io
+ * @return
+ */
+auto Heap::find_first_fit_frag(page_off_t t_size, bool is_chained,
+                               std::pair<page_off_t, page_off_t>& t_max_pair,
+                               std::pair<page_off_t, page_off_t>& t_min_pair,
+                               HeapMeta& t_meta, std::istream& t_io)
+    -> FindFragRetVal {
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
     // use a giant-hashtable type of database. If it's meant to be more
@@ -214,9 +262,16 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     // sizes vary wildly". For giant strings that take one or more pages to
     // allocate, this isn't an issue really. The number of fragments over
     // the total amount of heap memory allocated is smaller.
+
+    auto pagenum = t_meta.get_pg_num();
+
+    constexpr auto get_free_extra =
+        [](Fragment& t_frag) -> Fragment::FreeFragExtra& {
+        assert(std::get_if<Fragment::FreeFragExtra>(&t_frag.extra) != nullptr);
+        return std::get<Fragment::FreeFragExtra>(t_frag.extra);
+    };
     auto ret_frag = read_frag_from(
-        Ptr{.pagenum = pagenum, .offset = heap_meta.get_first_free_off()},
-        t_io);
+        Ptr{.pagenum = pagenum, .offset = t_meta.get_first_free_off()}, t_io);
     Heap::Fragment prev_frag{.pos = NullPtr,
                              .extra = Heap::Fragment::FreeFragExtra{},
                              .size = 0,
@@ -234,11 +289,11 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     // from this point, ret_frag's position will not be modified.
     assert(std::get_if<Fragment::FreeFragExtra>(&ret_frag.extra) != nullptr);
     // set max and min to some placeholder values.
-    if (max_pair.second == ret_frag.pos.offset) {
-        max_pair = {0, Fragment::NULL_FRAG_PTR};
+    if (t_max_pair.second == ret_frag.pos.offset) {
+        t_max_pair = {0, Fragment::NULL_FRAG_PTR};
     }
-    if (min_pair.second == ret_frag.pos.offset) {
-        min_pair = {SIZEOF_PAGE, Fragment::NULL_FRAG_PTR};
+    if (t_min_pair.second == ret_frag.pos.offset) {
+        t_min_pair = {SIZEOF_PAGE, Fragment::NULL_FRAG_PTR};
     }
 
     // record the 2 "neighbor" free fragments (neighbor in the sense of "closest
@@ -252,7 +307,7 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     }
     // Nicer name for checking invalid fragment than the raw null-pointer thingy
     // I guess.
-    auto is_invalid_frag = [](const Fragment& t_frag) {
+    constexpr auto is_invalid_frag = [](const Fragment& t_frag) {
         return t_frag.pos == NullPtr;
     };
 
@@ -265,9 +320,9 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
     }
 
     // in case the fragment we allocated is the first free fragment.
-    if (heap_meta.get_first_free_off() == ret_frag.pos.offset) {
+    if (t_meta.get_first_free_off() == ret_frag.pos.offset) {
         if (!is_invalid_frag(next_frag)) {
-            heap_meta.update_first_free(get_free_extra(next_frag).next);
+            t_meta.update_first_free(get_free_extra(next_frag).next);
         }
     }
     get_free_extra(ret_frag).next = next_frag.pos.offset;
@@ -286,8 +341,39 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
         }
         return Fragment::FragType::Used;
     }();
+    return {.ret_frag = ret_frag,
+            .next = next_frag,
+            .prev = prev_frag,
+            .ret_off = ret_off};
+}
 
-    // TODO: if the returned fragment still has room for another free fragment,
+// TODO: write Heap::malloc, then Heap::free
+auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
+                  std::iostream& t_io) -> std::pair<Fragment, page_off_t> {
+    // TODO: break down this giant function.
+    // There are a few things that this function is doing:
+    //   - Find a suitable heap page (a heap page whose largest fragment is
+    //   large enough to accomodate the requested size).
+    //   - Find the first suitable fragment in that page.
+    //   - If the fragment is large, break the parts we don't use into a new
+    //   free fragment.
+    //   - And finally, write all the things that changed back to the stream.
+
+    // TODO: when a fragment is chained, we need some extra size.
+    assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
+    constexpr auto get_free_extra =
+        [](Fragment& t_frag) -> Fragment::FreeFragExtra& {
+        assert(std::get_if<Fragment::FreeFragExtra>(&t_frag.extra) != nullptr);
+        return std::get<Fragment::FreeFragExtra>(t_frag.extra);
+    };
+    auto [heap_meta, max_pair, min_pair] =
+        find_first_fit_heap_pg(t_size, t_fl, t_io);
+    auto pagenum = heap_meta.get_pg_num();
+
+    auto [ret_frag, next_frag, prev_frag, ret_off] = find_first_fit_frag(
+        t_size, is_chained, max_pair, min_pair, heap_meta, t_io);
+
+    // if the returned fragment still has room for another free fragment,
     // break it down.
     auto new_frag_size = static_cast<page_off_t>(
         ret_frag.size - t_size - Fragment::FREE_FRAG_HEADER_SIZE);
@@ -307,6 +393,11 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
             ff != nullptr) {
             ff->next = new_frag_off;
         }
+        // Nicer name for checking invalid fragment than the raw null-pointer
+        // thingy I guess.
+        constexpr auto is_invalid_frag = [](const Fragment& t_frag) {
+            return t_frag.pos == NullPtr;
+        };
         // Then the neighboring fragment, particularly the next fragment.
         if (!is_invalid_frag(next_frag)) {
             get_free_extra(new_frag).next = next_frag.pos.offset;
@@ -320,17 +411,24 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
 
         write_frag_to(new_frag, t_io);
     }
-    // else, that bit of memory is lost to the entire system if I change
-    // ret_frag.size. So I won't. Hopefully the API consumer won't change
+    // NOTE: read the following and the code above this if you're implementing
+    // Heap::free:
+    //
+    // else, that bit of memory is lost to the entire system if I
+    // change ret_frag.size. So I won't. Hopefully the API consumer won't change
     // anything. But to be fair, the only API consumer of this is, me, even if
     // my library got some users.
 
-    // TODO: update the heap page to reflect the change we made to the database
-    // file. This line is just isn't enough. Need to update the header of the
-    // heap page we read from.
-
     write_frag_to(ret_frag, t_io);
     auto curr_update_frag = next_frag;
+    // Need to force update if the return fragment is the min and/or the max
+    // fragment.
+    if (max_pair.second == curr_update_frag.pos.offset) {
+        max_pair = {0, 0};
+    }
+    if (min_pair.second > curr_update_frag.pos.offset) {
+        min_pair = {SIZEOF_PAGE, 0};
+    }
     // Traverse the entire page to see which free fragments remaining are the
     // biggest and smallest.
     for (auto o = heap_meta.get_first_free_off();
@@ -354,5 +452,7 @@ auto Heap::malloc(page_off_t t_size, bool is_chained, FreeList& t_fl,
 
     return std::make_pair(ret_frag, ret_off);
 }
+
+// TODO: write the deallocation (Heap::free).
 
 } // namespace tinydb::dbfile::internal

@@ -5,6 +5,7 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_base.hxx"
+#include "dbfile/internal/page_meta.hxx"
 #include <iosfwd>
 #include <utility>
 #include <variant>
@@ -112,7 +113,7 @@ class Heap {
         static constexpr page_off_t FREE_FRAG_HEADER_SIZE =
             HEADER_SIZE + sizeof(FreeFragExtra::next);
         static constexpr page_off_t CHAINED_FRAG_HEADER_SIZE =
-            HEADER_SIZE + sizeof(Ptr::SIZE);
+            HEADER_SIZE + Ptr::SIZE;
     };
     static_assert(std::is_trivially_copy_assignable_v<Fragment>);
     static_assert(std::is_trivially_copy_constructible_v<Fragment>);
@@ -122,8 +123,11 @@ class Heap {
         : m_first_heap_page{t_first_heap_pg} {}
     /**
      * @brief Allocates a large enough chunk of memory. t_size must be smaller
-     * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF (which, at the moment
-     * of writing the documentation, is 4081).
+     * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF -
+     * USED_FRAG_HEADER_SIZE (which, at the moment of writing the documentation,
+     * is 4076).
+     * If is_chained is true, the maximum size is only 4070
+     * (HeapMeta::DEFAULT_FREE_OFF - CHAINED_FRAG_HEADER_SIZE).
      *
      * @param t_size Size of allocation.
      * @param is_chained If you
@@ -134,7 +138,7 @@ class Heap {
      *   - The second is the header size of the fragment. Data **MUST** be
      * written into the pointer whose `pagenum` is the same as
      * `return_value.first.pos.pagenum` and whose `offset` is
-     * `return_value.second` larger than `return_value.first.pos.offset`
+     * `return_value.second + return_value.first.pos.offset`
      */
     [[nodiscard]] auto malloc(page_off_t t_size, bool is_chained,
                               FreeList& t_fl, std::iostream& t_io)
@@ -143,6 +147,8 @@ class Heap {
     /**
      * @brief Manual call to chain 2 `Fragment`s together. Both of these must be
      * of type `Chained`.
+     *
+     * NOT YET IMPLEMENTED.
      *
      * @param t_to_chain
      * @param t_next_frag
@@ -153,6 +159,12 @@ class Heap {
     /**
      * @brief Frees the memory pointed to by the pointer, and writes the pointer
      * to NullPtr.
+     * @details This function also tries to coalesce free fragments. So, if you
+     * are simply reassigning value of the pointer, and care about squeezing out
+     * more performance, don't call this function. A "realloc" function will
+     * probably be written after this has been implemented to accomodate that.
+     *
+     * NOT YET IMPLEMENTED.
      *
      * @param t_ptr Pointer to memory to be freed.
      * @param t_fl In case we need to deallocate a page.
@@ -166,6 +178,17 @@ class Heap {
 
     static void write_frag_to(const Fragment&, std::ostream&);
     static auto read_frag_from(const Ptr&, std::istream&) -> Fragment;
+
+    // malloc and free helpers
+
+    struct FindHeapRetVal;
+    auto find_first_fit_heap_pg(page_off_t t_size, FreeList&, std::iostream&)
+        -> FindHeapRetVal;
+    struct FindFragRetVal;
+    auto find_first_fit_frag(page_off_t t_size, bool is_chained,
+                             std::pair<page_off_t, page_off_t>& max_pair,
+                             std::pair<page_off_t, page_off_t>& min_pair,
+                             HeapMeta&, std::istream&) -> FindFragRetVal;
 
     friend void write_heap_to(const Heap& t_heap, std::ostream& t_out);
 };
