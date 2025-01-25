@@ -139,7 +139,7 @@ class HeapMeta : public PageMixin {
         m_min = std::make_pair(t_size, t_off);
     }
 
-    constexpr auto update_max_size(page_off_t t_size, page_off_t t_off) {
+    constexpr auto update_max_pair(page_off_t t_size, page_off_t t_off) {
         assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
         assert(t_size >= m_min.first);
         m_max = std::make_pair(t_size, t_off);

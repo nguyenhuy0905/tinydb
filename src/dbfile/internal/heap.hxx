@@ -5,8 +5,9 @@
 #ifndef ENABLE_MODULE
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_base.hxx"
-#include "dbfile/internal/page_meta.hxx"
 #include <iosfwd>
+#include <utility>
+#include <variant>
 #endif // !ENABLE_MODULE
 
 TINYDB_EXPORT
@@ -60,19 +61,95 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  */
 class Heap {
   public:
+    /**
+     * @class Fragment
+     * @brief The in-memory representation of a fragment.
+     *
+     */
+    struct Fragment {
+        enum class FragType : char { // char so that I don't have to cast.
+            Free = 0,
+            Used,
+            Chained,
+        };
+        // All the `Extra` types here mean extra stuff that each fragment type
+        // inserts after the required fragment header.
+
+        struct FreeFragExtra {
+            page_off_t next;
+        };
+        struct ChainedFragExtra {
+            Ptr next;
+        };
+        struct UsedFragExtra {};
+        using FragExtra =
+            std::variant<FreeFragExtra, UsedFragExtra, ChainedFragExtra>;
+        // offset 0: 1-byte fragment type:
+        //   - 0 if free.
+        //   - 1 if used.
+        //   - 2 if used **AND** contains a pointer to another heap.
+        //     - To deal with super-duper large data.
+        // offset 1: 2-byte size.
+        //   - Remember that a page can only be 4096 bytes long.
+        // If fragment type is used, there's nothing more.
+        // If fragment type is chained:
+        //   - offset 3: 6-byte pointer to the next fragment in the chain.
+        //   NULL_FRAG_PTR if it's the last in chain.
+        // If fragment type is free:
+        //   - offset 3: 2-byte pointer to next fragment in the same page.
+
+        // pointer to the start of the header.
+        // Not written into the database file.
+        Ptr pos;
+        FragExtra extra;
+        page_off_t size;
+        FragType type;
+        static constexpr page_off_t NULL_FRAG_PTR = 0;
+        // Default header size. All fragment types have headers at least this
+        // size.
+        static constexpr page_off_t HEADER_SIZE = sizeof(type) + sizeof(size);
+        static constexpr page_off_t USED_FRAG_HEADER_SIZE = HEADER_SIZE;
+        static constexpr page_off_t FREE_FRAG_HEADER_SIZE =
+            HEADER_SIZE + sizeof(FreeFragExtra::next);
+        static constexpr page_off_t CHAINED_FRAG_HEADER_SIZE =
+            HEADER_SIZE + sizeof(Ptr::SIZE);
+    };
+    static_assert(std::is_trivially_copy_assignable_v<Fragment>);
+    static_assert(std::is_trivially_copy_constructible_v<Fragment>);
+
     Heap() = default;
     explicit Heap(page_ptr_t t_first_heap_pg)
         : m_first_heap_page{t_first_heap_pg} {}
     /**
      * @brief Allocates a large enough chunk of memory. t_size must be smaller
-     * than or equal to 2048.
+     * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF (which, at the moment
+     * of writing the documentation, is 4081).
      *
      * @param t_size Size of allocation.
+     * @param is_chained If you
      * @param t_fl In case we need to allocate a new page.
      * @param t_io The stream to deal with.
+     * @return A pair:
+     *   - The first value is the fragment allocated.
+     *   - The second is the header size of the fragment. Data **MUST** be
+     * written into the pointer whose `pagenum` is the same as
+     * `return_value.first.pos.pagenum` and whose `offset` is
+     * `return_value.second` larger than `return_value.first.pos.offset`
      */
-    [[nodiscard]] auto malloc(page_off_t t_size, FreeList& t_fl,
-                              std::iostream& t_io) -> Ptr;
+    [[nodiscard]] auto malloc(page_off_t t_size, bool is_chained,
+                              FreeList& t_fl, std::iostream& t_io)
+        -> std::pair<Fragment, page_off_t>;
+
+    /**
+     * @brief Manual call to chain 2 `Fragment`s together. Both of these must be
+     * of type `Chained`.
+     *
+     * @param t_to_chain
+     * @param t_next_frag
+     * @param t_io
+     */
+    void chain(Fragment& t_to_chain, const Fragment& t_next_frag,
+               std::iostream& t_io);
     /**
      * @brief Frees the memory pointed to by the pointer, and writes the pointer
      * to NullPtr.
@@ -87,7 +164,6 @@ class Heap {
     // offset 0: 4-byte pointer to the first heap.
     page_ptr_t m_first_heap_page{0};
 
-    struct Fragment;
     static void write_frag_to(const Fragment&, std::ostream&);
     static auto read_frag_from(const Ptr&, std::istream&) -> Fragment;
 

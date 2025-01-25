@@ -21,7 +21,7 @@ using page_off_t = uint16_t;
  * @brief A flag that each page has.
  * Determines how a page is formatted.
  * */
-enum class PageType : uint8_t {
+enum class PageType : char {
     Free = 0,
     BTreeLeaf,
     BTreeInternal,
@@ -61,6 +61,8 @@ class PageMixin {
     uint32_t m_pg_num;
     // NOLINTEND(*non-private*)
 };
+
+static constexpr page_ptr_t NULL_PAGE = 0;
 
 } // namespace tinydb::dbfile::internal
 
