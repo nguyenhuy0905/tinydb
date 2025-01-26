@@ -156,7 +156,9 @@ class HeapMeta : public PageMixin {
     }
 
     constexpr auto update_first_free(page_off_t t_val) {
-        if (t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE) {
+        // Now I'm allowing something like 0 to be set here.
+
+        if (t_val > 0 && (t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE)) {
             // TODO: throw something more useful.
             throw 1;
         }
