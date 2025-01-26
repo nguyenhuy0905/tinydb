@@ -14,8 +14,7 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "tinydb_WARNING_AS_ERR": "ON",
-                "tinydb_ENABLE_UNIT_TEST": "ON",
-                "CMAKE_CXX_SCAN_FOR_MODULES": "ON"
+                "tinydb_ENABLE_UNIT_TEST": "ON"
             }
         }
     ],
@@ -38,7 +37,7 @@
     "workflowPresets": [
         {
             "name": "debug",
-            "displayName": "Build without modules, and runs the unit test",
+            "displayName": "Debug build, and with unit test",
             "steps": [
                 {
                     "type": "configure",
