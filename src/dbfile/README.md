@@ -50,3 +50,6 @@ file inside the `dbfile/internal` directory. `Ptr` is needed in some more places
 - Also, maybe not hard-code 4096 as page size either. I can use something like
 `getconf PAGESIZE` on Unix systems. On Windows though.
 - Make a B+ Tree hash table for secondary keys functionality.
+- Maybe use a "write handler" instead of eagerly writing into the database. Cuz,
+we all know database writes are slow, so how about we delay doing that. Or, a
+"commit" system. But, this is optimization that should be done much much later.
