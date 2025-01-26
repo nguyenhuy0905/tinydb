@@ -1,24 +1,22 @@
-#ifndef TINYDB_DBFILE_COLTYPE_HXX
-#define TINYDB_DBFILE_COLTYPE_HXX
-
-#include "general/modules.hxx"
+module;
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <type_traits>
 #include <utility>
 #include <variant>
+export module tinydb.dbfile.coltype;
 
-namespace {
+export namespace tinydb {
 
 template <class... Ts> struct overload : Ts... {
     using Ts::operator()...;
 };
 template <class... Ts> overload(Ts...) -> overload<Ts...>;
 
-} // namespace
+}
 
-namespace tinydb::dbfile::column {
+export namespace tinydb::dbfile::column {
 
 // TODO: I'm planning to move column type definitions to here. I don't want the
 // client to have to depend on the table header file.
@@ -184,4 +182,3 @@ constexpr auto type_of(coltype_num_t t_num) -> std::optional<ColType> {
 }
 
 }; // namespace tinydb::dbfile::column
-#endif // !TINYDB_DBFILE_COLTYPE_HXX

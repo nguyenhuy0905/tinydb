@@ -3,8 +3,8 @@ module;
 #include <cassert>
 #include <cstdint>
 #include <utility>
-export module tinydb.dbfile.internal.page:meta;
-export import :base;
+export module tinydb.dbfile.internal.page.meta;
+export import tinydb.dbfile.internal.page.base;
 
 export namespace tinydb::dbfile::internal {
 

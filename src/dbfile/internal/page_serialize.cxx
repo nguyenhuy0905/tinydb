@@ -7,9 +7,9 @@ module;
 #include <memory>
 #include <optional>
 #include <utility>
-export module tinydb.dbfile.internal.page:serialize;
-export import :base;
-export import :meta;
+export module tinydb.dbfile.internal.page.serialize;
+import tinydb.dbfile.internal.page.base;
+import tinydb.dbfile.internal.page.meta;
 
 export namespace tinydb::dbfile::internal {
 

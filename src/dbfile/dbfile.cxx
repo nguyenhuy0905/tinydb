@@ -1,11 +1,11 @@
 module;
-#include "dbfile/coltype.hxx"
 #include "version.hxx"
 #include <bit>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 export module tinydb.dbfile;
+export import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.tbl;

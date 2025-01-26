@@ -1,8 +1,9 @@
-import tinydb.dbfile.internal.freelist;
-import tinydb.dbfile.internal.page;
 #include "sizes.hxx"
 #include <bit>
+#include <iostream>
 #include <gtest/gtest.h>
+import tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.page;
 TEST(simple_page, init) {
     using namespace tinydb;
     using namespace tinydb::dbfile;

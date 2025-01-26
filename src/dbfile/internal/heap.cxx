@@ -1,7 +1,6 @@
 module;
 #include "general/sizes.hxx"
 #include "general/offsets.hxx"
-#include "dbfile/coltype.hxx"
 #include <bit>
 #include <cassert>
 #include <cmath>
@@ -9,6 +8,7 @@ module;
 #include <utility>
 #include <variant>
 export module tinydb.dbfile.internal.heap;
+import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
 

@@ -1,15 +1,16 @@
 module;
-#include "dbfile/coltype.hxx"
 #include "general/offsets.hxx"
 #include <cstdint>
 #include <iostream>
 #include <optional>
+#include <print>
+#include <ranges>
+#include <sstream>
 #include <string>
 #include <type_traits>
-#include <ranges>
-#include <print>
-#include <sstream>
+#include <unordered_map>
 export module tinydb.dbfile.internal.tbl;
+import tinydb.dbfile.coltype;
 
 export namespace tinydb::dbfile::internal {
 

@@ -1,7 +1,7 @@
 module;
 #include <cstdint>
 #include <type_traits>
-export module tinydb.dbfile.internal.page:base;
+export module tinydb.dbfile.internal.page.base;
 // import std;
 
 export namespace tinydb::dbfile::internal {

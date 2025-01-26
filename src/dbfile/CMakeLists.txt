@@ -1,3 +1,7 @@
+add_library(tinydb_coltype)
+target_sources(tinydb_coltype PUBLIC FILE_SET CXX_MODULES FILES coltype.cxx)
+target_link_libraries(tinydb_coltype PRIVATE tinydb_compile_opts)
+
 add_subdirectory(internal)
 add_library(tinydb_dbfile)
 target_sources(tinydb_dbfile PUBLIC FILE_SET
@@ -8,6 +12,7 @@ target_link_libraries(tinydb_dbfile
     tinydb_dbfile_internal
     PUBLIC
     tinydb_general
+    tinydb_coltype
 )
 
 if(tinydb_ENABLE_UNIT_TEST)

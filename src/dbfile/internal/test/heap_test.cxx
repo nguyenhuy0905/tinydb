@@ -1,10 +1,11 @@
-import tinydb.dbfile.internal.freelist;
-import tinydb.dbfile.internal.heap;
-import tinydb.dbfile.internal.page;
 #include "sizes.hxx"
+#include <iostream>
 #include <gtest/gtest.h>
 #include <print>
 #include <sstream>
+import tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.heap;
+import tinydb.dbfile.internal.page;
 
 TEST(heap, init) {
     using namespace tinydb;

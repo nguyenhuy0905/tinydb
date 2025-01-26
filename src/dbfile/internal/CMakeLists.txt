@@ -13,6 +13,7 @@ target_sources(tinydb_dbfile_internal PUBLIC FILE_SET
 target_link_libraries(tinydb_dbfile_internal
     PUBLIC
     tinydb_general
+    tinydb_coltype
     PRIVATE
     tinydb_compile_opts
 )

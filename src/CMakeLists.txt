@@ -36,6 +36,7 @@ if(tinydb_ENABLE_UNIT_TEST)
     gtest_discover_tests(tinydb_test)
 endif()
 
+add_subdirectory(test)
 add_subdirectory(general)
 add_subdirectory(sql)
 add_subdirectory(dbfile)
