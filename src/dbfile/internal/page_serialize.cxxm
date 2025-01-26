@@ -180,7 +180,7 @@ auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta {
     rdbuf.sgetn(std::bit_cast<char*>(&min_pair.second),
                 sizeof(min_pair.second));
 
-    auto max_pair = 
+    auto max_pair =
         std::make_pair(static_cast<page_off_t>(0), static_cast<page_off_t>(0));
     rdbuf.sgetn(std::bit_cast<char*>(&max_pair.first), sizeof(max_pair.first));
     rdbuf.sgetn(std::bit_cast<char*>(&max_pair.second),
@@ -279,7 +279,8 @@ class PageSerializer {
         virtual void do_read_from(std::istream& t_in) = 0;
         virtual void do_write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
-        virtual ~PageConcept() = default;
+        // gcc got a segfault trying to digest with `= default`
+        virtual ~PageConcept() {};
     };
     // NOLINTEND(*special-member*)
 

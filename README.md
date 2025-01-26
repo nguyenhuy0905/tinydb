@@ -26,23 +26,23 @@ compilers would suffice.
   ~~- So far, testing on g++-14 and clang++-18 indicates that these compilers all
   work.~~
   - clang++-19 or later works flawlessly.
-    - clang++-18 cannot find `std::expected`.
+    - clang++-18 cannot find `std::expected`, unless you add `-D CMAKE_CXX_FLAGS:STRING="-stdlib=libc++"`.
+    This requires `libc++-dev` and `libc++abi-dev`, both of version 18 or above
+    (so, `libc++-18-dev` and `libc++abi-18-dev` on `apt`).
   - MSVC (Visual Studio) works, if your Visual Studio is of version 17 or newer.
   - g++-14 hits a compiler segfault. TLDR; it doesn't work.
-  - Apple's clang (so, XCode), pretty sure not.
+    - Maybe version 14.3 has this fixed. [Here's the bug report page of GCC on that
+    issue](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114630).
+  - Apple's clang (so, XCode): no.
+    - [If you want a peek](https://arewemodulesyet.org/tools/)
 
 > [!NOTE]
 > Extended testing on which compiler versions are the absolute minimum hasn't
 > been done.
 
-- CMake 3.23+.
+- CMake 3.28+.
+- Ninja build (`ninja-build` on `apt`).
 
-> [!WARNING]
-> CMake 3.30+ to compile using modules (since `import std;` is used), or 3.31+
-> to compile with modules using `gcc`.
-> (Speculative) CMake 3.23 should be enough otherwise.
-
-- Optional: Ninja Build on Linux/Mac (faster build speed than Makefiles).
 - Optional: ccache (speeds up non-module builds, from the second build
 onwards).
 - Optional: `gcc` or `msvc` users may want to take a look at LLVM for
@@ -77,23 +77,6 @@ cmake --workflow --preset debug
 - If you want more fine-grained configuration, using `ccmake` or `cmake-gui`
 is recommended.
   - Or, write your own `CMakeUserPresets.json`.
-
-### Building: Build with `import std`
-
-- Note, unless you use the latest version of CMake (by building from source),
-gcc is not supported.
-  - If you do, go to the CMake's GitHub page, at path `Help/dev/experimental.rst`,
-  and find new experimental code for `import std`.
-- If you want to build with modules (which also has `import std`), configure
-with the following options:
-  - `CMAKE_CXX_EXTENSIONS=ON`.
-  - `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD="0e5b6991-d74f-4b3d-a41c-cf096e0b2508"`
-  - `CMAKE_CXX_MODULE_STD=ON`
-  - `tinydb_ENABLE_MODULE=ON`
-  - If you use clang:
-    - `CMAKE_CXX_FLAGS="-stdlib=libc++"`
-    - `CMAKE_CXX_LINKER_FLAGS="-stdlib=libc++ -lc++abi"`
-  - If you use msvc: you don't need to do anything else, hopefully.
 
 ## Editor setup
 

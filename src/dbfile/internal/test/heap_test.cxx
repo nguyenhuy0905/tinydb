@@ -1,5 +1,4 @@
 #include "sizes.hxx"
-#include <iostream>
 #include <gtest/gtest.h>
 #include <print>
 #include <sstream>
