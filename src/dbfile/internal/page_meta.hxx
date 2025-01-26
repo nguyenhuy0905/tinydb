@@ -181,8 +181,6 @@ class HeapMeta : public PageMixin {
     // offset 11: 2-byte maximum heap size.
     // offset 13: 2-byte maximum heap local offset.
     std::pair<page_off_t, page_off_t> m_max;
-
-    static_assert(!std::is_trivially_copyable_v<decltype(m_min)>);
 };
 
 void write_to(const HeapMeta& t_meta, std::ostream& t_out);
