@@ -57,7 +57,7 @@ jobs:
     - name: Download Ninja, update compilers
       if: runner.os == 'Linux'
       # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get install ninja-build gcc clang
+      run: sudo apt-get update && sudo apt-get install ninja-build gcc clang
 
     - name: Configure CMake (Linux)
       if: runner.os == 'Linux'
