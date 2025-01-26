@@ -5,7 +5,7 @@ module;
 export module tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.page;
 
-export namespace tinydb::dbfile::internal {
+namespace tinydb::dbfile::internal {
 
 /**
  * @class FreeList
@@ -17,7 +17,7 @@ export namespace tinydb::dbfile::internal {
  * file.
  *
  */
-class FreeList {
+export class FreeList {
   public:
     // This should be written into the header of the database file.
     // This is constant-sized so I expect this to be written before the table
