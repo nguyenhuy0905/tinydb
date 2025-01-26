@@ -101,7 +101,7 @@ class HeapMeta : public PageMixin {
     explicit HeapMeta(page_ptr_t t_page_num)
         : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF},
           m_min{
-              std::make_pair(SIZEOF_PAGE - DEFAULT_FREE_OFF, DEFAULT_FREE_OFF)},
+              std::make_pair(static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF), static_cast<page_off_t>(DEFAULT_FREE_OFF))},
           m_max{m_min} {}
     HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg,
              page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_min,

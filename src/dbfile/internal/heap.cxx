@@ -241,10 +241,10 @@ export class Heap {
         // Need to force update if the return fragment is the min and/or the max
         // fragment.
         if (max_pair.second == curr_update_frag.pos.offset) {
-            max_pair = {0, 0};
+            max_pair = {static_cast<page_off_t>(0), static_cast<page_off_t>(0)};
         }
         if (min_pair.second > curr_update_frag.pos.offset) {
-            min_pair = {SIZEOF_PAGE, 0};
+            min_pair = {SIZEOF_PAGE, static_cast<page_off_t>(0)};
         }
         // Traverse the entire page to see which free fragments remaining are
         // the biggest and smallest.
@@ -475,7 +475,7 @@ export class Heap {
                nullptr);
         // set max and min to some placeholder values.
         if (t_max_pair.second == ret_frag.pos.offset) {
-            t_max_pair = {0, Fragment::NULL_FRAG_PTR};
+            t_max_pair = {static_cast<page_off_t>(0), Fragment::NULL_FRAG_PTR};
         }
         if (t_min_pair.second == ret_frag.pos.offset) {
             t_min_pair = {SIZEOF_PAGE, Fragment::NULL_FRAG_PTR};
