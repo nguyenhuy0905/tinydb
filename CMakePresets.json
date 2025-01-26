@@ -2,20 +2,19 @@
     "version": 8,
     "cmakeMinimumRequired": {
         "major": 3,
-        "minor": 30,
+        "minor": 28,
         "patch": 0
     },
     "configurePresets": [
         {
             "name": "debug",
-            "displayName": "Debug build without Modules, and with unit test",
+            "displayName": "Debug build, and with unit test",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "tinydb_WARNING_AS_ERR": "ON",
-                "tinydb_ENABLE_UNIT_TEST": "ON",
-                "CMAKE_CXX_EXTENSIONS": "OFF"
+                "tinydb_ENABLE_UNIT_TEST": "ON"
             }
         }
     ],
