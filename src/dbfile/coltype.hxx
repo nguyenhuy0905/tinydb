@@ -3,7 +3,6 @@
 
 #include "general/modules.hxx"
 #include <cstdint>
-#include <cstdint>
 #include <functional>
 #include <optional>
 #include <type_traits>
@@ -15,6 +14,7 @@ namespace {
 template <class... Ts> struct overload : Ts... {
     using Ts::operator()...;
 };
+template <class... Ts> overload(Ts...) -> overload<Ts...>;
 
 } // namespace
 
