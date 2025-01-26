@@ -148,14 +148,12 @@ class Heap {
      * @brief Manual call to chain 2 `Fragment`s together. Both of these must be
      * of type `Chained`.
      *
-     * NOT YET IMPLEMENTED.
-     *
      * @param t_to_chain
      * @param t_next_frag
-     * @param t_io
+     * @param t_out
      */
     void chain(Fragment& t_to_chain, const Fragment& t_next_frag,
-               std::iostream& t_io);
+               std::ostream& t_out);
     /**
      * @brief Frees the memory pointed to by the pointer, and writes the pointer
      * to NullPtr.

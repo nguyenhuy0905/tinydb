@@ -21,16 +21,18 @@ TEST(heap, init) {
     Heap test_heap{0};
     // NOLINTBEGIN(*magic-number*)
     std::pair<Heap::Fragment, page_off_t> frag1{};
-    frag1 = test_heap.malloc(4020, false, fl, test_stream);
+    frag1 = test_heap.malloc(4020, true, fl, test_stream);
 
     // the print functions are there so that the fragments aren't optimized out.
     std::println("frag1 - pagenum: {} - offset: {} - size: {}",
                  frag1.first.pos.pagenum, frag1.first.pos.offset,
                  frag1.first.size);
-    auto frag2 = test_heap.malloc(25, false, fl, test_stream);
+    auto frag2 = test_heap.malloc(50, false, fl, test_stream);
     std::println("frag2 - pagenum: {} - offset: {} - size: {}",
                  frag2.first.pos.pagenum, frag2.first.pos.offset,
                  frag2.first.size);
+    [[maybe_unused]]
+    auto rando_frag = test_heap.malloc(10, false, fl, test_stream);
     // to force another free page allocation
     auto frag3 = test_heap.malloc(4000, false, fl, test_stream);
     std::println("frag3 - pagenum: {} - offset: {} - size: {}",
