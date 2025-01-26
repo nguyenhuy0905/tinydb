@@ -1,14 +1,14 @@
 add_library(tinydb_dbfile_internal)
 target_sources(tinydb_dbfile_internal PUBLIC FILE_SET
     CXX_MODULES FILES
-    page.cxxm
-    page_base.cxxm
-    page_meta.cxxm
-    page_serialize.cxxm
-    # btree.cxx
-    freelist.cxxm
-    tbl.cxxm
-    heap.cxxm
+    page.cxx
+    page_base.cxx
+    page_meta.cxx
+    page_serialize.cxx
+    btree.cxx
+    freelist.cxx
+    tbl.cxx
+    heap.cxx
 )
 target_link_libraries(tinydb_dbfile_internal
     PUBLIC
