@@ -13,7 +13,8 @@
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
-                "tinydb_WARNING_AS_ERR": "ON"
+                "tinydb_WARNING_AS_ERR": "ON",
+                "tinydb_ENABLE_UNIT_TEST": "ON"
             }
         }
     ],

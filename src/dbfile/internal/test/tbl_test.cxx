@@ -1,10 +1,11 @@
-#include "dbfile/coltype.hxx"
 #include "sizes.hxx"
 #include <iostream>
 #include <cassert>
 #include <sstream>
+#include <gtest/gtest.h>
 import tinydb.dbfile.internal.tbl;
-void tbl_init() {
+import tinydb.dbfile.coltype;
+TEST(tbl, init) {
     using namespace tinydb::dbfile;
     using namespace tinydb::dbfile::internal;
     TableMeta tbltest{"test-tbl"};
