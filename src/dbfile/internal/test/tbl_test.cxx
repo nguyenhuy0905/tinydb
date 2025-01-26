@@ -1,7 +1,6 @@
-#ifndef ENABLE_MODULE
+import tinydb.dbfile.internal.tbl;
 #include "dbfile/coltype.hxx"
 #include "sizes.hxx"
-#include "dbfile/internal/tbl.hxx"
 #include <gtest/gtest.h>
 #include <sstream>
 TEST(tbl, init) {
@@ -38,16 +37,3 @@ TEST(tbl, init) {
     auto read_txt = std::get<column::TextType>(read_col2.m_type);
     ASSERT_EQ(initial_txt.get_size(), read_txt.get_size());
 }
-#else
-import std;
-import tinydb.dbfile.page;
-/**
- * @brief Simply here while I'm finding a way to unit-test these modules.
- * @details I may have to move back to CTest.
- */
-void something() {
-    using namespace tinydb::dbfile;
-    PageMeta t_meta{FreePageMeta{1}};
-    std::println("{}", t_meta.get_pg_num());
-}
-#endif // !ENABLE_MODULE

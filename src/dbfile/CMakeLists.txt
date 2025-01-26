@@ -1,14 +1,7 @@
 add_subdirectory(internal)
 add_library(tinydb_dbfile)
-tinydb_target_module_if_enabled(tinydb_dbfile
-    HEADER_FILES
-    dbfile.hxx
-    coltype.hxx
-    MODULE_FILES
-    dbfile.cxx
-    SOURCE_FILES
-    dbfile.cxx
-)
+target_sources(tinydb_dbfile PUBLIC FILE_SET
+    CXX_MODULES FILES dbfile.cxx)
 target_link_libraries(tinydb_dbfile
     PRIVATE
     tinydb_compile_opts

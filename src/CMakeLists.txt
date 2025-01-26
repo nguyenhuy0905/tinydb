@@ -1,8 +1,8 @@
-include(${PROJECT_SOURCE_DIR}/cmake/ModuleIfEnabled.cmake)
 include(GenerateExportHeader)
 add_library(tinydb)
-tinydb_target_module_if_enabled(tinydb
-    MODULE_FILES tinydb.cxx
+target_sources(tinydb
+    PUBLIC FILE_SET CXX_MODULES FILES
+    tinydb.cxx
 )
 generate_export_header(tinydb)
 target_include_directories(tinydb_compile_opts

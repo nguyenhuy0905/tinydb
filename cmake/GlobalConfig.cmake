@@ -50,14 +50,6 @@ macro(tinydb_global_config)
         endif()
     endif()
 
-    if(tinydb_ENABLE_MODULE)
-        if(MSVC)
-            add_compile_definitions("/DENABLE_MODULE")
-        else()
-            add_compile_definitions("-DENABLE_MODULE")
-        endif()
-    endif()
-
     # libc++
     if(tinydb_USE_LIBCXX)
         include(${PROJECT_SOURCE_DIR}/cmake/CheckLibcxxSourceCompile.cmake)

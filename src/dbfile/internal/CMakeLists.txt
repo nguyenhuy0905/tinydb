@@ -1,22 +1,6 @@
 add_library(tinydb_dbfile_internal)
-tinydb_target_module_if_enabled(tinydb_dbfile_internal
-    HEADER_FILES
-    page_base.hxx
-    page_serialize.hxx
-    page_meta.hxx
-    btree.hxx
-    freelist.hxx
-    heap.hxx
-    tbl.hxx
-    SOURCE_FILES
-    page_base.cxx
-    page_serialize.cxx
-    page.cxx
-    btree.cxx
-    freelist.cxx
-    tbl.cxx
-    heap.cxx
-    MODULE_FILES
+target_sources(tinydb_dbfile_internal PUBLIC FILE_SET
+    CXX_MODULES FILES
     page.cxx
     page_base.cxx
     page_meta.cxx

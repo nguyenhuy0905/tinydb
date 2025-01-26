@@ -1,11 +1,10 @@
-#ifndef ENABLE_MODULE
-#include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/heap.hxx"
-#include "general/sizes.hxx"
+import tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.heap;
+import tinydb.dbfile.internal.page;
+#include "sizes.hxx"
 #include <gtest/gtest.h>
 #include <print>
 #include <sstream>
-#endif
 
 TEST(heap, init) {
     using namespace tinydb;

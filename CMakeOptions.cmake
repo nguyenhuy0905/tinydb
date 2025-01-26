@@ -23,9 +23,6 @@ endif()
 option(tinydb_ENABLE_CCACHE "Use ccache" OFF)
 option(tinydb_ENABLE_LLD "Use lld instead of the compiler-default linker" OFF)
 option(tinydb_ENABLE_LTO "Enable link-time optimization" OFF)
-cmake_dependent_option(
-    tinydb_ENABLE_MODULE "Enable modules. Require C++20 and above" OFF
-    "${CMAKE_CXX_STANDARD} GREATER_EQUAL 20" OFF)
 option(tinydb_ENABLE_WARNING "Turn on compiler warnings." ON)
 cmake_dependent_option(
     tinydb_WARNING_AS_ERR "Turn compiler warnings into errors" OFF
@@ -72,7 +69,6 @@ if(NOT PROJECT_IS_TOP_LEVEL)
         tinydb_ENABLE_CCACHE
         tinydb_ENABLE_LLD
         tinydb_ENABLE_LTO
-        tinydb_ENABLE_MODULE
         tinydb_ENABLE_WARNING
         tinydb_WARNING_AS_ERR
         tinydb_ENABLE_UNIT_TEST

@@ -1,8 +1,6 @@
-#ifndef ENABLE_MODULE
-#include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/page_serialize.hxx"
-#include "dbfile/internal/page_meta.hxx"
-#include "general/sizes.hxx"
+import tinydb.dbfile.internal.freelist;
+import tinydb.dbfile.internal.page;
+#include "sizes.hxx"
 #include <bit>
 #include <gtest/gtest.h>
 TEST(simple_page, init) {
@@ -47,9 +45,5 @@ TEST(free_list, init) {
     // read_from(dealloc_page, test_stream);
     [[maybe_unused]] auto dealloc_page = read_from<FreePageMeta>(1, test_stream);
 }
-#else
-import std;
-import tinydb.dbfile.freelist;
 // #include "sizes.hxx"
-#endif // !ENABLE_MODULE
 

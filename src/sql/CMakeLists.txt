@@ -1,5 +1,3 @@
-include(${PROJECT_SOURCE_DIR}/cmake/ModuleIfEnabled.cmake)
-
 add_library(tinydb_sql)
 target_sources(tinydb_sql
     PRIVATE
