@@ -6,6 +6,7 @@ module;
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <utility>
 export module tinydb.dbfile.internal.page:serialize;
 export import :base;
 export import :meta;
