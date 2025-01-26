@@ -25,7 +25,6 @@ auto interpret(std::span<Token> t_tokens) -> InterpreterRetCode {
         return Err;
     }
 
-    using enum InterpreterRetCode;
     auto retval = Ok;
     std::visit(matches{[&](const Identifier& id) {
                            if (id.val != "select") {
