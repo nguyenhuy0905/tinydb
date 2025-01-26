@@ -19,6 +19,7 @@ jobs:
 
     env:
       CXX: ${{ matrix.cxx_compiler }}
+      CMAKE_GENERATOR: Ninja
 
     steps:
     - uses: actions/checkout@v4
