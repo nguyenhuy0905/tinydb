@@ -7,6 +7,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -30,9 +31,10 @@ jobs:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++-14
+          # gcc currently gives out a compiler segfault.
+          # - os: ubuntu-latest
+          #   c_compiler: gcc
+          #   cpp_compiler: g++-14
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++-18
@@ -57,7 +59,7 @@ jobs:
     - name: Download Ninja, update compilers
       if: runner.os == 'Linux'
       # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get update && sudo apt-get install ninja-build libstdc++-14-dev
+      run: sudo apt-get update && sudo apt-get install ninja-build libc++-14-dev
 
     - name: Configure CMake (Linux)
       if: runner.os == 'Linux'
@@ -68,6 +70,7 @@ jobs:
         -G "Ninja"
         -D CMAKE_CXX_COMPILER:STRING=${{ matrix.cpp_compiler }}
         -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
+        -D CMAKE_CXX_FLAGS:STRING="-stdlib=libc++"
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'

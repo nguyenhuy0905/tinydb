@@ -23,9 +23,12 @@
 
 - A C++ compiler that supports most of C++23. The newest versions of all major
 compilers would suffice.
-  - So far, testing on g++-14 and clang++-18 indicates that these compilers all
-  work.
-  - MSVC (Visual Studio) should work if it's the latest Visual Studio.
+  ~~- So far, testing on g++-14 and clang++-18 indicates that these compilers all
+  work.~~
+  - clang++-19 or later works flawlessly.
+    - clang++-18 cannot find `std::expected`.
+  - MSVC (Visual Studio) works, if your Visual Studio is of version 17 or newer.
+  - g++-14 hits a compiler segfault. TLDR; it doesn't work.
   - Apple's clang (so, XCode), pretty sure not.
 
 > [!NOTE]
