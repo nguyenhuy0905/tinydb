@@ -32,10 +32,10 @@ jobs:
             cpp_compiler: cl
           - os: ubuntu-latest
             c_compiler: gcc
-            cpp_compiler: g++
+            cpp_compiler: g++-14
           - os: ubuntu-latest
             c_compiler: clang
-            cpp_compiler: clang++
+            cpp_compiler: clang++-18
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -57,7 +57,7 @@ jobs:
     - name: Download Ninja, update compilers
       if: runner.os == 'Linux'
       # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get update && sudo apt-get install ninja-build gcc clang
+      run: sudo apt-get update && sudo apt-get install ninja-build libstdc++-14-dev
 
     - name: Configure CMake (Linux)
       if: runner.os == 'Linux'
