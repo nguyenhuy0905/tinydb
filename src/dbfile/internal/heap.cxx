@@ -7,6 +7,7 @@ module;
 #include <iostream>
 #include <utility>
 #include <variant>
+#include <type_traits>
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
