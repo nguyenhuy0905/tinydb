@@ -73,7 +73,7 @@ class TableMeta {
         -> std::optional<rw<const ColumnMeta>> const {
         try {
             return {{m_entries.at(std::forward<T>(t_name))}};
-        } catch (std::out_of_range e) {
+        } catch (std::out_of_range& e) {
             return {std::nullopt};
         }
     }

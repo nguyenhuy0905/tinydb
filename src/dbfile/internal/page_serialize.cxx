@@ -6,6 +6,7 @@
 #include <bit>
 #include <cassert>
 #include <iostream>
+#include <optional>
 #else
 module;
 #include <cassert>
