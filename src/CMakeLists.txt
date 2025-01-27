@@ -2,7 +2,7 @@ include(GenerateExportHeader)
 add_library(tinydb)
 target_sources(tinydb
     PUBLIC FILE_SET CXX_MODULES FILES
-    tinydb.cxxm
+    tinydb.cxx
 )
 generate_export_header(tinydb)
 target_include_directories(tinydb_compile_opts
