@@ -15,6 +15,7 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "tinydb_WARNING_AS_ERR": "ON",
                 "tinydb_ENABLE_UNIT_TEST": "ON",
+                "tinydb_USE_IMPORT_STD": "OFF",
                 "CMAKE_C_EXTENSIONS": "OFF",
                 "CMAKE_CXX_EXTENSIONS": "OFF"
             }
