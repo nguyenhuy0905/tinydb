@@ -65,4 +65,3 @@ class PageMixin {
 constexpr page_ptr_t NULL_PAGE = 0;
 
 } // namespace tinydb::dbfile::internal
-

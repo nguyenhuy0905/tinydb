@@ -1,14 +1,14 @@
 module;
-#include "general/sizes.hxx"
 #include "general/offsets.hxx"
+#include "general/sizes.hxx"
 #include <cassert>
 #ifndef IMPORT_STD
 #include <bit>
 #include <cmath>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 #include <variant>
-#include <type_traits>
 #endif
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.coltype;

@@ -48,7 +48,7 @@ TEST(free_list, init) {
     freelist.deallocate_page(test_stream, std::move(btlpage));
     // FreePageMeta dealloc_page{1};
     // read_from(dealloc_page, test_stream);
-    [[maybe_unused]] auto dealloc_page = read_from<FreePageMeta>(1, test_stream);
+    [[maybe_unused]] auto dealloc_page =
+        read_from<FreePageMeta>(1, test_stream);
 }
 // #include "sizes.hxx"
-
