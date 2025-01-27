@@ -1,8 +1,12 @@
 #include "sizes.hxx"
+#include <gtest/gtest.h>
+#ifndef IMPORT_STD
 #include <iostream>
 #include <cassert>
 #include <sstream>
-#include <gtest/gtest.h>
+#else
+import std;
+#endif
 import tinydb.dbfile.internal.tbl;
 import tinydb.dbfile.coltype;
 TEST(tbl, init) {

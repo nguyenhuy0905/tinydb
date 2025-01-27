@@ -1,7 +1,11 @@
 #include "sizes.hxx"
+#include <gtest/gtest.h>
+#ifndef IMPORT_STD
 #include <bit>
 #include <iostream>
-#include <gtest/gtest.h>
+#else
+import std;
+#endif
 import tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.page;
 TEST(simple_page, init) {
