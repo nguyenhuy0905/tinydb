@@ -23,7 +23,7 @@ TEST(heap, init) {
     // fl.do_write_to(test_stream);
     Heap test_heap{0};
     // NOLINTBEGIN(*magic-number*)
-    std::pair<Heap::Fragment, page_off_t> frag1{};
+    std::pair<Fragment, page_off_t> frag1{};
     frag1 = test_heap.malloc(4020, true, fl, test_stream);
 
     // the print functions are there so that the fragments aren't optimized out.
@@ -49,6 +49,10 @@ TEST(heap, init) {
     std::println("frag5 - pagenum: {} - offset: {} - size: {}",
                  frag5.first.pos.pagenum, frag5.first.pos.offset,
                  frag5.first.size);
+    auto frag6 = test_heap.malloc(10, false, fl, test_stream);
+    std::println("frag6 - pagenum: {} - offset: {} - size: {}",
+                 frag6.first.pos.pagenum, frag6.first.pos.offset,
+                 frag6.first.size);
     // NOLINTEND(*magic-number*)
 }
 
