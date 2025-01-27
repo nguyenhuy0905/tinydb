@@ -1,8 +1,12 @@
 module;
 #include <cstdint>
+#ifndef IMPORT_STD
 #include <type_traits>
+#endif
 export module tinydb.dbfile.internal.page:base;
-// import std;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 export namespace tinydb::dbfile::internal {
 

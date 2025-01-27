@@ -44,4 +44,8 @@ macro(tinydb_local_config)
         include(${PROJECT_SOURCE_DIR}/cmake/AddHardeningFlags.cmake)
         tinydb_add_hardening_flags(tinydb_compile_opts INTERFACE)
     endif()
+
+    if(tinydb_USE_IMPORT_STD)
+        target_compile_definitions(tinydb_compile_opts INTERFACE IMPORT_STD)
+    endif()
 endmacro()

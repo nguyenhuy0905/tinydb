@@ -1,15 +1,20 @@
 module;
 #include "general/sizes.hxx"
-#include <bit>
 #include <cassert>
+#ifndef IMPORT_STD
+#include <bit>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <utility>
+#endif
 export module tinydb.dbfile.internal.page:serialize;
 import :base;
 import :meta;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 export namespace tinydb::dbfile::internal {
 
@@ -280,7 +285,7 @@ class PageSerializer {
         virtual void do_write_to(std::ostream& t_out) const = 0;
         virtual auto clone() -> std::unique_ptr<PageConcept> = 0;
         // gcc got a segfault trying to digest with `= default`
-        virtual ~PageConcept() {};
+        virtual ~PageConcept() = default;
     };
     // NOLINTEND(*special-member*)
 

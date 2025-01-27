@@ -1,14 +1,19 @@
 module;
 #include "version.hxx"
+#ifndef IMPORT_STD
 #include <bit>
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#endif
 export module tinydb.dbfile;
 export import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.tbl;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 export namespace tinydb::dbfile {
 

@@ -1,17 +1,22 @@
 module;
 #include "general/sizes.hxx"
 #include "general/offsets.hxx"
-#include <bit>
 #include <cassert>
+#ifndef IMPORT_STD
+#include <bit>
 #include <cmath>
 #include <iostream>
 #include <utility>
 #include <variant>
 #include <type_traits>
+#endif
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 namespace tinydb::dbfile::internal {
 

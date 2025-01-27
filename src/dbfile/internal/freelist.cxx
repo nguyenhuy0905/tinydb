@@ -1,9 +1,14 @@
 module;
 #include "general/offsets.hxx"
+#ifndef IMPORT_STD
 #include <bit>
 #include <iostream>
+#endif
 export module tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.page;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 namespace tinydb::dbfile::internal {
 

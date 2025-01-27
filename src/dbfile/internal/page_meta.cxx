@@ -1,10 +1,15 @@
 module;
 #include "general/sizes.hxx"
 #include <cassert>
+#ifndef IMPORT_STD
 #include <cstdint>
 #include <utility>
+#endif
 export module tinydb.dbfile.internal.page:meta;
 export import :base;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 export namespace tinydb::dbfile::internal {
 
@@ -100,8 +105,9 @@ class HeapMeta : public PageMixin {
     static constexpr page_off_t DEFAULT_FREE_OFF = 15;
     explicit HeapMeta(page_ptr_t t_page_num)
         : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF},
-          m_min{
-              std::make_pair(static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF), static_cast<page_off_t>(DEFAULT_FREE_OFF))},
+          m_min{std::make_pair(
+              static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF),
+              static_cast<page_off_t>(DEFAULT_FREE_OFF))},
           m_max{m_min} {}
     HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg,
              page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_min,

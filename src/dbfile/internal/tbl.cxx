@@ -1,6 +1,7 @@
 module;
 #include "general/offsets.hxx"
 #include <cstdint>
+#ifndef IMPORT_STD
 #include <iostream>
 #include <optional>
 #include <print>
@@ -9,8 +10,12 @@ module;
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#endif
 export module tinydb.dbfile.internal.tbl;
 import tinydb.dbfile.coltype;
+#ifdef IMPORT_STD
+import std;
+#endif
 
 export namespace tinydb::dbfile::internal {
 
