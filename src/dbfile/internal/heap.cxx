@@ -278,22 +278,14 @@ export class Heap {
             t_size);
 
         assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
+
         auto [heap_meta, max_pair, min_pair] = find_first_fit_heap_pg(
             actual_size - Fragment::USED_FRAG_HEADER_SIZE, t_fl, t_io);
-
         auto [ret_frag, next_frag, prev_frag, ret_off] = find_first_fit_frag(
             actual_size - Fragment::USED_FRAG_HEADER_SIZE, is_chained, max_pair,
             min_pair, heap_meta, t_io);
 
         try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
-        // NOTE: read the following and the code above this if you're
-        // implementing Heap::free:
-        //
-        // else, that bit of memory is lost to the entire system if I
-        // change ret_frag.size. So I won't. Hopefully the API consumer won't
-        // change anything. But to be fair, the only API consumer of this is,
-        // me, even if my library got some users.
-
         write_frag_to(ret_frag, t_io);
         update_write_heap_pg(heap_meta, next_frag, max_pair, min_pair, t_io);
 
