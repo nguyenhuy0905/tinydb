@@ -40,14 +40,7 @@ export struct Ptr {
 
 static_assert(std::is_trivial_v<Ptr>);
 
-auto write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
-    t_out.seekp(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
-    auto& rdbuf = *t_out.rdbuf();
-    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.pagenum),
-                sizeof(t_ptr.pagenum));
-    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.offset),
-                sizeof(t_ptr.offset));
-}
+void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out);
 
 /**
  * @brief Gets the pointer at the specified position.
@@ -55,14 +48,7 @@ auto write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
  * @param t_pos The pointer to the position to read the pointer.
  * @param t_in The stream to read from.
  */
-export auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
-    t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
-    auto& rdbuf = *t_in.rdbuf();
-    Ptr ret{};
-    rdbuf.sgetn(std::bit_cast<char*>(&ret.pagenum), sizeof(ret.pagenum));
-    rdbuf.sgetn(std::bit_cast<char*>(&ret.offset), sizeof(ret.offset));
-    return ret;
-}
+auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
 
 /**
  * @brief Useful for null-checking I suppose?
@@ -140,11 +126,283 @@ export struct Fragment {
         assert(std::get_if<FreeFragExtra>(&extra) != nullptr);
         return std::get<FreeFragExtra>(extra);
     }
+
+    /**
+     * @brief A fragment is invalid if its `pos` is pointing to a NullPtr.
+     */
+    constexpr auto is_invalid() -> bool { return pos == NullPtr; }
 };
 static_assert(std::is_trivially_copy_assignable_v<Fragment>);
 static_assert(std::is_trivially_copy_constructible_v<Fragment>);
 
-static void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
+/**
+ * @brief Writes the data inside the fragment into the stream.
+ * This function performs no checking before writing data.
+ *
+ * @param t_frag The fragment.
+ * @param t_out The write-only stream.
+ */
+static void write_frag_to(const Fragment& t_frag, std::ostream& t_out);
+
+/**
+ * @brief Reads the fragment at the position pointed to from the stream.
+ *
+ * @param t_pos Pointer to the position of the fragment.
+ * @param t_in The read-only stream.
+ * @return The fragment read.
+ *   - Exception if there's a read error.
+ */
+static auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment;
+
+struct FindFragRetVal {
+    Fragment ret_frag;
+    Fragment next;
+    Fragment prev;
+    page_off_t ret_off{};
+};
+
+/**
+ * @brief Find the first-fit fragment. If the first-fit fragment is the
+ * largest fragment in the page, update the max-pair of the page. Similarly
+ * for smallest fragment and min-pair.
+ *
+ * @details Since min_pair and max_pair may be in an indeterminate state
+ * before and after calling this function, meaning we can't really call
+ * update_min_pair or update_max_pair without an error, we need to take their
+ * pairs by reference.
+ *
+ * This function also formats the returned fragment's extra into the right
+ * variant.
+ *
+ * // TODO: update the precondition of update_min_pair and update_max_pair.
+ *
+ * @param t_size The allocation size.
+ * @param is_chained Whether the fragment to be allocated is chained.
+ * @param t_max_pair First value must be larger than t_size (plus
+ * CHAINED_FRAG_HEADER_SIZE if is_chained is true).
+ * @param t_min_pair
+ * @param t_meta
+ * @param t_io
+ * @return
+ */
+static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
+                                std::pair<page_off_t, page_off_t>& t_max_pair,
+                                std::pair<page_off_t, page_off_t>& t_min_pair,
+                                const HeapMeta& t_meta, std::istream& t_io)
+    -> FindFragRetVal;
+
+/**
+ * @brief Calculates the difference between the fragment's size and the size
+ * requested. If the difference is large enough (larger than
+ * FREE_FRAG_HEADER_SIZE), perform a fragmentation, creating a new free
+ * fragment.
+ *
+ * @param t_old_frag The fragment to try break. This fragment will be allocated
+ * to the user.
+ * @param t_next_frag The next fragment of `t_old_frag`. Can be in an
+ * indeterminate state.
+ * @param t_old_frag_size The requested size.
+ * @param heap_meta The heap meta of the heap page containing `t_old_frag` (and
+ * consequently t_next_frag). Taken by reference. In case `t_old_frag` is the
+ * first free fragment, update `heap_meta`'s first free.
+ * @param t_io The stream to read/write.
+ * @return True if a new fragment is created, false otherwise.
+ */
+auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
+                    page_off_t t_old_frag_size, HeapMeta& heap_meta,
+                    std::iostream& t_io) -> bool;
+
+/**
+ * @brief Updates all the parameters passed in if needed before writing them
+ * into the stream.
+ *
+ * @param t_heap_meta Needs to be updated if max_pair and min_pair changes.
+ * @param t_next_frag Will not be updated. The updating is already done in
+ * `try_break_frag.`
+ * @param t_max_pair Updated if there's a larger fragment (not happening in
+ * `malloc`), or if it's a .
+ * @param t_min_pair Updated if there's a smaller fragment.
+ * @param t_io The read/write stream.
+ */
+void update_write_heap_pg(HeapMeta& t_heap_meta, const Fragment& t_next_frag,
+                          std::pair<page_off_t, page_off_t>& t_max_pair,
+                          decltype(t_max_pair)& t_min_pair,
+                          std::iostream& t_io);
+
+/**
+ * @class Heap
+ * @brief A freelist allocator.
+ *
+ * This allocator is created from 2 levels of linked lists. The first level is a
+ * singly-linked list between the heap pages. Inside each heap page contains a
+ * singly-linked list of memory fragments.
+ * To find a new allocation, the program first traverses the list of heap pages
+ * until it finds a page whose max fragment is large enough to accomodate the
+ * requested size. Then, it traverses the inner linked list of the heap page
+ * to find the first fragment that can accomodate the requested size.
+ *
+ */
+export class Heap {
+  public:
+    Heap() = default;
+    explicit Heap(page_ptr_t t_first_heap_pg)
+        : m_first_heap_page{t_first_heap_pg} {}
+
+    /**
+     * @brief Allocates a large enough chunk of memory. t_size must be smaller
+     * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF -
+     * USED_FRAG_HEADER_SIZE (which, at the moment of writing the documentation,
+     * is 4076).
+     * If is_chained is true, the maximum size is only 4070
+     * (HeapMeta::DEFAULT_FREE_OFF - CHAINED_FRAG_HEADER_SIZE).
+     *
+     * @param t_size Size of allocation.
+     * @param is_chained If you
+     * @param t_fl In case we need to allocate a new page.
+     * @param t_io The stream to deal with.
+     * @return A pair:
+     *   - The first value is the fragment allocated.
+     *   - The second is the header size of the fragment. Data **MUST** be
+     * written into the pointer whose `pagenum` is the same as
+     * `return_value.first.pos.pagenum` and whose `offset` is
+     * `return_value.second + return_value.first.pos.offset`
+     */
+    [[nodiscard]] auto malloc(page_off_t t_size, bool is_chained,
+                              FreeList& t_fl, std::iostream& t_io)
+        -> std::pair<Fragment, page_off_t> {
+        // chained fragment is free fragment plus a pointer, so naturally it
+        // needs Ptr::SIZE (6) more bytes.
+        auto actual_size = static_cast<page_off_t>(
+            (is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
+                        : Fragment::USED_FRAG_HEADER_SIZE) +
+            t_size);
+
+        assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
+        auto [heap_meta, max_pair, min_pair] = find_first_fit_heap_pg(
+            actual_size - Fragment::USED_FRAG_HEADER_SIZE, t_fl, t_io);
+
+        auto [ret_frag, next_frag, prev_frag, ret_off] = find_first_fit_frag(
+            actual_size - Fragment::USED_FRAG_HEADER_SIZE, is_chained, max_pair,
+            min_pair, heap_meta, t_io);
+
+        try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
+        // NOTE: read the following and the code above this if you're
+        // implementing Heap::free:
+        //
+        // else, that bit of memory is lost to the entire system if I
+        // change ret_frag.size. So I won't. Hopefully the API consumer won't
+        // change anything. But to be fair, the only API consumer of this is,
+        // me, even if my library got some users.
+
+        write_frag_to(ret_frag, t_io);
+        update_write_heap_pg(heap_meta, next_frag, max_pair, min_pair, t_io);
+
+        return std::make_pair(ret_frag, ret_off);
+    }
+
+    /**
+     * @brief Manual call to chain 2 `Fragment`s together. Both of these must be
+     * of type `Chained`.
+     *
+     * @param t_to_chain
+     * @param t_next_frag
+     * @param t_out
+     */
+    void chain(Fragment& t_to_chain, const Fragment& t_next_frag,
+               std::ostream& t_out) {
+        assert(std::get_if<Fragment::ChainedFragExtra>(&t_to_chain.extra) !=
+               nullptr);
+        assert(std::get_if<Fragment::ChainedFragExtra>(&t_next_frag.extra) !=
+               nullptr);
+        std::get<Fragment::ChainedFragExtra>(t_to_chain.extra).next =
+            t_next_frag.pos;
+        write_frag_to(t_to_chain, t_out);
+    }
+
+    /**
+     * @brief Releases the memory held by a fragment. Fragment must be of type
+     * Used.
+     *
+     * NOT IMPLEMENTED YET.
+     *
+     * @param t_frag The fragment to free, must be of type Used.
+     * @param t_fl In case the heap page the fragment points to is entirely
+     * free. Then, that page is released to the freelist.
+     * @param t_io The database read/write stream.
+     *
+     * @details
+     */
+    void free(Fragment& t_frag, FreeList& t_fl, std::iostream& t_io);
+
+  private:
+    // offset 0: 4-byte pointer to the first heap.
+    page_ptr_t m_first_heap_page{NULL_PAGE};
+
+    // malloc and free helpers
+
+    struct FindHeapRetVal {
+        HeapMeta heap_pg;
+        std::pair<page_off_t, page_off_t> max_pair;
+        std::pair<page_off_t, page_off_t> min_pair;
+    };
+
+    /**
+     * @brief Finds the first heap page whose maximum fragment size is large
+     * enough to accomodate an allocation of size t_size.
+     * If no such heap page is found, a new heap page is requested from t_fl. If
+     * a new heap page is requested, t_fl will initialize the allocated heap
+     * page and write the page info into the stream t_io.
+     * If `m_first_heap_page` is NULL_PAGE before calling this function, it will
+     * be updated.
+     *
+     * @param t_size The size to allocate.
+     * @param t_fl The free list to (potentially) request a new page from.
+     * @param t_io The read/write stream.
+     * @return
+     */
+    auto find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
+                                std::iostream& t_io) -> FindHeapRetVal;
+
+    void write_heap_to(std::ostream& t_out) {
+        t_out.seekp(HEAP_OFF);
+        t_out.rdbuf()->sputn(std::bit_cast<const char*>(&m_first_heap_page),
+                             sizeof(m_first_heap_page));
+    }
+};
+
+static_assert(!std::is_trivially_constructible_v<Heap>);
+
+/**
+ * @brief Reads from a stream and gets the heap.
+ *
+ * @param t_in The input stream.
+ */
+auto read_heap_from(std::istream& t_in) -> Heap {
+    t_in.seekg(HEAP_OFF);
+    page_ptr_t first_heap{};
+    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&first_heap), sizeof(first_heap));
+    return Heap{first_heap};
+}
+
+void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
+    t_out.seekp(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
+    auto& rdbuf = *t_out.rdbuf();
+    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.pagenum),
+                sizeof(t_ptr.pagenum));
+    rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.offset),
+                sizeof(t_ptr.offset));
+}
+
+auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
+    t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
+    auto& rdbuf = *t_in.rdbuf();
+    Ptr ret{};
+    rdbuf.sgetn(std::bit_cast<char*>(&ret.pagenum), sizeof(ret.pagenum));
+    rdbuf.sgetn(std::bit_cast<char*>(&ret.offset), sizeof(ret.offset));
+    return ret;
+}
+
+void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
     t_out.seekp(t_frag.pos.pagenum * SIZEOF_PAGE + t_frag.pos.offset);
     auto& rdbuf = *t_out.rdbuf();
     // type
@@ -174,7 +432,7 @@ static void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
         t_frag.extra);
 }
 
-static auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
+auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
     t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
 
@@ -218,37 +476,10 @@ static auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
             .type = Fragment::FragType{type}};
 }
 
-struct FindFragRetVal {
-    Fragment ret_frag;
-    Fragment next;
-    Fragment prev;
-    page_off_t ret_off{};
-};
-
-/**
- * @brief Find the first-fit fragment. If the first-fit fragment is the
- * largest fragment in the page, update the max-pair of the page. Similarly
- * for smallest fragment and min-pair.
- *
- *
- * @details Since min_pair and max_pair may be in an indeterminate state
- * here, meaning we can't really call update_min_pair or update_max_pair
- * without an error, we need to take their pairs by reference.
- *
- * And would you look at that. The function signature is ugly as fuck.
- *
- * @param t_size The allocation size.
- * @param is_chained
- * @param t_max_pair
- * @param t_min_pair
- * @param t_meta
- * @param t_io
- * @return
- */
-static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                                std::pair<page_off_t, page_off_t>& t_max_pair,
-                                std::pair<page_off_t, page_off_t>& t_min_pair,
-                                const HeapMeta& t_meta, std::istream& t_io)
+auto find_first_fit_frag(page_off_t t_size, bool is_chained,
+                         std::pair<page_off_t, page_off_t>& t_max_pair,
+                         std::pair<page_off_t, page_off_t>& t_min_pair,
+                         const HeapMeta& t_meta, std::istream& t_io)
     -> FindFragRetVal {
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
@@ -298,13 +529,7 @@ static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
             Ptr{.pagenum = pagenum, .offset = ret_frag.get_free_extra().next},
             t_io);
     }
-    // Nicer name for checking invalid fragment than the raw null-pointer
-    // thingy I guess.
-    constexpr auto is_invalid_frag = [](const Fragment& t_frag) {
-        return t_frag.pos == NullPtr;
-    };
-
-    if (!is_invalid_frag(prev_frag)) {
+    if (!prev_frag.is_invalid()) {
         auto next_off = ret_frag.get_free_extra().next;
         if (next_off != Fragment::NULL_FRAG_PTR) {
             next_frag = read_frag_from(
@@ -333,19 +558,67 @@ static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
             .ret_off = ret_off};
 }
 
-/**
- * @brief
- * TODO: document try_break_frag
- *
- * @param t_old_frag
- * @param t_next_frag
- * @param t_old_frag_size
- * @param heap_meta
- * @param t_io
- */
+auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
+                                  std::iostream& t_io) -> FindHeapRetVal {
+    assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
+    auto alloc_new_heap_pg = [&]() {
+        auto ret = t_fl.allocate_page<HeapMeta>(t_io);
+        // initialize the only fragment, which is 4081 bytes long (including
+        // the header stuff).
+        Fragment write_to{
+            .pos{.pagenum = ret.get_pg_num(),
+                 .offset = HeapMeta::DEFAULT_FREE_OFF},
+            .extra{Fragment::FreeFragExtra{.next = Fragment::NULL_FRAG_PTR}},
+            // When this thing is used, it is converted into
+            // an used fragment anyways.
+            .size = SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
+                    Fragment::USED_FRAG_HEADER_SIZE,
+            .type = Fragment::FragType::Free};
+        write_frag_to(write_to, t_io);
+        return ret;
+    };
+    auto heap_meta = [&]() {
+        if (m_first_heap_page == NULL_PAGE) {
+            auto ret = alloc_new_heap_pg();
+            m_first_heap_page = ret.get_pg_num();
+            return ret;
+        } else {
+            return read_from<HeapMeta>(m_first_heap_page, t_io);
+        }
+    }();
+    // search for the first heap page that has a large enough fragment.
+    auto max_pair = heap_meta.get_max_pair();
+    auto min_pair = heap_meta.get_min_pair();
+    auto pagenum = heap_meta.get_pg_num();
+    {
+        // this one is to update the heap page later on
+        // this name is terrible. I should have created a struct that has
+        // fields size and offset.
+        while (max_pair.first < t_size && pagenum != NULL_PAGE) {
+            pagenum = heap_meta.get_next_pg();
+            if (pagenum == NULL_PAGE) {
+                break;
+            }
+            heap_meta = read_from<HeapMeta>(pagenum, t_io);
+            max_pair = heap_meta.get_max_pair();
+        }
+        // if we don't even have a large enough fragment to use, ask the
+        // freelist for a new heap page. Pretty much "inventing" `mmap()`
+        // here.
+        if (pagenum == NULL_PAGE) {
+            auto prev_heap = heap_meta;
+            heap_meta = alloc_new_heap_pg();
+            pagenum = heap_meta.get_pg_num();
+            prev_heap.update_next_pg(pagenum);
+            write_to(prev_heap, t_io);
+        }
+    }
+    return {.heap_pg = heap_meta, .max_pair = max_pair, .min_pair = min_pair};
+}
+
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
                     page_off_t t_old_frag_size, HeapMeta& heap_meta,
-                    std::iostream& t_io) {
+                    std::iostream& t_io) -> bool {
     auto actual_size = [&]() {
         if (std::get_if<Fragment::UsedFragExtra>(&t_old_frag.extra) !=
             nullptr) {
@@ -365,7 +638,6 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
         return static_cast<page_off_t>(0);
     }();
     if (new_frag_size > 0) {
-        // if there's a bug, try to add 1 to the function below.
         auto new_frag_off =
             static_cast<page_off_t>(t_old_frag.pos.offset + actual_size);
         auto new_frag = Fragment{
@@ -377,13 +649,8 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
                                              Fragment::USED_FRAG_HEADER_SIZE)),
             .type = Fragment::FragType::Free};
         t_old_frag.size = t_old_frag_size;
-        // Nicer name for checking invalid fragment than the raw
-        // null-pointer thingy I guess.
-        constexpr auto is_invalid_frag = [](const Fragment& t_frag) {
-            return t_frag.pos == NullPtr;
-        };
         // Update the neighboring fragment, particularly the next fragment.
-        if (!is_invalid_frag(t_next_frag)) {
+        if (!t_next_frag.is_invalid()) {
             assert(std::get_if<Fragment::FreeFragExtra>(&t_next_frag.extra) !=
                    nullptr);
             new_frag.get_free_extra().next = t_next_frag.pos.offset;
@@ -397,249 +664,51 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
         // TODO: move the writes back to malloc.
 
         write_frag_to(new_frag, t_io);
-    } else if (heap_meta.get_first_free_off() == t_old_frag.pos.offset) {
+        return true;
+    }
+    if (heap_meta.get_first_free_off() == t_old_frag.pos.offset) {
         heap_meta.update_first_free(Fragment::NULL_FRAG_PTR);
     }
+    return false;
 }
 
-/**
- * @class Heap
- * @brief "Generic allocator," you may say. As opposed to the nice-and-efficient
- * block allocator that is FreeList. I know, naming scheme is a bit scuffed.
- *
- */
-export class Heap {
-  public:
-    Heap() = default;
-    explicit Heap(page_ptr_t t_first_heap_pg)
-        : m_first_heap_page{t_first_heap_pg} {}
-
-    /**
-     * @brief Allocates a large enough chunk of memory. t_size must be smaller
-     * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF -
-     * USED_FRAG_HEADER_SIZE (which, at the moment of writing the documentation,
-     * is 4076).
-     * If is_chained is true, the maximum size is only 4070
-     * (HeapMeta::DEFAULT_FREE_OFF - CHAINED_FRAG_HEADER_SIZE).
-     *
-     * @param t_size Size of allocation.
-     * @param is_chained If you
-     * @param t_fl In case we need to allocate a new page.
-     * @param t_io The stream to deal with.
-     * @return A pair:
-     *   - The first value is the fragment allocated.
-     *   - The second is the header size of the fragment. Data **MUST** be
-     * written into the pointer whose `pagenum` is the same as
-     * `return_value.first.pos.pagenum` and whose `offset` is
-     * `return_value.second + return_value.first.pos.offset`
-     */
-    [[nodiscard]] auto malloc(page_off_t t_size, bool is_chained,
-                              FreeList& t_fl, std::iostream& t_io)
-        -> std::pair<Fragment, page_off_t> {
-        // chained fragment is free fragment plus a pointer, so naturally it
-        // needs Ptr::SIZE (6) more bytes.
-        auto actual_size = static_cast<page_off_t>(
-            (is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
-                        : Fragment::USED_FRAG_HEADER_SIZE) +
-            t_size);
-
-        assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
-        auto [heap_meta, max_pair, min_pair] = find_first_fit_heap_pg(
-            actual_size - Fragment::USED_FRAG_HEADER_SIZE, t_fl, t_io);
-        auto pagenum = heap_meta.get_pg_num();
-
-        auto [ret_frag, next_frag, prev_frag, ret_off] = find_first_fit_frag(
-            actual_size - Fragment::USED_FRAG_HEADER_SIZE, is_chained, max_pair,
-            min_pair, heap_meta, t_io);
-
-        try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
-        // NOTE: read the following and the code above this if you're
-        // implementing Heap::free:
-        //
-        // else, that bit of memory is lost to the entire system if I
-        // change ret_frag.size. So I won't. Hopefully the API consumer won't
-        // change anything. But to be fair, the only API consumer of this is,
-        // me, even if my library got some users.
-
-        write_frag_to(ret_frag, t_io);
-        auto curr_update_frag = next_frag;
-        // Need to force update if the return fragment is the min and/or the max
-        // fragment.
-        if (max_pair.second == curr_update_frag.pos.offset) {
-            max_pair = {static_cast<page_off_t>(0), static_cast<page_off_t>(0)};
-        }
-        if (min_pair.second > curr_update_frag.pos.offset) {
-            min_pair = {SIZEOF_PAGE, static_cast<page_off_t>(0)};
-        }
-        // Traverse the entire page to see which free fragments remaining are
-        // the biggest and smallest.
+void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
+                          std::pair<page_off_t, page_off_t>& max_pair,
+                          decltype(max_pair)& min_pair, std::iostream& t_io) {
+    auto pagenum = heap_meta.get_pg_num();
+    auto curr_update_frag = next_frag;
+    // Force update. I'm a bit paranoid.
+    if (max_pair.second == curr_update_frag.pos.offset) {
+        max_pair = {static_cast<page_off_t>(0), static_cast<page_off_t>(0)};
+    }
+    if (min_pair.second == curr_update_frag.pos.offset) {
+        min_pair = {SIZEOF_PAGE, static_cast<page_off_t>(0)};
+    }
+    // Traverse the entire page to see which free fragments remaining are
+    // the biggest and smallest.
+    for (auto o = heap_meta.get_first_free_off(); o != Fragment::NULL_FRAG_PTR;
+         o = curr_update_frag.get_free_extra().next) {
         assert(std::get_if<Fragment::FreeFragExtra>(&curr_update_frag.extra) !=
                nullptr);
-        for (auto o = heap_meta.get_first_free_off();
-             o != Fragment::NULL_FRAG_PTR;
-             o = curr_update_frag.get_free_extra().next) {
-            curr_update_frag =
-                read_frag_from(Ptr{.pagenum = pagenum, .offset = o}, t_io);
-
-            if (max_pair.first < curr_update_frag.size) {
-                max_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
-            }
-            if (min_pair.first > curr_update_frag.size) {
-                min_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
-            }
-            assert(std::get_if<Fragment::FreeFragExtra>(
-                       &curr_update_frag.extra) != nullptr);
+        if (max_pair.first < curr_update_frag.size) {
+            max_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
         }
-        // if there's no update, set min_pair to {0, 0} also.
-        if (min_pair.first == SIZEOF_PAGE) {
-            min_pair.first = 0;
+        if (min_pair.first > curr_update_frag.size) {
+            min_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
         }
-
-        heap_meta.update_min_pair(min_pair.first, min_pair.second);
-        heap_meta.update_max_pair(max_pair.first, max_pair.second);
-        write_to(heap_meta, t_io);
-        // in case m_first_heap_page is updated
-        write_heap_to(t_io);
-
-        return std::make_pair(ret_frag, ret_off);
+        curr_update_frag =
+            read_frag_from(Ptr{.pagenum = pagenum, .offset = o}, t_io);
+    }
+    // if min_pair is not updated at all, meaning there is no fragment left.
+    // first = 0 is basically the same as "this page is out of memory".
+    if (min_pair.first == SIZEOF_PAGE) {
+        min_pair.first = 0;
+        max_pair.first = 0;
     }
 
-    /**
-     * @brief Manual call to chain 2 `Fragment`s together. Both of these must be
-     * of type `Chained`.
-     *
-     * @param t_to_chain
-     * @param t_next_frag
-     * @param t_out
-     */
-    void chain(Fragment& t_to_chain, const Fragment& t_next_frag,
-               std::ostream& t_out) {
-        assert(std::get_if<Fragment::ChainedFragExtra>(&t_to_chain.extra) !=
-               nullptr);
-        assert(std::get_if<Fragment::ChainedFragExtra>(&t_next_frag.extra) !=
-               nullptr);
-        std::get<Fragment::ChainedFragExtra>(t_to_chain.extra).next =
-            t_next_frag.pos;
-        write_frag_to(t_to_chain, t_out);
-    }
-
-    /**
-     * @brief Releases the memory held by a fragment. Fragment must be of type
-     * Used.
-     *
-     * @param t_frag The fragment to free, must be of type Used.
-     * @param t_fl In case the heap page the fragment points to is entirely
-     * free. Then, that page is released to the freelist.
-     * @param t_io The database read/write stream.
-     *
-     * @details
-     */
-    void free(Fragment& t_frag, FreeList& t_fl, std::iostream& t_io);
-
-  private:
-    // offset 0: 4-byte pointer to the first heap.
-    page_ptr_t m_first_heap_page{0};
-
-    // malloc and free helpers
-
-    struct FindHeapRetVal {
-        HeapMeta heap_pg;
-        std::pair<page_off_t, page_off_t> max_pair;
-        std::pair<page_off_t, page_off_t> min_pair;
-    };
-
-    /**
-     * @brief Finds the first heap page whose maximum fragment size is large
-     * enough to accomodate an allocation of size t_size. If no such heap page
-     * is found, a new heap page is requested from t_fl. If a new heap page is
-     * requested, t_fl will initialize the allocated heap page and write the
-     * page info into the stream t_io.
-     *
-     * TODO: document heap helper functions
-     *
-     * @param t_size
-     * @param t_fl
-     * @param t_io
-     * @return
-     */
-    auto find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
-                                std::iostream& t_io) -> FindHeapRetVal {
-        assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
-        auto alloc_new_heap_pg = [&]() {
-            auto ret = t_fl.allocate_page<HeapMeta>(t_io);
-            // initialize the only fragment, which is 4081 bytes long (including
-            // the header stuff).
-            Fragment write_to{.pos{.pagenum = ret.get_pg_num(),
-                                   .offset = HeapMeta::DEFAULT_FREE_OFF},
-                              .extra{Fragment::FreeFragExtra{
-                                  .next = Fragment::NULL_FRAG_PTR}},
-                              // When this thing is used, it is converted into
-                              // an used fragment anyways.
-                              .size = SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
-                                      Fragment::USED_FRAG_HEADER_SIZE,
-                              .type = Fragment::FragType::Free};
-            write_frag_to(write_to, t_io);
-            return ret;
-        };
-        auto heap_meta = [&]() {
-            if (m_first_heap_page == NULL_PAGE) {
-                auto ret = alloc_new_heap_pg();
-                m_first_heap_page = ret.get_pg_num();
-                return ret;
-            } else {
-                return read_from<HeapMeta>(m_first_heap_page, t_io);
-            }
-        }();
-        // search for the first heap page that has a large enough fragment.
-        auto max_pair = heap_meta.get_max_pair();
-        auto min_pair = heap_meta.get_min_pair();
-        auto pagenum = heap_meta.get_pg_num();
-        {
-            // this one is to update the heap page later on
-            // this name is terrible. I should have created a struct that has
-            // fields size and offset.
-            while (max_pair.first < t_size && pagenum != NULL_PAGE) {
-                pagenum = heap_meta.get_next_pg();
-                if (pagenum == NULL_PAGE) {
-                    break;
-                }
-                heap_meta = read_from<HeapMeta>(pagenum, t_io);
-                max_pair = heap_meta.get_max_pair();
-            }
-            // if we don't even have a large enough fragment to use, ask the
-            // freelist for a new heap page. Pretty much "inventing" `mmap()`
-            // here.
-            if (pagenum == NULL_PAGE) {
-                auto prev_heap = heap_meta;
-                heap_meta = alloc_new_heap_pg();
-                pagenum = heap_meta.get_pg_num();
-                prev_heap.update_next_pg(pagenum);
-                write_to(prev_heap, t_io);
-            }
-        }
-        return {
-            .heap_pg = heap_meta, .max_pair = max_pair, .min_pair = min_pair};
-    }
-
-    void write_heap_to(std::ostream& t_out) {
-        t_out.seekp(HEAP_OFF);
-        t_out.rdbuf()->sputn(std::bit_cast<const char*>(&m_first_heap_page),
-                             sizeof(m_first_heap_page));
-    }
-};
-
-static_assert(!std::is_trivially_constructible_v<Heap>);
-
-/**
- * @brief Reads from a stream and gets the heap.
- *
- * @param t_in The input stream.
- */
-auto read_heap_from(std::istream& t_in) -> Heap {
-    t_in.seekg(HEAP_OFF);
-    page_ptr_t first_heap{};
-    t_in.rdbuf()->sgetn(std::bit_cast<char*>(&first_heap), sizeof(first_heap));
-    return Heap{first_heap};
+    heap_meta.update_min_pair(min_pair.first, min_pair.second);
+    heap_meta.update_max_pair(max_pair.first, max_pair.second);
+    write_to(heap_meta, t_io);
 }
 
 } // namespace tinydb::dbfile::internal
