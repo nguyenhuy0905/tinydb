@@ -40,7 +40,8 @@ export struct Ptr {
 
 static_assert(std::is_trivial_v<Ptr>);
 
-void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out);
+static void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr,
+                         std::ostream& t_out);
 
 /**
  * @brief Gets the pointer at the specified position.
@@ -48,7 +49,7 @@ void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out);
  * @param t_pos The pointer to the position to read the pointer.
  * @param t_in The stream to read from.
  */
-auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
+static auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr;
 
 /**
  * @brief Useful for null-checking I suppose?
@@ -208,9 +209,9 @@ static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
  * @param t_io The stream to read/write.
  * @return True if a new fragment is created, false otherwise.
  */
-auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
-                    page_off_t t_old_frag_size, HeapMeta& heap_meta,
-                    std::iostream& t_io) -> bool;
+static auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
+                           page_off_t t_old_frag_size, HeapMeta& heap_meta,
+                           std::iostream& t_io) -> bool;
 
 /**
  * @brief Updates all the parameters passed in if needed before writing them
@@ -224,10 +225,11 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
  * @param t_min_pair Updated if there's a smaller fragment.
  * @param t_io The read/write stream.
  */
-void update_write_heap_pg(HeapMeta& t_heap_meta, const Fragment& t_next_frag,
-                          std::pair<page_off_t, page_off_t>& t_max_pair,
-                          decltype(t_max_pair)& t_min_pair,
-                          std::iostream& t_io);
+static void update_write_heap_pg(HeapMeta& t_heap_meta,
+                                 const Fragment& t_next_frag,
+                                 std::pair<page_off_t, page_off_t>& t_max_pair,
+                                 decltype(t_max_pair)& t_min_pair,
+                                 std::iostream& t_io);
 
 /**
  * @class Heap
@@ -376,7 +378,8 @@ auto read_heap_from(std::istream& t_in) -> Heap {
     return Heap{first_heap};
 }
 
-void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
+static void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr,
+                         std::ostream& t_out) {
     t_out.seekp(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_out.rdbuf();
     rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.pagenum),
@@ -385,7 +388,7 @@ void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
                 sizeof(t_ptr.offset));
 }
 
-auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
+static auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
     t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
     Ptr ret{};
@@ -394,7 +397,7 @@ auto read_ptr_from(const Ptr& t_pos, std::istream& t_in) -> Ptr {
     return ret;
 }
 
-void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
+static void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
     t_out.seekp(t_frag.pos.pagenum * SIZEOF_PAGE + t_frag.pos.offset);
     auto& rdbuf = *t_out.rdbuf();
     // type
@@ -424,7 +427,7 @@ void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
         t_frag.extra);
 }
 
-auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
+static auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
     t_in.seekg(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_in.rdbuf();
 
@@ -468,10 +471,10 @@ auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
             .type = Fragment::FragType{type}};
 }
 
-auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                         std::pair<page_off_t, page_off_t>& t_max_pair,
-                         std::pair<page_off_t, page_off_t>& t_min_pair,
-                         const HeapMeta& t_meta, std::istream& t_io)
+static auto find_first_fit_frag(page_off_t t_size, bool is_chained,
+                                std::pair<page_off_t, page_off_t>& t_max_pair,
+                                std::pair<page_off_t, page_off_t>& t_min_pair,
+                                const HeapMeta& t_meta, std::istream& t_io)
     -> FindFragRetVal {
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
@@ -608,9 +611,9 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
     return {.heap_pg = heap_meta, .max_pair = max_pair, .min_pair = min_pair};
 }
 
-auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
-                    page_off_t t_old_frag_size, HeapMeta& heap_meta,
-                    std::iostream& t_io) -> bool {
+static auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
+                           page_off_t t_old_frag_size, HeapMeta& heap_meta,
+                           std::iostream& t_io) -> bool {
     auto actual_size = [&]() {
         if (std::get_if<Fragment::UsedFragExtra>(&t_old_frag.extra) !=
             nullptr) {
@@ -664,9 +667,10 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
     return false;
 }
 
-void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
-                          std::pair<page_off_t, page_off_t>& max_pair,
-                          decltype(max_pair)& min_pair, std::iostream& t_io) {
+static void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
+                                 std::pair<page_off_t, page_off_t>& max_pair,
+                                 decltype(max_pair)& min_pair,
+                                 std::iostream& t_io) {
     auto pagenum = heap_meta.get_pg_num();
     auto curr_update_frag = next_frag;
     // Force update. I'm a bit paranoid.
