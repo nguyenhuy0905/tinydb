@@ -40,8 +40,7 @@ export struct Ptr {
 
 static_assert(std::is_trivial_v<Ptr>);
 
-void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr,
-                         std::ostream& t_out);
+void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out);
 
 /**
  * @brief Gets the pointer at the specified position.
@@ -187,9 +186,8 @@ struct FindFragRetVal {
  * @return
  */
 auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                                std::pair<page_off_t, page_off_t>& t_max_pair,
-                                std::pair<page_off_t, page_off_t>& t_min_pair,
-                                const HeapMeta& t_meta, std::istream& t_io)
+                         std::pair<page_off_t, page_off_t>& t_max_pair,
+                         const HeapMeta& t_meta, std::istream& t_io)
     -> FindFragRetVal;
 
 /**
@@ -210,8 +208,8 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
  * @return True if a new fragment is created, false otherwise.
  */
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
-                           page_off_t t_old_frag_size, HeapMeta& heap_meta,
-                           std::iostream& t_io) -> bool;
+                    page_off_t t_old_frag_size, HeapMeta& heap_meta,
+                    std::iostream& t_io) -> bool;
 
 /**
  * @brief Updates all the parameters passed in if needed before writing them
@@ -225,11 +223,9 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
  * @param t_min_pair Updated if there's a smaller fragment.
  * @param t_io The read/write stream.
  */
-void update_write_heap_pg(HeapMeta& t_heap_meta,
-                                 const Fragment& t_next_frag,
-                                 std::pair<page_off_t, page_off_t>& t_max_pair,
-                                 decltype(t_max_pair)& t_min_pair,
-                                 std::iostream& t_io);
+void update_write_heap_pg(HeapMeta& t_heap_meta, const Fragment& t_next_frag,
+                          std::pair<page_off_t, page_off_t>& t_max_pair,
+                          std::iostream& t_io);
 
 /**
  * @class Heap
@@ -281,15 +277,15 @@ export class Heap {
 
         assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
 
-        auto [heap_meta, max_pair, min_pair] = find_first_fit_heap_pg(
+        auto [heap_meta, max_pair] = find_first_fit_heap_pg(
             actual_size - Fragment::USED_FRAG_HEADER_SIZE, t_fl, t_io);
-        auto [ret_frag, next_frag, prev_frag, ret_off] = find_first_fit_frag(
-            actual_size - Fragment::USED_FRAG_HEADER_SIZE, is_chained, max_pair,
-            min_pair, heap_meta, t_io);
+        auto [ret_frag, next_frag, prev_frag, ret_off] =
+            find_first_fit_frag(actual_size - Fragment::USED_FRAG_HEADER_SIZE,
+                                is_chained, max_pair, heap_meta, t_io);
 
         try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
         write_frag_to(ret_frag, t_io);
-        update_write_heap_pg(heap_meta, next_frag, max_pair, min_pair, t_io);
+        update_write_heap_pg(heap_meta, next_frag, max_pair, t_io);
 
         return std::make_pair(ret_frag, ret_off);
     }
@@ -337,7 +333,6 @@ export class Heap {
     struct FindHeapRetVal {
         HeapMeta heap_pg;
         std::pair<page_off_t, page_off_t> max_pair;
-        std::pair<page_off_t, page_off_t> min_pair;
     };
 
     /**
@@ -378,8 +373,7 @@ auto read_heap_from(std::istream& t_in) -> Heap {
     return Heap{first_heap};
 }
 
-void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr,
-                         std::ostream& t_out) {
+void write_ptr_to(const Ptr& t_pos, const Ptr& t_ptr, std::ostream& t_out) {
     t_out.seekp(t_pos.pagenum * SIZEOF_PAGE + t_pos.offset);
     auto& rdbuf = *t_out.rdbuf();
     rdbuf.sputn(std::bit_cast<const char*>(&t_ptr.pagenum),
@@ -472,9 +466,8 @@ auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
 }
 
 auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                                std::pair<page_off_t, page_off_t>& t_max_pair,
-                                std::pair<page_off_t, page_off_t>& t_min_pair,
-                                const HeapMeta& t_meta, std::istream& t_io)
+                         std::pair<page_off_t, page_off_t>& t_max_pair,
+                         const HeapMeta& t_meta, std::istream& t_io)
     -> FindFragRetVal {
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
@@ -511,10 +504,6 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
     if (t_max_pair.second == ret_frag.pos.offset) {
         t_max_pair = {static_cast<page_off_t>(0), Fragment::NULL_FRAG_PTR};
     }
-    if (t_min_pair.second == ret_frag.pos.offset) {
-        t_min_pair = {SIZEOF_PAGE, Fragment::NULL_FRAG_PTR};
-    }
-
     // record the 2 "neighbor" free fragments (neighbor in the sense of
     // "closest together" here) for update later. Of course, only update if
     // there exists those 2.
@@ -583,7 +572,6 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
     }();
     // search for the first heap page that has a large enough fragment.
     auto max_pair = heap_meta.get_max_pair();
-    auto min_pair = heap_meta.get_min_pair();
     auto pagenum = heap_meta.get_pg_num();
     {
         // this one is to update the heap page later on
@@ -608,12 +596,12 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
             write_to(prev_heap, t_io);
         }
     }
-    return {.heap_pg = heap_meta, .max_pair = max_pair, .min_pair = min_pair};
+    return {.heap_pg = heap_meta, .max_pair = max_pair};
 }
 
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
-                           page_off_t t_old_frag_size, HeapMeta& heap_meta,
-                           std::iostream& t_io) -> bool {
+                    page_off_t t_old_frag_size, HeapMeta& heap_meta,
+                    std::iostream& t_io) -> bool {
     auto actual_size = [&]() {
         if (std::get_if<Fragment::UsedFragExtra>(&t_old_frag.extra) !=
             nullptr) {
@@ -668,17 +656,13 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
 }
 
 void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
-                                 std::pair<page_off_t, page_off_t>& max_pair,
-                                 decltype(max_pair)& min_pair,
-                                 std::iostream& t_io) {
+                          std::pair<page_off_t, page_off_t>& max_pair,
+                          std::iostream& t_io) {
     auto pagenum = heap_meta.get_pg_num();
     auto curr_update_frag = next_frag;
     // Force update. I'm a bit paranoid.
     if (max_pair.second == curr_update_frag.pos.offset) {
         max_pair = {static_cast<page_off_t>(0), static_cast<page_off_t>(0)};
-    }
-    if (min_pair.second == curr_update_frag.pos.offset) {
-        min_pair = {SIZEOF_PAGE, static_cast<page_off_t>(0)};
     }
     // Traverse the entire page to see which free fragments remaining are
     // the biggest and smallest.
@@ -689,20 +673,15 @@ void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
         if (max_pair.first < curr_update_frag.size) {
             max_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
         }
-        if (min_pair.first > curr_update_frag.size) {
-            min_pair = {curr_update_frag.size, curr_update_frag.pos.offset};
-        }
         curr_update_frag =
             read_frag_from(Ptr{.pagenum = pagenum, .offset = o}, t_io);
     }
     // if min_pair is not updated at all, meaning there is no fragment left.
     // first = 0 is basically the same as "this page is out of memory".
-    if (min_pair.first == SIZEOF_PAGE) {
-        min_pair.first = 0;
-        max_pair.first = 0;
+    if (max_pair.first == 0) {
+        max_pair.second = 0;
     }
 
-    heap_meta.update_min_pair(min_pair.first, min_pair.second);
     heap_meta.update_max_pair(max_pair.first, max_pair.second);
     write_to(heap_meta, t_io);
 }
