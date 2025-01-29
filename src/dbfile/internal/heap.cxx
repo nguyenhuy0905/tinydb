@@ -270,18 +270,16 @@ export class Heap {
         -> std::pair<Fragment, page_off_t> {
         // chained fragment is free fragment plus a pointer, so naturally it
         // needs Ptr::SIZE (6) more bytes.
-        auto actual_size = static_cast<page_off_t>(
-            (is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
-                        : Fragment::USED_FRAG_HEADER_SIZE) +
-            t_size);
+        auto header_size = (is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
+                                       : Fragment::USED_FRAG_HEADER_SIZE);
+        auto actual_size = static_cast<page_off_t>(header_size + t_size);
 
         assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
 
-        auto [heap_meta, max_pair] = find_first_fit_heap_pg(
-            actual_size - Fragment::USED_FRAG_HEADER_SIZE, t_fl, t_io);
+        auto [heap_meta, max_pair] =
+            find_first_fit_heap_pg(t_size, is_chained, t_fl, t_io);
         auto [ret_frag, next_frag, prev_frag, ret_off] =
-            find_first_fit_frag(actual_size - Fragment::USED_FRAG_HEADER_SIZE,
-                                is_chained, max_pair, heap_meta, t_io);
+            find_first_fit_frag(t_size, is_chained, max_pair, heap_meta, t_io);
 
         try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
         write_frag_to(ret_frag, t_io);
@@ -349,8 +347,9 @@ export class Heap {
      * @param t_io The read/write stream.
      * @return
      */
-    auto find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
-                                std::iostream& t_io) -> FindHeapRetVal;
+    auto find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
+                                FreeList& t_fl, std::iostream& t_io)
+        -> FindHeapRetVal;
 
     void write_heap_to(std::ostream& t_out) {
         t_out.seekp(HEAP_OFF);
@@ -398,11 +397,6 @@ void write_frag_to(const Fragment& t_frag, std::ostream& t_out) {
     rdbuf.sputc(static_cast<std::underlying_type_t<decltype(t_frag.type)>>(
         t_frag.type));
     // size
-    t_out.seekp(static_cast<std::streamoff>(t_frag.pos.pagenum * SIZEOF_PAGE +
-                                            t_frag.pos.offset +
-                                            // Ptr in-memory is 8 bytes due to
-                                            // alignment, but we only need 6.
-                                            sizeof(t_frag.type) + Ptr::SIZE));
     rdbuf.sputn(std::bit_cast<const char*>(&t_frag.size), sizeof(t_frag.size));
     std::visit(
         overload{[&](const Fragment::FreeFragExtra& t_free_extra) {
@@ -429,15 +423,8 @@ auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
         static_cast<std::underlying_type_t<Fragment::FragType>>(
             rdbuf.sbumpc())};
 
-    Ptr curr_pos{.pagenum = t_pos.pagenum,
-                 .offset = static_cast<page_off_t>(
-                     t_pos.offset + sizeof(Fragment::type) + Ptr::SIZE)};
-    t_in.seekg(static_cast<std::streamoff>(curr_pos.pagenum * SIZEOF_PAGE +
-                                           curr_pos.offset));
-
     page_off_t size{};
     rdbuf.sgetn(std::bit_cast<char*>(&size), sizeof(size));
-    curr_pos.offset += sizeof(size);
 
     Fragment::FragExtra extra{Fragment::UsedFragExtra{}};
     switch (Fragment::FragType{type}) {
@@ -451,7 +438,10 @@ auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
     case Used:
         break;
     case Chained: {
-        Ptr next = read_ptr_from(curr_pos, t_in);
+        Ptr next = read_ptr_from(Ptr{.pagenum = t_pos.pagenum,
+                                     .offset = static_cast<page_off_t>(
+                                         t_pos.offset + Fragment::HEADER_SIZE)},
+                                 t_in);
         extra = Fragment::ChainedFragExtra{.next = next};
         break;
     }
@@ -469,6 +459,9 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
                          std::pair<page_off_t, page_off_t>& t_max_pair,
                          const HeapMeta& t_meta, std::istream& t_io)
     -> FindFragRetVal {
+    auto header_size = is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
+                                  : Fragment::USED_FRAG_HEADER_SIZE;
+    auto search_size = t_size + header_size - Fragment::FREE_FRAG_HEADER_SIZE;
     // first-fit scheme. You know, a database is meant to be read from more
     // than update. If one wants frequent updating, he/she would probably
     // use a giant-hashtable type of database. If it's meant to be more
@@ -487,7 +480,7 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
                        .extra = Fragment::FreeFragExtra{},
                        .size = 0,
                        .type = Fragment::FragType::Free};
-    while (ret_frag.size < t_size) {
+    while (ret_frag.size < search_size) {
         assert(std::get_if<Fragment::FreeFragExtra>(&ret_frag.extra) !=
                nullptr);
         assert(ret_frag.get_free_extra().next != Fragment::NULL_FRAG_PTR);
@@ -524,30 +517,35 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
     ret_frag.get_free_extra().next = next_frag.pos.offset;
     // if the user needs to chain the fragments, they must have another
     // `Chained` fragment ready.
-    auto ret_off = Fragment::USED_FRAG_HEADER_SIZE;
 
     // if we have is_chained == true
     ret_frag.type = [&]() {
         if (is_chained) {
             ret_frag.extra = Fragment::ChainedFragExtra{NullPtr};
-            ret_off = Fragment::CHAINED_FRAG_HEADER_SIZE;
             return Fragment::FragType::Chained;
         }
         ret_frag.extra = Fragment::UsedFragExtra{};
         return Fragment::FragType::Used;
     }();
+    ret_frag.size =
+        ret_frag.size + Fragment::FREE_FRAG_HEADER_SIZE - header_size;
     return {.ret_frag = ret_frag,
             .next = next_frag,
             .prev = prev_frag,
-            .ret_off = ret_off};
+            .ret_off = header_size};
 }
 
-auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
-                                  std::iostream& t_io) -> FindHeapRetVal {
-    assert(t_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
+auto Heap::find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
+                                  FreeList& t_fl, std::iostream& t_io)
+    -> FindHeapRetVal {
+    auto header_size = (is_chained) ? Fragment::CHAINED_FRAG_HEADER_SIZE
+                                    : Fragment::USED_FRAG_HEADER_SIZE;
+    auto search_size = t_size + header_size - Fragment::FREE_FRAG_HEADER_SIZE;
+    assert(search_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
+                              Fragment::FREE_FRAG_HEADER_SIZE);
     auto alloc_new_heap_pg = [&]() {
         auto ret = t_fl.allocate_page<HeapMeta>(t_io);
-        // initialize the only fragment, which is 4081 bytes long (including
+        // initialize the only fragment, which is 4076 bytes long (including
         // the header stuff).
         Fragment write_to{
             .pos{.pagenum = ret.get_pg_num(),
@@ -555,8 +553,9 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
             .extra{Fragment::FreeFragExtra{.next = Fragment::NULL_FRAG_PTR}},
             // When this thing is used, it is converted into
             // an used fragment anyways.
-            .size = SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
-                    Fragment::USED_FRAG_HEADER_SIZE,
+            .size = static_cast<page_off_t>(SIZEOF_PAGE -
+                                            HeapMeta::DEFAULT_FREE_OFF -
+                                            Fragment::FREE_FRAG_HEADER_SIZE),
             .type = Fragment::FragType::Free};
         write_frag_to(write_to, t_io);
         return ret;
@@ -577,7 +576,7 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
         // this one is to update the heap page later on
         // this name is terrible. I should have created a struct that has
         // fields size and offset.
-        while (max_pair.first < t_size && pagenum != NULL_PAGE) {
+        while (max_pair.first < search_size && pagenum != NULL_PAGE) {
             pagenum = heap_meta.get_next_pg();
             if (pagenum == NULL_PAGE) {
                 break;
@@ -602,13 +601,17 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, FreeList& t_fl,
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
                     page_off_t t_old_frag_size, HeapMeta& heap_meta,
                     std::iostream& t_io) -> bool {
-    auto actual_size = [&]() {
-        if (std::get_if<Fragment::UsedFragExtra>(&t_old_frag.extra) !=
-            nullptr) {
-            return t_old_frag_size + Fragment::USED_FRAG_HEADER_SIZE;
-        }
-        return t_old_frag_size + Fragment::CHAINED_FRAG_HEADER_SIZE;
-    }();
+    auto header_size = (t_old_frag.type == Fragment::FragType::Used)
+                           ? Fragment::USED_FRAG_HEADER_SIZE
+                           : Fragment::CHAINED_FRAG_HEADER_SIZE;
+    // auto actual_size = [&]() {
+    //     if (std::get_if<Fragment::UsedFragExtra>(&t_old_frag.extra) !=
+    //         nullptr) {
+    //         return t_old_frag_size + Fragment::USED_FRAG_HEADER_SIZE;
+    //     }
+    //     return t_old_frag_size + Fragment::CHAINED_FRAG_HEADER_SIZE;
+    // }();
+    auto actual_size = static_cast<page_off_t>(t_old_frag_size + header_size);
 
     // if the returned fragment still has room for another free fragment,
     // break it down.
@@ -627,9 +630,7 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
             .pos{.pagenum = t_old_frag.pos.pagenum, .offset = new_frag_off},
             .extra{Fragment::FreeFragExtra{.next = Fragment::NULL_FRAG_PTR}},
             // basically, we only care about the size of an used fragment.
-            .size = static_cast<page_off_t>(new_frag_size +
-                                            (Fragment::FREE_FRAG_HEADER_SIZE -
-                                             Fragment::USED_FRAG_HEADER_SIZE)),
+            .size = static_cast<page_off_t>(new_frag_size),
             .type = Fragment::FragType::Free};
         t_old_frag.size = t_old_frag_size;
         // Update the neighboring fragment, particularly the next fragment.
