@@ -1,6 +1,7 @@
 #include "sizes.hxx"
 #include <gtest/gtest.h>
 #ifndef IMPORT_STD
+#include <iostream>
 #include <print>
 #include <sstream>
 #else
@@ -20,7 +21,6 @@ TEST(heap, init) {
     std::stringstream test_stream{std::string(SIZEOF_PAGE * numpages, '\0')};
     test_stream.exceptions(std::stringstream::failbit);
     auto fl = FreeList::default_init(first_pg, test_stream);
-    // fl.do_write_to(test_stream);
     Heap test_heap{0};
     // NOLINTBEGIN(*magic-number*)
     std::pair<Fragment, page_off_t> frag1{};
@@ -30,7 +30,7 @@ TEST(heap, init) {
     std::println("frag1 - pagenum: {} - offset: {} - size: {}",
                  frag1.first.pos.pagenum, frag1.first.pos.offset,
                  frag1.first.size);
-    auto frag2 = test_heap.malloc(50, false, fl, test_stream);
+    auto frag2 = test_heap.malloc(45, false, fl, test_stream);
     std::println("frag2 - pagenum: {} - offset: {} - size: {}",
                  frag2.first.pos.pagenum, frag2.first.pos.offset,
                  frag2.first.size);
@@ -41,10 +41,11 @@ TEST(heap, init) {
     std::println("frag3 - pagenum: {} - offset: {} - size: {}",
                  frag3.first.pos.pagenum, frag3.first.pos.offset,
                  frag3.first.size);
+    [[maybe_unused]]
     auto frag4 = test_heap.malloc(30, false, fl, test_stream);
-    std::println("frag4 - pagenum: {} - offset: {} - size: {}",
-                 frag4.first.pos.pagenum, frag4.first.pos.offset,
-                 frag4.first.size);
+    // std::println("frag4 - pagenum: {} - offset: {} - size: {}",
+    //              frag4.first.pos.pagenum, frag4.first.pos.offset,
+    //              frag4.first.size);
     auto frag5 = test_heap.malloc(30, false, fl, test_stream);
     std::println("frag5 - pagenum: {} - offset: {} - size: {}",
                  frag5.first.pos.pagenum, frag5.first.pos.offset,

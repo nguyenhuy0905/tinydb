@@ -7,6 +7,7 @@ module;
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <print>
 #include <utility>
 #endif
 export module tinydb.dbfile.internal.page:serialize;
@@ -37,6 +38,8 @@ void write_to(const FreePageMeta& t_meta, std::ostream& t_out) {
 
     auto next_pg = t_meta.get_next_pg();
     t_out.rdbuf()->sputn(std::bit_cast<const char*>(&next_pg), sizeof(next_pg));
+    std::println("Write free page: (pagenum: {}, next: {})",
+                 t_meta.get_pg_num(), next_pg);
 }
 
 template <>
@@ -54,8 +57,9 @@ auto read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     //     return;
     // }
 
-    uint32_t next_pg{0};
+    page_ptr_t next_pg{0};
     t_in.rdbuf()->sgetn(std::bit_cast<char*>(&next_pg), sizeof(next_pg));
+    std::println("Read free page: (pagenum: {}, next: {})", t_pg_num, next_pg);
     return {t_pg_num, next_pg};
 }
 
@@ -147,13 +151,10 @@ void write_to(const HeapMeta& t_meta, std::ostream& t_out) {
     rdbuf.sputc(static_cast<char>(PageType::Heap));
     auto nextpg = t_meta.get_next_pg();
     rdbuf.sputn(std::bit_cast<const char*>(&nextpg), sizeof(nextpg));
+    auto prevpg = t_meta.get_prev_pg();
+    rdbuf.sputn(std::bit_cast<const char*>(&prevpg), sizeof(prevpg));
     auto first_free = t_meta.get_first_free_off();
     rdbuf.sputn(std::bit_cast<const char*>(&first_free), sizeof(first_free));
-    auto min_pair = t_meta.get_min_pair();
-    rdbuf.sputn(std::bit_cast<const char*>(&min_pair.first),
-                sizeof(min_pair.first));
-    rdbuf.sputn(std::bit_cast<const char*>(&min_pair.second),
-                sizeof(min_pair.second));
     auto max_pair = t_meta.get_max_pair();
     rdbuf.sputn(std::bit_cast<const char*>(&max_pair.first),
                 sizeof(max_pair.first));
@@ -177,20 +178,17 @@ auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta {
 
     page_ptr_t nextpg{0};
     rdbuf.sgetn(std::bit_cast<char*>(&nextpg), sizeof(nextpg));
+    page_ptr_t prevpg{0};
+    rdbuf.sgetn(std::bit_cast<char*>(&prevpg), sizeof(prevpg));
     page_off_t first_free{0};
     rdbuf.sgetn(std::bit_cast<char*>(&first_free), sizeof(first_free));
-    auto min_pair =
-        std::make_pair(static_cast<page_off_t>(0), static_cast<page_off_t>(0));
-    rdbuf.sgetn(std::bit_cast<char*>(&min_pair.first), sizeof(min_pair.first));
-    rdbuf.sgetn(std::bit_cast<char*>(&min_pair.second),
-                sizeof(min_pair.second));
 
     auto max_pair =
         std::make_pair(static_cast<page_off_t>(0), static_cast<page_off_t>(0));
     rdbuf.sgetn(std::bit_cast<char*>(&max_pair.first), sizeof(max_pair.first));
     rdbuf.sgetn(std::bit_cast<char*>(&max_pair.second),
                 sizeof(max_pair.second));
-    return {t_pg_num, nextpg, first_free, min_pair, max_pair};
+    return {t_pg_num, nextpg, prevpg, first_free, max_pair};
 }
 
 // technically, write_to could be a templated function, relying on template

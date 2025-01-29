@@ -151,6 +151,7 @@ export class FreeList {
         auto new_first_free = fpage.get_next_pg();
 
         if (new_first_free != 0) {
+            m_first_free_pg = new_first_free;
             return old_first_free;
         }
 

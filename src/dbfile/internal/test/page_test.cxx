@@ -1,3 +1,4 @@
+#include "general/offsets.hxx"
 #include "sizes.hxx"
 #include <gtest/gtest.h>
 #ifndef IMPORT_STD
@@ -29,8 +30,7 @@ TEST(free_list, init) {
     using namespace tinydb::dbfile::internal;
     constexpr uint32_t filesize{2};
     std::stringstream test_stream{std::string(filesize * SIZEOF_PAGE, '\0')};
-    constexpr uint16_t sizeoff{6};
-    test_stream.seekp(sizeoff);
+    test_stream.seekp(DBFILE_SIZE_OFF);
     test_stream.write(std::bit_cast<const char*>(&filesize), sizeof(filesize));
     // hook to GDB to check. These 2 should be the same.
     [[maybe_unused]] auto freelist = FreeList::default_init(1, test_stream);
@@ -40,7 +40,7 @@ TEST(free_list, init) {
         freelist.allocate_page<BTreeLeafMeta>(test_stream);
     ASSERT_EQ(btlpage.get_pg_num(), 1);
     // filesize should be updated also.
-    test_stream.seekg(sizeoff);
+    test_stream.seekg(DBFILE_SIZE_OFF);
     test_stream.read(std::bit_cast<char*>(&filesize), sizeof(filesize));
     ASSERT_EQ(filesize, 3);
     // deallocation. Also hook this to GDB. The first free page should be 1.

@@ -104,29 +104,27 @@ class HeapMeta : public PageMixin {
   public:
     static constexpr page_off_t DEFAULT_FREE_OFF = 15;
     explicit HeapMeta(page_ptr_t t_page_num)
-        : PageMixin{t_page_num}, m_next_pg{0}, m_first_free{DEFAULT_FREE_OFF},
-          m_min{std::make_pair(
+        : PageMixin{t_page_num}, m_next_pg{0}, m_prev_pg{0},
+          m_first_free{DEFAULT_FREE_OFF},
+          m_max{std::make_pair(
               static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF),
-              static_cast<page_off_t>(DEFAULT_FREE_OFF))},
-          m_max{m_min} {}
-    HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg,
-             page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_min,
-             std::pair<page_off_t, page_off_t> t_max)
-        : PageMixin{t_page_num}, m_next_pg{t_next_pg},
-          m_first_free{t_first_free}, m_min{t_min}, m_max{t_max} {}
+              static_cast<page_off_t>(DEFAULT_FREE_OFF))} {}
+    HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg, page_ptr_t t_prev_pg,
+             page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_max)
+        : PageMixin{t_page_num}, m_next_pg{t_next_pg}, m_prev_pg{t_prev_pg},
+          m_first_free{t_first_free}, m_max{t_max} {}
 
     [[nodiscard]] constexpr auto get_next_pg() const noexcept -> page_ptr_t {
         return m_next_pg;
     }
 
+    [[nodiscard]] constexpr auto get_prev_pg() const noexcept -> page_ptr_t {
+        return m_prev_pg;
+    }
+
     [[nodiscard]] constexpr auto get_first_free_off() const noexcept
         -> page_off_t {
         return m_first_free;
-    }
-
-    [[nodiscard]] constexpr auto get_min_pair() const noexcept
-        -> const std::pair<page_off_t, page_off_t>& {
-        return m_min;
     }
 
     [[nodiscard]] constexpr auto get_max_pair() const noexcept
@@ -135,29 +133,28 @@ class HeapMeta : public PageMixin {
     }
 
     constexpr auto update_next_pg(page_ptr_t t_next) noexcept {
-        assert(t_next != NULL_PAGE);
         m_next_pg = t_next;
     }
 
-    constexpr auto update_min_pair(page_off_t t_size, page_off_t t_off) {
-        assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
-        assert(t_size <= m_max.first);
-        m_min = std::make_pair(t_size, t_off);
+    constexpr auto update_prev_pg(page_ptr_t t_prev) noexcept {
+        assert(t_prev != NULL_PAGE);
+        m_prev_pg = t_prev;
     }
 
     constexpr auto update_max_pair(page_off_t t_size, page_off_t t_off) {
         assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
-        assert(t_size >= m_min.first);
         m_max = std::make_pair(t_size, t_off);
     }
 
     constexpr auto update_first_free(page_off_t t_val) {
         // Now I'm allowing something like 0 to be set here.
 
-        if (t_val > 0 && (t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE)) {
-            // TODO: throw something more useful.
-            throw 1;
-        }
+        assert(t_val == 0 ||
+               (t_val >= DEFAULT_FREE_OFF && t_val <= SIZEOF_PAGE));
+        // if (t_val > 0 && (t_val < DEFAULT_FREE_OFF || t_val > SIZEOF_PAGE)) {
+        //     // TODO: throw something more useful.
+        //     throw 1;
+        // }
         m_first_free = t_val;
     }
 
@@ -167,13 +164,13 @@ class HeapMeta : public PageMixin {
     //   In that case, if a new heap page is needed, a new heap page will be
     //   allocated from the free list.
     page_ptr_t m_next_pg;
-    // offset 5: 2-byte local offset to first free fragment.
+    // offset 5: 4-byte pointer to the previous heap page.
+    //   Default to 0, which means this heap page is the first one.
+    page_ptr_t m_prev_pg;
+    // offset 9: 2-byte local offset to first free fragment.
     //   By default, the first free fragment is at offset 7.
     //   And, there's always one fragment at offset 7.
     page_off_t m_first_free;
-    // offset 7: 2-byte minimum heap size.
-    // offset 9: 2-byte minimum heap local offset.
-    std::pair<page_off_t, page_off_t> m_min;
     // offset 11: 2-byte maximum heap size.
     // offset 13: 2-byte maximum heap local offset.
     std::pair<page_off_t, page_off_t> m_max;
