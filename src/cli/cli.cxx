@@ -9,14 +9,14 @@ namespace tinydb::cli {
 Cli::Cli() = default;
 
 void Cli::run() {
-    std::print("> ");
-    std::flush(std::cout);
-    std::string input{};
-    std::getline(std::cin, input);
-    Tokenizer tk{};
-    tk.tokenize(input);
+  std::print("> ");
+  std::flush(std::cout);
+  std::string input{};
+  std::getline(std::cin, input);
+  Tokenizer tk{};
+  tk.tokenize(input);
 #ifndef NDEBUG
-    tk.print_tokens();
+  tk.print_tokens();
 #endif // !NDEBUG
 }
 

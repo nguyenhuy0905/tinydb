@@ -1,8 +1,8 @@
 #include "cli.hxx"
 
 auto main() -> int {
-    auto cli = tinydb::cli::Cli{};
-    cli.run();
+  auto cli = tinydb::cli::Cli{};
+  cli.run();
 
-    return 0;
+  return 0;
 }

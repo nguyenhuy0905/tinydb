@@ -22,14 +22,14 @@ using page_off_t = uint16_t;
  * Determines how a page is formatted.
  * */
 enum class PageType : char {
-    Free = 0,
-    BTreeLeaf,
-    BTreeInternal,
-    Heap,
+  Free = 0,
+  BTreeLeaf,
+  BTreeInternal,
+  Heap,
 };
 
 enum class PageReadErrCode : uint8_t {
-    WrongPageType = 1,
+  WrongPageType = 1,
 };
 
 // PageType's underlying number type.
@@ -43,23 +43,23 @@ using err_num_t = std::underlying_type_t<PageReadErrCode>;
  *
  */
 class PageMixin {
-  public:
-    PageMixin() = delete;
-    /**
-     * @return The page number of this page.
-     */
-    [[nodiscard]] constexpr auto get_pg_num() const noexcept -> uint32_t {
-        return m_pg_num;
-    }
+public:
+  PageMixin() = delete;
+  /**
+   * @return The page number of this page.
+   */
+  [[nodiscard]] constexpr auto get_pg_num() const noexcept -> uint32_t {
+    return m_pg_num;
+  }
 
-    // no need for virtual dtor here.
+  // no need for virtual dtor here.
 
-    explicit PageMixin(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
+  explicit PageMixin(uint32_t t_pg_num) : m_pg_num{t_pg_num} {}
 
-  protected:
-    // NOLINTBEGIN(*non-private*)
-    uint32_t m_pg_num;
-    // NOLINTEND(*non-private*)
+protected:
+  // NOLINTBEGIN(*non-private*)
+  uint32_t m_pg_num;
+  // NOLINTEND(*non-private*)
 };
 
 constexpr page_ptr_t NULL_PAGE = 0;
