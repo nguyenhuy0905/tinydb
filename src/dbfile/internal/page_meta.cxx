@@ -137,7 +137,6 @@ class HeapMeta : public PageMixin {
     }
 
     constexpr auto update_prev_pg(page_ptr_t t_prev) noexcept {
-        assert(t_prev != NULL_PAGE);
         m_prev_pg = t_prev;
     }
 
@@ -164,12 +163,10 @@ class HeapMeta : public PageMixin {
     //   In that case, if a new heap page is needed, a new heap page will be
     //   allocated from the free list.
     page_ptr_t m_next_pg;
-    // offset 5: 4-byte pointer to the previous heap page.
-    //   Default to 0, which means this heap page is the first one.
+    // offset 5: 4-byte pointer to the next heap page.
+    //   Default to 0, which means this heap page is the last one.
     page_ptr_t m_prev_pg;
-    // offset 9: 2-byte local offset to first free fragment.
-    //   By default, the first free fragment is at offset 7.
-    //   And, there's always one fragment at offset 7.
+    // offset 9: offset to the first free fragment.
     page_off_t m_first_free;
     // offset 11: 2-byte maximum heap size.
     // offset 13: 2-byte maximum heap local offset.

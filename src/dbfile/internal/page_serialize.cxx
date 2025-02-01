@@ -182,7 +182,6 @@ auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta {
     rdbuf.sgetn(std::bit_cast<char*>(&prevpg), sizeof(prevpg));
     page_off_t first_free{0};
     rdbuf.sgetn(std::bit_cast<char*>(&first_free), sizeof(first_free));
-
     auto max_pair =
         std::make_pair(static_cast<page_off_t>(0), static_cast<page_off_t>(0));
     rdbuf.sgetn(std::bit_cast<char*>(&max_pair.first), sizeof(max_pair.first));
