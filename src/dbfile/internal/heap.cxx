@@ -270,6 +270,7 @@ export class Heap {
         // needs Ptr::SIZE (6) more bytes.
         auto header_size = (is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
                                        : Fragment::USED_FRAG_HEADER_SIZE);
+        [[maybe_unused]]
         auto actual_size = static_cast<page_off_t>(header_size + t_size);
 
         assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
