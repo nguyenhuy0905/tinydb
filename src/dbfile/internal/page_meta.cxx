@@ -107,7 +107,11 @@ class HeapMeta : public PageMixin {
         : PageMixin{t_page_num}, m_next_pg{0}, m_prev_pg{0},
           m_first_free{DEFAULT_FREE_OFF},
           m_max{std::make_pair(
-              static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF),
+              // the definition isn't available here: 5 is the size of a free
+              // fragment header. You can imagine a heap page as a list of
+              // different types of fragments.
+              static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF -
+                                      5), // NOLINT
               static_cast<page_off_t>(DEFAULT_FREE_OFF))} {}
     HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg, page_ptr_t t_prev_pg,
              page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_max)

@@ -52,6 +52,13 @@ TEST(heap, init) {
     std::println("frag6 - pagenum: {} - offset: {} - size: {}",
                  frag6.first.pos.pagenum, frag6.first.pos.offset,
                  frag6.first.size);
+    // it's freedom time
+    test_heap.free(std::move(frag1.first), fl, test_stream);
+    frag1 = test_heap.malloc(4020, true, fl, test_stream);
+    std::println("frag1 - pagenum: {} - offset: {} - size: {}",
+                 frag1.first.pos.pagenum, frag1.first.pos.offset,
+                 frag1.first.size);
+
     // NOLINTEND(*magic-number*)
 }
 

@@ -226,6 +226,30 @@ void update_write_heap_pg(HeapMeta& t_heap_meta, const Fragment& t_next_frag,
                           std::iostream& t_io);
 
 /**
+ * @brief Gets the 2 neighboring free fragments of the fragment passed in.
+ *
+ * The previous neighbor is the closest free fragment to `t_curr_frag` whose
+ * `pos.offset` is smaller than that of `t_curr_frag`.
+ * Similarly for next neighbor, except this time `pos.offset` is larger.
+ *
+ * @param t_curr_frag The current fragment.
+ * @param t_in The read stream.
+ * @return A pair of `Fragment`s whose:
+ * - `first` is the previous neighbor.
+ * - `second` is the next neighbor.
+ */
+auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
+    -> std::pair<std::optional<Fragment>, std::optional<Fragment>>;
+
+/**
+ * @brief Try coalesce `t_frag` and its 2 closest neighbors.
+ *
+ * @param t_frag
+ * @param t_in
+ */
+auto coalesce(Fragment&& t_frag, std::istream& t_in) -> Fragment;
+
+/**
  * @class Heap
  * @brief A freelist allocator.
  *
@@ -310,7 +334,7 @@ export class Heap {
      * @brief Releases the memory held by a fragment. Fragment must be of type
      * Used.
      *
-     * NOT IMPLEMENTED YET.
+     * COALESCE NOT IMPLEMENTED YET.
      *
      * @param t_frag The fragment to free, must be of type Used.
      * @param t_fl In case the heap page the fragment points to is entirely
@@ -319,7 +343,38 @@ export class Heap {
      *
      * @details
      */
-    void free(Fragment& t_frag, FreeList& t_fl, std::iostream& t_io);
+    void free(Fragment&& t_frag, [[maybe_unused]] FreeList& t_fl,
+              std::iostream& t_io) {
+        assert(t_frag.type != Fragment::FragType::Free);
+        auto heap_meta{read_from<HeapMeta>(t_frag.pos.pagenum, t_io)};
+        if (t_frag.type == Fragment::FragType::Chained) {
+            t_frag.size = t_frag.size + Fragment::CHAINED_FRAG_HEADER_SIZE -
+                          Fragment::FREE_FRAG_HEADER_SIZE;
+        } else {
+            t_frag.size = t_frag.size + Fragment::USED_FRAG_HEADER_SIZE -
+                          Fragment::FREE_FRAG_HEADER_SIZE;
+        }
+        t_frag.type = Fragment::FragType::Free;
+        t_frag.extra = Fragment::FreeFragExtra{};
+        bool heap_meta_changed{false};
+        auto max_pair{heap_meta.get_max_pair()};
+        if (max_pair.first < t_frag.size || max_pair.first == 0) {
+            heap_meta.update_max_pair(t_frag.size, t_frag.pos.offset);
+            heap_meta_changed = true;
+        }
+        auto first_free_off = heap_meta.get_first_free_off();
+        if (first_free_off > t_frag.pos.offset ||
+            first_free_off == Fragment::NULL_FRAG_PTR) {
+            heap_meta.update_first_free(t_frag.pos.offset);
+            heap_meta_changed = true;
+        }
+
+        if (heap_meta_changed) {
+            write_to(heap_meta, t_io);
+        }
+
+        write_frag_to(std::move(t_frag), t_io);
+    }
 
   private:
     // offset 0: 4-byte pointer to the first heap.
@@ -683,6 +738,77 @@ void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
 
     heap_meta.update_max_pair(max_pair.first, max_pair.second);
     write_to(heap_meta, t_io);
+}
+
+auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
+    -> std::pair<std::optional<Fragment>, std::optional<Fragment>> {
+    // this disgusting piece of template means "the return type of this
+    // function".
+    // Also, ret is declared here to abuse NRVO. Of course, in the debug build
+    // with no optimization whatsoever, copy assignment will probably be called
+    // anyways.
+    std::invoke_result_t<decltype(&get_neighboring_free_frags), const Fragment&,
+                         std::istream&>
+        ret;
+
+    // Fuck C++, where is my labeled return?
+    [&]() {
+        auto heap_meta{read_from<HeapMeta>(t_curr_frag.pos.pagenum, t_in)};
+        auto first_free{heap_meta.get_first_free_off()};
+        if (first_free == Fragment::NULL_FRAG_PTR) {
+            // return {std::nullopt, std::nullopt};
+            return;
+        }
+
+        Fragment prev = read_frag_from(
+            {.pagenum = t_curr_frag.pos.pagenum, .offset = first_free}, t_in);
+        assert(prev.type == Fragment::FragType::Free);
+        if (prev.pos.offset > t_curr_frag.pos.offset) {
+            // then `prev` should have been `next`.
+            // return {std::nullopt, prev};
+            ret = {std::nullopt, prev};
+            return;
+        }
+        if (prev.get_free_extra().next == Fragment::NULL_FRAG_PTR) {
+            // there's nothing "next".
+            if (prev.pos.offset == t_curr_frag.pos.offset) {
+                // return {std::nullopt, std::nullopt};
+                ret = {std::nullopt, std::nullopt};
+                return;
+            }
+            // return {prev, std::nullopt};
+            ret = {prev, std::nullopt};
+            return;
+        }
+
+        // a potential "next"
+        Fragment next = read_frag_from({.pagenum = t_curr_frag.pos.pagenum,
+                                        .offset = prev.get_free_extra().next},
+                                       t_in);
+        assert(next.type == Fragment::FragType::Free);
+        while (next.pos.offset <= t_curr_frag.pos.offset) {
+            assert(next.type == Fragment::FragType::Free);
+            if (next.get_free_extra().next == Fragment::NULL_FRAG_PTR) {
+                // at this point, `next` is still the previous neighbor of
+                // `t_curr_frag`
+                // return {next, std::nullopt};
+                if (next.get_free_extra().next == t_curr_frag.pos.offset) {
+                    ret = {prev, std::nullopt};
+                    return;
+                }
+                ret = {next, std::nullopt};
+                return;
+            }
+            if (next.pos.offset < t_curr_frag.pos.offset) {
+                prev = next;
+            }
+            next = read_frag_from({.pagenum = t_curr_frag.pos.pagenum,
+                                   .offset = next.get_free_extra().next},
+                                  t_in);
+        }
+    }();
+
+    return ret;
 }
 
 } // namespace tinydb::dbfile::internal
