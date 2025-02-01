@@ -41,9 +41,9 @@ TEST(heap, init) {
                  frag3.first.size);
     [[maybe_unused]]
     auto frag4 = test_heap.malloc(30, false, fl, test_stream);
-    // std::println("frag4 - pagenum: {} - offset: {} - size: {}",
-    //              frag4.first.pos.pagenum, frag4.first.pos.offset,
-    //              frag4.first.size);
+    std::println("frag4 - pagenum: {} - offset: {} - size: {}",
+                 frag4.first.pos.pagenum, frag4.first.pos.offset,
+                 frag4.first.size);
     auto frag5 = test_heap.malloc(30, false, fl, test_stream);
     std::println("frag5 - pagenum: {} - offset: {} - size: {}",
                  frag5.first.pos.pagenum, frag5.first.pos.offset,

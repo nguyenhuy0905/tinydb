@@ -185,10 +185,8 @@ struct FindFragRetVal {
  * @param t_io
  * @return
  */
-auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                         std::pair<page_off_t, page_off_t>& t_max_pair,
-                         const HeapMeta& t_meta, std::istream& t_io)
-    -> FindFragRetVal;
+auto find_first_fit_frag(page_off_t t_size, bool is_chained, HeapMeta& t_meta,
+                         std::istream& t_io) -> FindFragRetVal;
 
 /**
  * @brief Calculates the difference between the fragment's size and the size
@@ -276,10 +274,10 @@ export class Heap {
 
         assert(actual_size <= SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF);
 
-        auto [heap_meta, max_pair] =
-            find_first_fit_heap_pg(t_size, is_chained, t_fl, t_io);
+        auto heap_meta = find_first_fit_heap_pg(t_size, is_chained, t_fl, t_io);
         auto [ret_frag, next_frag, prev_frag, ret_off] =
-            find_first_fit_frag(t_size, is_chained, max_pair, heap_meta, t_io);
+            find_first_fit_frag(t_size, is_chained, heap_meta, t_io);
+        auto max_pair = heap_meta.get_max_pair();
 
         try_break_frag(ret_frag, next_frag, t_size, heap_meta, t_io);
         write_frag_to(ret_frag, t_io);
@@ -328,10 +326,10 @@ export class Heap {
 
     // malloc and free helpers
 
-    struct FindHeapRetVal {
-        HeapMeta heap_pg;
-        std::pair<page_off_t, page_off_t> max_pair;
-    };
+    // struct FindHeapRetVal {
+    //     HeapMeta heap_pg;
+    //     std::pair<page_off_t, page_off_t> max_pair;
+    // };
 
     /**
      * @brief Finds the first heap page whose maximum fragment size is large
@@ -349,7 +347,7 @@ export class Heap {
      */
     auto find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
                                 FreeList& t_fl, std::iostream& t_io)
-        -> FindHeapRetVal;
+        -> HeapMeta;
 
     void write_heap_to(std::ostream& t_out) {
         t_out.seekp(HEAP_OFF);
@@ -455,10 +453,8 @@ auto read_frag_from(const Ptr& t_pos, std::istream& t_in) -> Fragment {
             .type = Fragment::FragType{type}};
 }
 
-auto find_first_fit_frag(page_off_t t_size, bool is_chained,
-                         std::pair<page_off_t, page_off_t>& t_max_pair,
-                         const HeapMeta& t_meta, std::istream& t_io)
-    -> FindFragRetVal {
+auto find_first_fit_frag(page_off_t t_size, bool is_chained, HeapMeta& t_meta,
+                         std::istream& t_io) -> FindFragRetVal {
     auto header_size = is_chained ? Fragment::CHAINED_FRAG_HEADER_SIZE
                                   : Fragment::USED_FRAG_HEADER_SIZE;
     auto search_size = t_size + header_size - Fragment::FREE_FRAG_HEADER_SIZE;
@@ -473,6 +469,7 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
     // the total amount of heap memory allocated is smaller.
 
     auto pagenum = t_meta.get_pg_num();
+    auto& max_pair = t_meta.get_max_pair();
 
     auto ret_frag = read_frag_from(
         Ptr{.pagenum = pagenum, .offset = t_meta.get_first_free_off()}, t_io);
@@ -494,8 +491,10 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
     assert(ret_frag.type == Fragment::FragType::Free);
     // set max to some placeholder values, if max happens to
     // point to the same fragment that will be allocated.
-    if (t_max_pair.second == ret_frag.pos.offset) {
-        t_max_pair = {static_cast<page_off_t>(0), Fragment::NULL_FRAG_PTR};
+    if (max_pair.second == ret_frag.pos.offset) {
+        // max_pair = {static_cast<page_off_t>(0), Fragment::NULL_FRAG_PTR};
+        t_meta.update_max_pair(static_cast<page_off_t>(0),
+                               Fragment::NULL_FRAG_PTR);
     }
     // record the 2 "neighbor" free fragments (neighbor in the sense of
     // "closest together" here) for update later. Of course, only update if
@@ -533,7 +532,7 @@ auto find_first_fit_frag(page_off_t t_size, bool is_chained,
 
 auto Heap::find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
                                   FreeList& t_fl, std::iostream& t_io)
-    -> FindHeapRetVal {
+    -> HeapMeta {
     auto header_size = (is_chained) ? Fragment::CHAINED_FRAG_HEADER_SIZE
                                     : Fragment::USED_FRAG_HEADER_SIZE;
     auto search_size = t_size + header_size - Fragment::FREE_FRAG_HEADER_SIZE;
@@ -591,7 +590,8 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
             write_to(prev_heap, t_io);
         }
     }
-    return {.heap_pg = heap_meta, .max_pair = max_pair};
+    // return {.heap_pg = heap_meta, .max_pair = max_pair};
+    return heap_meta;
 }
 
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
@@ -619,8 +619,8 @@ auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
         return static_cast<page_off_t>(0);
     }();
     if (new_frag_size > 0) {
-        auto new_frag_off =
-            static_cast<page_off_t>(t_old_frag.pos.offset + header_size + t_old_frag_size);
+        auto new_frag_off = static_cast<page_off_t>(
+            t_old_frag.pos.offset + header_size + t_old_frag_size);
         auto new_frag = Fragment{
             .pos{.pagenum = t_old_frag.pos.pagenum, .offset = new_frag_off},
             .extra{Fragment::FreeFragExtra{.next = Fragment::NULL_FRAG_PTR}},

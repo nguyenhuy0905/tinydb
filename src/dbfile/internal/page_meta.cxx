@@ -114,37 +114,86 @@ class HeapMeta : public PageMixin {
         : PageMixin{t_page_num}, m_next_pg{t_next_pg}, m_prev_pg{t_prev_pg},
           m_first_free{t_first_free}, m_max{t_max} {}
 
+    /**
+     * @return The next page pointer.
+     * Returns NULL_PAGE (aka. 0) if this page is the last page.
+     */
     [[nodiscard]] constexpr auto get_next_pg() const noexcept -> page_ptr_t {
         return m_next_pg;
     }
 
+    /**
+     * @return The previous page pointer.
+     * Returns NULL_PAGE (aka. 0) if this page is the previous page.
+     */
     [[nodiscard]] constexpr auto get_prev_pg() const noexcept -> page_ptr_t {
         return m_prev_pg;
     }
 
+    /**
+     * @return The first free offset
+     * Points to Fragment::NULL_FRAG_PTR (aka, 0) if there's no free offset
+     * left.
+     */
     [[nodiscard]] constexpr auto get_first_free_off() const noexcept
         -> page_off_t {
         return m_first_free;
     }
 
+    /**
+     * @return The [size, offset] of the largest free fragment.
+     * size == 0 means there's no free fragment inside.
+     */
     [[nodiscard]] constexpr auto get_max_pair() const noexcept
         -> const std::pair<page_off_t, page_off_t>& {
         return m_max;
     }
 
+    /**
+     * @brief Updates the next page pointer
+     *
+     * Update to NULL_PAGE if this is the last page.
+     *
+     * @param t_next The next page pointer.
+     */
     constexpr auto update_next_pg(page_ptr_t t_next) noexcept {
         m_next_pg = t_next;
     }
 
+    /**
+     * @brief Updates the previous page pointer
+     *
+     * Update to NULL_PAGE if this is the first page.
+     *
+     * @param t_prev The previous page pointer.
+     */
     constexpr auto update_prev_pg(page_ptr_t t_prev) noexcept {
         m_prev_pg = t_prev;
     }
 
+    /**
+     * @brief Updates the maximum fragment.
+     *
+     * Set t_size = 0 and t_off = 0 to indicate invalid pair.
+     *
+     * @param t_size New size
+     * @param t_off new offset
+     */
     constexpr auto update_max_pair(page_off_t t_size, page_off_t t_off) {
-        assert(t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF);
+        assert((t_size == 0 && t_off == 0) ||
+               (t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF && t_size > 0 &&
+                t_off < SIZEOF_PAGE));
         m_max = std::make_pair(t_size, t_off);
     }
 
+    /**
+     * @brief Updates the first free fragment pointer
+     *
+     * Update to Fragment::NULL_FRAG_PTR (aka, 0) if there's no free fragment
+     * left.
+     *
+     * @param t_val The new offset.
+     */
     constexpr auto update_first_free(page_off_t t_val) {
         // Now I'm allowing something like 0 to be set here.
 
