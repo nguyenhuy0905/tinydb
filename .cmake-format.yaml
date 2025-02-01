@@ -14,7 +14,7 @@ parse:
 format:
   disable: false
   line_width: 80
-  tab_size: 4
+  tab_size: 2
   use_tabchars: false
   fractional_tab_policy: use-space
   max_subgroups_hwrap: 2

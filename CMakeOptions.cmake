@@ -5,12 +5,12 @@ include(CMakeDependentOption)
 
 # if build type is not set
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message("No build type specified! Default to Debug")
-    set(CMAKE_BUILD_TYPE
+  message("No build type specified! Default to Debug")
+  set(CMAKE_BUILD_TYPE
         "Debug"
         CACHE STRING
               "Choose a build type (Debug;Release;MinSizeRel;RelWithDebInfo)")
-    set_property(CACHE CMAKE_BUILD_TYPE
+  set_property(CACHE CMAKE_BUILD_TYPE
                  PROPERTY STRINGS "Debug;Release;MinSizeRel;RelWithDebInfo")
 endif()
 
@@ -67,8 +67,8 @@ cmake_dependent_option(tinydb_PACK "Configure packing for this project" OFF
                        "PROJECT_IS_TOP_LEVEL" OFF)
 
 if(NOT PROJECT_IS_TOP_LEVEL)
-    message(STATUS "Project is not top-level.")
-    mark_as_advanced(
+  message(STATUS "Project is not top-level.")
+  mark_as_advanced(
         tinydb_ENABLE_CCACHE
         tinydb_ENABLE_LLD
         tinydb_ENABLE_LTO
@@ -88,23 +88,23 @@ if(NOT PROJECT_IS_TOP_LEVEL)
         tinydb_INSTALL
         tinydb_PACK)
 else()
-    message(STATUS "Project is top-level. Configuring global options.")
-    include(cmake/GlobalConfig.cmake)
-    tinydb_global_config()
+  message(STATUS "Project is top-level. Configuring global options.")
+  include(cmake/GlobalConfig.cmake)
+  tinydb_global_config()
 endif()
 
 include(cmake/ProjectConfig.cmake)
 message(STATUS "Configuring project-specific options.")
 if(tinydb_ENABLE_PCH)
-    set_pch_options(PCH <memory> <string> <print> <expected> <variant> <vector>
+  set_pch_options(PCH <memory> <string> <print> <expected> <variant> <vector>
         <ranges> <iostream> <fstream>)
 endif()
 tinydb_local_config()
 
 # this has to stay here for ctest to more conveniently work
 if(tinydb_ENABLE_UNIT_TEST)
-    include(CTest)
-    # Probably gonna have to break this down once the codebase grows.
-    # For now I only need to test dbfile.
-    add_test(NAME tinydb_test COMMAND ${CMAKE_BINARY_DIR}/src/tinydb_test)
+  include(CTest)
+  # Probably gonna have to break this down once the codebase grows.
+  # For now I only need to test dbfile.
+  add_test(NAME tinydb_test COMMAND ${CMAKE_BINARY_DIR}/src/tinydb_test)
 endif()

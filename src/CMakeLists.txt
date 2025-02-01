@@ -18,24 +18,24 @@ target_link_libraries(tinydb
 
 # unit test
 if(tinydb_ENABLE_UNIT_TEST)
-    include(${PROJECT_SOURCE_DIR}/cmake/CPM.cmake)
-    # The precompiled GTest bit me good times.
-    # Probably because of different build flags used.
-    # find_package(GTest)
-    # if(NOT GTest_FOUND)
-    CPMAddPackage(
+  include(${PROJECT_SOURCE_DIR}/cmake/CPM.cmake)
+  # The precompiled GTest bit me good times.
+  # Probably because of different build flags used.
+  # find_package(GTest)
+  # if(NOT GTest_FOUND)
+  CPMAddPackage(
         GTest
         URL https://github.com/google/googletest/releases/download/v1.15.0/googletest-1.15.0.tar.gz
     )
-    # endif()
-    # target_sources this one.
-    add_executable(tinydb_test)
-    target_link_libraries(tinydb_test
+  # endif()
+  # target_sources this one.
+  add_executable(tinydb_test)
+  target_link_libraries(tinydb_test
         PRIVATE
         GTest::gtest_main
     )
-    include(GoogleTest)
-    gtest_discover_tests(tinydb_test)
+  include(GoogleTest)
+  gtest_discover_tests(tinydb_test)
 endif()
 
 add_subdirectory(general)
