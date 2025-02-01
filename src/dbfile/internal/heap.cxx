@@ -6,10 +6,10 @@ module;
 #include <bit>
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include <variant>
-#include <optional>
 #endif
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.coltype;
@@ -20,9 +20,6 @@ import std;
 #endif
 
 namespace tinydb::dbfile::internal {
-
-// TODO: move the non-export stuff down the file, again.
-// I want to keep the interface more readable.
 
 /**
  * @class Ptr
@@ -174,8 +171,6 @@ struct FindFragRetVal {
  *
  * This function also formats the returned fragment's extra into the right
  * variant.
- *
- * // TODO: update the precondition of update_min_pair and update_max_pair.
  *
  * @param t_size The allocation size.
  * @param is_chained Whether the fragment to be allocated is chained.
