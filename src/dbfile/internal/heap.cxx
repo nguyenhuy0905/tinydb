@@ -9,6 +9,7 @@ module;
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <optional>
 #endif
 export module tinydb.dbfile.internal.heap;
 import tinydb.dbfile.coltype;
