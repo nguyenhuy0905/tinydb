@@ -17,13 +17,12 @@ job, really.~~
 
 ~~- Move decl of `Ptr` from inside the `dbfile/internal/heap.hxx` to a new header
 file inside the `dbfile/internal` directory. `Ptr` is needed in some more places.~~
+The entire repo now uses modules. So, very few headers remained.
 
 - Finish the functionalities of the heap.
-  - ~~`malloc`~~, `free`.
-    - Damn, a "generic" allocator is harder to write than I thought. Still, it isn't
-    too much. Wait until I start writing the B+ Tree.
-  - `free` should also coalesce free fragments that are next to each
-  other, if it can create a combined fragment whose size is a power of 2.
+  - ~~`malloc`~~, ~~`free`~~.
+  - ~~`free` should also coalesce free fragments that are next to each
+  other, if it can create a combined fragment whose size is a power of 2.~~
 - Change TextType to simply hold a pointer (so, it's 6 bytes in size).
 - If the user wants to set a string-type row as the key, auto-add an 8-byte column
 (or more like, whatever size\_t equals to) that holds the hashcode.
