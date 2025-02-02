@@ -38,6 +38,9 @@ if(tinydb_ENABLE_UNIT_TEST)
         PRIVATE
         GTest::gtest_main
   )
+  if(tinydb_ENABLE_PCH)
+    target_precompile_headers(tinydb_test PRIVATE <gtest/gtest.h>)
+  endif()
   include(GoogleTest)
   gtest_discover_tests(tinydb_test)
 endif()

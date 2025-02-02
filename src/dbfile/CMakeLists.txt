@@ -14,6 +14,8 @@ add_library(tinydb_dbfile OBJECT)
 # target_sources(tinydb_dbfile PUBLIC FILE_SET
 #     CXX_MODULES FILES dbfile.cxx)
 target_module_if_enabled(tinydb_dbfile
+  HEADERS
+  dbfile.hxx
   SOURCES
   dbfile.cxx
   MODULES
@@ -29,5 +31,5 @@ target_link_libraries(tinydb_dbfile
 )
 
 if(tinydb_ENABLE_UNIT_TEST)
-    add_subdirectory(test)
+  add_subdirectory(test)
 endif()
