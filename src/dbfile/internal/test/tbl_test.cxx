@@ -1,14 +1,18 @@
 #include "sizes.hxx"
 #include <gtest/gtest.h>
+#ifdef ENABLE_MODULES
 #ifndef IMPORT_STD
 #include <cassert>
-#include <iostream>
 #include <sstream>
 #else
 import std;
-#endif
+#endif // !IMPORT_STD
 import tinydb.dbfile.internal.tbl;
 import tinydb.dbfile.coltype;
+#else
+#include "dbfile/internal/tbl.hxx"
+#include "dbfile/coltype.hxx"
+#endif // ENABLE_MODULES
 TEST(tbl, init) {
   using namespace tinydb::dbfile;
   using namespace tinydb::dbfile::internal;

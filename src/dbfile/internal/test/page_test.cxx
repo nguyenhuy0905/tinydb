@@ -1,6 +1,7 @@
 #include "general/offsets.hxx"
 #include "sizes.hxx"
 #include <gtest/gtest.h>
+#ifdef ENABLE_MODULES
 #ifndef IMPORT_STD
 #include <bit>
 #include <iostream>
@@ -9,6 +10,11 @@ import std;
 #endif
 import tinydb.dbfile.internal.freelist;
 import tinydb.dbfile.internal.page;
+#else
+#include "dbfile/internal/freelist.hxx"
+#include "dbfile/internal/page_meta.hxx"
+#include "dbfile/internal/page_serialize.hxx"
+#endif // ENABLE_MODULES
 TEST(simple_page, init) {
   using namespace tinydb;
   using namespace tinydb::dbfile;

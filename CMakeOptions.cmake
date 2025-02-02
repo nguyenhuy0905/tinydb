@@ -35,8 +35,11 @@ cmake_dependent_option(
 option(tinydb_ENABLE_COVERAGE "Add coverage flags" OFF)
 option(tinydb_ENABLE_PCH "Use precompiled headers" OFF)
 option(tinydb_ENABLE_DOXYGEN "Use Doxygen to generate documents" OFF)
-cmake_dependent_option(tinydb_USE_IMPORT_STD "Whether to use 'import std'" ON
-    "CMAKE_CXX_MODULE_STD" OFF)
+cmake_dependent_option(tinydb_ENABLE_MODULE
+  "Whether to build with module support" OFF
+  "CMAKE_CXX_STANDARD GREATER_EQUAL 20" OFF)
+cmake_dependent_option(tinydb_USE_IMPORT_STD "Whether to use 'import std'" OFF
+    "CMAKE_CXX_MODULE_STD;tinydb_ENABLE_MODULE" OFF)
 # option(tinydb_USE_IMPORT_STD "Whether to use 'import std'" OFF)
 # in my experience, turning this off gives better debug information
 cmake_dependent_option(

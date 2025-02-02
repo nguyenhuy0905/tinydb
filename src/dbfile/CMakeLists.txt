@@ -1,11 +1,24 @@
-add_library(tinydb_coltype)
-target_sources(tinydb_coltype PUBLIC FILE_SET CXX_MODULES FILES coltype.cxx)
+add_library(tinydb_coltype OBJECT)
+target_module_if_enabled(tinydb_coltype
+  HEADERS
+  coltype.hxx
+  SOURCES
+  coltype.cxx
+  MODULES
+  coltype.cxx
+)
 target_link_libraries(tinydb_coltype PRIVATE tinydb_compile_opts)
 
 add_subdirectory(internal)
-add_library(tinydb_dbfile)
-target_sources(tinydb_dbfile PUBLIC FILE_SET
-    CXX_MODULES FILES dbfile.cxx)
+add_library(tinydb_dbfile OBJECT)
+# target_sources(tinydb_dbfile PUBLIC FILE_SET
+#     CXX_MODULES FILES dbfile.cxx)
+target_module_if_enabled(tinydb_dbfile
+  SOURCES
+  dbfile.cxx
+  MODULES
+  dbfile.cxx
+)
 target_link_libraries(tinydb_dbfile
     PRIVATE
     tinydb_compile_opts

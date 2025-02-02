@@ -1,4 +1,4 @@
-add_library(tinydb_sql)
+add_library(tinydb_sql OBJECT)
 target_sources(tinydb_sql
     PRIVATE
     interpreter.cxx

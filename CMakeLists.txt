@@ -3,7 +3,7 @@
 # ##############################################################################
 
 # module support starts at 3.28, but we need 3.30 to import std
-cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 project(
     tinydb
     VERSION 0.0.1
@@ -24,8 +24,8 @@ if(NOT CMAKE_C_STANDARD AND NOT MSVC)
   set(CMAKE_C_STANDARD_REQUIRED ON)
 endif()
 
-# set(CMAKE_C_EXTENSIONS OFF)
-# set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # hide as much as I can
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
