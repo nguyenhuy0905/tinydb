@@ -3,7 +3,7 @@
 # ##############################################################################
 
 # module support starts at 3.28, but we need 3.30 to import std
-cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
     tinydb
     VERSION 0.0.1

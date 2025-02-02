@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28.2 FATAL_ERROR)
 # target_sources that:
 # - include MODULES if tinydb_ENABLE_MODULE is true.
 # - doesn't otherwise.
@@ -8,6 +9,7 @@ function(target_module_if_enabled target)
     target_sources(${target} PUBLIC FILE_SET HEADERS FILES ${modules_HEADERS})
   endif()
   if(tinydb_ENABLE_MODULE)
+    cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
     target_sources(${target}
       PUBLIC FILE_SET CXX_MODULES FILES
       ${modules_MODULES}
