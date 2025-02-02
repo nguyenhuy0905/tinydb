@@ -67,6 +67,8 @@ export constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  * @class Fragment
  * @brief The in-memory representation of a fragment.
  *
+ * Default-construct a `Fragment` returns an invalid fragment.
+ *
  */
 export struct Fragment {
   enum class FragType : char { // char so that I don't have to cast.
@@ -102,10 +104,10 @@ export struct Fragment {
 
   // pointer to the start of the header.
   // Not written into the database file.
-  Ptr pos;
-  FragExtra extra;
-  page_off_t size;
-  FragType type;
+  Ptr pos{};
+  FragExtra extra{FreeFragExtra{}};
+  page_off_t size{};
+  FragType type{FragType::Free};
   static constexpr page_off_t NULL_FRAG_PTR{0};
   // Default header size. All fragment types have headers at least this
   // size.
@@ -127,7 +129,22 @@ export struct Fragment {
   /**
    * @brief A fragment is invalid if its `pos` is pointing to a NullPtr.
    */
-  constexpr auto is_invalid() -> bool { return pos == NullPtr; }
+  [[nodiscard]] constexpr auto is_invalid() const noexcept -> bool {
+    return pos == NullPtr;
+  }
+
+  [[nodiscard]] constexpr auto header_size() const noexcept -> page_off_t {
+    switch (type) {
+    case FragType::Free:
+      return FREE_FRAG_HEADER_SIZE;
+    case FragType::Used:
+      return USED_FRAG_HEADER_SIZE;
+    case FragType::Chained:
+      return CHAINED_FRAG_HEADER_SIZE;
+    default:
+      std::unreachable();
+    }
+  }
 };
 static_assert(std::is_trivially_copy_assignable_v<Fragment>);
 static_assert(std::is_trivially_copy_constructible_v<Fragment>);
@@ -233,7 +250,8 @@ void update_write_heap_pg(HeapMeta& t_heap_meta, const Fragment& t_next_frag,
  * - `first` is the previous neighbor.
  * - `second` is the next neighbor.
  */
-auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
+auto get_neighboring_free_frags(Fragment& t_curr_frag, HeapMeta& t_meta,
+                                std::istream& t_in)
     -> std::pair<std::optional<Fragment>, std::optional<Fragment>>;
 
 /**
@@ -242,7 +260,8 @@ auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
  * @param t_frag
  * @param t_in
  */
-auto coalesce(Fragment&& t_frag, std::istream& t_in) -> Fragment;
+auto coalesce(Fragment&& t_frag, HeapMeta& t_meta, std::iostream& t_io)
+    -> Fragment;
 
 /**
  * @class Heap
@@ -351,24 +370,26 @@ public:
     }
     t_frag.type = Fragment::FragType::Free;
     t_frag.extra = Fragment::FreeFragExtra{};
+    auto coalesced_frag{coalesce(std::move(t_frag), heap_meta, t_io)};
+
     bool heap_meta_changed{false};
     auto max_pair{heap_meta.get_max_pair()};
-    if (max_pair.first < t_frag.size || max_pair.first == 0) {
-      heap_meta.update_max_pair(t_frag.size, t_frag.pos.offset);
+    if (max_pair.first < coalesced_frag.size || max_pair.first == 0) {
+      heap_meta.update_max_pair(coalesced_frag.size, coalesced_frag.pos.offset);
       heap_meta_changed = true;
     }
     auto first_free_off{heap_meta.get_first_free_off()};
-    if (first_free_off > t_frag.pos.offset ||
+    if (first_free_off > coalesced_frag.pos.offset ||
         first_free_off == Fragment::NULL_FRAG_PTR) {
-      heap_meta.update_first_free(t_frag.pos.offset);
+      heap_meta.update_first_free(coalesced_frag.pos.offset);
       heap_meta_changed = true;
     }
 
     if (heap_meta_changed) {
-      write_to(heap_meta, t_io);
     }
+    write_to(heap_meta, t_io);
 
-    write_frag_to(std::move(t_frag), t_io);
+    write_frag_to(std::move(coalesced_frag), t_io);
   }
 
 private:
@@ -637,9 +658,7 @@ auto Heap::find_first_fit_heap_pg(page_off_t t_size, bool is_chained,
 auto try_break_frag(Fragment& t_old_frag, Fragment& t_next_frag,
                     page_off_t t_old_frag_size, HeapMeta& heap_meta,
                     std::iostream& t_io) -> bool {
-  auto header_size{(t_old_frag.type == Fragment::FragType::Used)
-                       ? Fragment::USED_FRAG_HEADER_SIZE
-                       : Fragment::CHAINED_FRAG_HEADER_SIZE};
+  auto header_size{t_old_frag.header_size()};
 
   // if the returned fragment still has room for another free fragment,
   // break it down.
@@ -717,20 +736,22 @@ void update_write_heap_pg(HeapMeta& heap_meta, const Fragment& next_frag,
   write_to(heap_meta, t_io);
 }
 
-auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
+auto get_neighboring_free_frags(Fragment& t_curr_frag, HeapMeta& heap_meta,
+                                std::istream& t_in)
     -> std::pair<std::optional<Fragment>, std::optional<Fragment>> {
+  assert(t_curr_frag.type == Fragment::FragType::Free);
   // this disgusting piece of template means "the return type of this
   // function".
   // Also, ret is declared here to abuse NRVO. Of course, in the debug build
   // with no optimization whatsoever, copy assignment will probably be called
   // anyways.
-  std::invoke_result_t<decltype(&get_neighboring_free_frags), const Fragment&,
-                       std::istream&>
+  std::invoke_result_t<decltype(&get_neighboring_free_frags), Fragment&,
+                       HeapMeta&, std::istream&>
       ret;
 
   // Fuck C++, where is my labeled return?
   [&]() {
-    auto heap_meta{read_from<HeapMeta>(t_curr_frag.pos.pagenum, t_in)};
+    // auto heap_meta{read_from<HeapMeta>(t_curr_frag.pos.pagenum, t_in)};
     auto first_free{heap_meta.get_first_free_off()};
     if (first_free == Fragment::NULL_FRAG_PTR) {
       // return {std::nullopt, std::nullopt};
@@ -743,6 +764,7 @@ auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
     if (prev.pos.offset > t_curr_frag.pos.offset) {
       // then `prev` should have been `next`.
       // return {std::nullopt, prev};
+      t_curr_frag.get_free_extra().next = prev.pos.offset;
       ret = {std::nullopt, prev};
       return;
     }
@@ -754,6 +776,7 @@ auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
         return;
       }
       // return {prev, std::nullopt};
+      prev.get_free_extra().next = t_curr_frag.pos.offset;
       ret = {prev, std::nullopt};
       return;
     }
@@ -769,10 +792,12 @@ auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
         // at this point, `next` is still the previous neighbor of
         // `t_curr_frag`
         // return {next, std::nullopt};
-        if (next.get_free_extra().next == t_curr_frag.pos.offset) {
+        if (prev.get_free_extra().next == t_curr_frag.pos.offset) {
+          prev.get_free_extra().next = t_curr_frag.pos.offset;
           ret = {prev, std::nullopt};
           return;
         }
+        next.get_free_extra().next = t_curr_frag.pos.offset;
         ret = {next, std::nullopt};
         return;
       }
@@ -783,8 +808,114 @@ auto get_neighboring_free_frags(const Fragment& t_curr_frag, std::istream& t_in)
                              .offset = next.get_free_extra().next},
                             t_in);
     }
+    prev.get_free_extra().next = t_curr_frag.pos.offset;
+    t_curr_frag.get_free_extra().next = next.pos.offset;
+    ret = {prev, next};
   }();
 
+  return ret;
+}
+
+auto coalesce(Fragment&& t_frag, HeapMeta& t_meta, std::iostream& t_io)
+    -> Fragment {
+  assert(t_frag.type == Fragment::FragType::Free);
+  Fragment ret;
+
+  [&]() {
+    auto [prev_frag,
+          next_frag]{get_neighboring_free_frags(t_frag, t_meta, t_io)};
+    if (!prev_frag && !next_frag) {
+      ret = std::move(t_frag);
+      return;
+    }
+
+    // if lhs is left next to of rhs, returns true, otherwise false.
+    //
+    // Eg, lhs is a free fragment size 10 (which makes the fragment 15 bytes)
+    // large. Then if rhs's offset is exactly 15 more than that of lhs, the
+    // 2 are next to each other.
+    static constexpr auto is_next_to{
+        [](const Fragment& lhs, const Fragment& rhs) noexcept {
+          auto lhs_tail = lhs.pos.offset + lhs.header_size() + lhs.size;
+          // print debugging, I know. But it's helpful when you have tracked down
+          // that one troublesome function.
+          //
+          // std::println("Fragment (off: {}, header: {}, size: {}) neighbors "
+          //              "(off: {}, header: {}, size: {}): {}",
+          //              lhs.pos.offset, lhs.header_size(), lhs.size,
+          //              rhs.pos.offset, rhs.header_size(), rhs.size,
+          //              (lhs_tail == rhs.pos.offset) ? "true" : "false");
+          return lhs_tail == rhs.pos.offset;
+        }};
+    // Merges 2 fragments. Assumption: `is_next_to(lhs, rhs)` returns `true`.
+    //
+    // The move is just to explicitly tell "don't touch these variables again".
+    static constexpr auto merge{[](Fragment&& lhs,
+                                   Fragment&& rhs) noexcept -> Fragment {
+      // damn, you don't need to capture static lambdas?
+      // assert(is_next_to(lhs, rhs));
+      return Fragment{
+          .pos{lhs.pos},
+          .extra{Fragment::FreeFragExtra{
+              .next = rhs.get_free_extra().next,
+          }},
+          .size = static_cast<page_off_t>(
+              std::move(lhs).size + rhs.header_size() + std::move(rhs).size),
+          .type = Fragment::FragType::Free,
+      };
+    }};
+
+    bool prev_merged{false};
+    auto left_merge = [&]() {
+      // merge with prev_frag if prev_frag exists, and return the newly created
+      // fragment. Otherwise, just return t_frag.
+      auto ret_opt =
+          prev_frag
+              .transform([&](Fragment& prev) noexcept {
+                // we only care about t_frag.
+                if (!is_next_to(prev, t_frag)) {
+                  return t_frag;
+                }
+                if (t_meta.get_first_free_off() > prev.pos.offset ||
+                    t_meta.get_first_free_off() == Fragment::NULL_FRAG_PTR) {
+                  t_meta.update_first_free(prev.pos.offset);
+                }
+                prev_merged = true;
+                return merge(std::move(prev), std::move(t_frag));
+              })
+              .or_else([&t_frag]() noexcept { return std::optional{t_frag}; });
+      assert(ret_opt.has_value());
+      return *ret_opt;
+    }();
+
+    ret = [&]() {
+      // merge left_merge with next_frag if next_frag exists, or just return
+      // left_merge.
+      // If prev_frag has a value but cannot be merged (due to not being
+      // neighbors) but t_frag and next_frag can still be merged, update
+      // prev_frag's next pointer.
+      auto ret_opt = next_frag
+                         .transform([&](Fragment& next) noexcept {
+                           if (!is_next_to(left_merge, next)) {
+                             return left_merge;
+                           }
+                           if (!prev_merged && prev_frag.has_value()) {
+                             prev_frag->get_free_extra().next =
+                                 left_merge.pos.offset;
+                             write_frag_to(*prev_frag, t_io);
+                           }
+                           return merge(std::move(left_merge), std::move(next));
+                         })
+                         .or_else([&left_merge]() noexcept {
+                           return std::optional{left_merge};
+                         });
+      assert(ret_opt.has_value());
+      return ret_opt.value();
+    }();
+  }();
+
+  // std::println("Resulting fragment: (page: {}, offset: {}, header: {}, size: {})",
+  //              ret.pos.pagenum, ret.pos.offset, ret.header_size(), ret.size);
   return ret;
 }
 

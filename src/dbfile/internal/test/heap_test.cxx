@@ -30,6 +30,7 @@ TEST(heap, init) {
   std::println("frag1 - pagenum: {} - offset: {} - size: {}",
                frag1.first.pos.pagenum, frag1.first.pos.offset,
                frag1.first.size);
+  ASSERT_EQ(frag1.first.pos.pagenum, 1);
   auto frag2 = test_heap.malloc(20, false, fl, test_stream);
   std::println("frag2 - pagenum: {} - offset: {} - size: {}",
                frag2.first.pos.pagenum, frag2.first.pos.offset,
@@ -53,12 +54,20 @@ TEST(heap, init) {
                frag6.first.pos.pagenum, frag6.first.pos.offset,
                frag6.first.size);
   // it's freedom time
+  // frag1, frag2 and frag6 are in page 1.
+  std::println(
+      "Freeing frag1, frag2, and frag6. Should be the entirety of page 1");
   test_heap.free(std::move(frag1.first), fl, test_stream);
-  frag1 = test_heap.malloc(4020, true, fl, test_stream);
+  test_heap.free(std::move(frag6.first), fl, test_stream);
+  test_heap.free(std::move(frag2.first), fl, test_stream);
+  std::println("Reallocating frag1 with size 4070, and Chained.\n"
+      "Should be in page 1");
+  // if coalesced successfully, frag1 should be in page 1.
+  frag1 = test_heap.malloc(4070, true, fl, test_stream);
   std::println("frag1 - pagenum: {} - offset: {} - size: {}",
                frag1.first.pos.pagenum, frag1.first.pos.offset,
                frag1.first.size);
-
+  ASSERT_EQ(frag1.first.pos.pagenum, 1);
   // NOLINTEND(*magic-number*)
 }
 

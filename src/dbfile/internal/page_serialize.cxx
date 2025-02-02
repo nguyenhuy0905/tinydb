@@ -38,8 +38,6 @@ void write_to(const FreePageMeta& t_meta, std::ostream& t_out) {
 
   auto next_pg = t_meta.get_next_pg();
   t_out.rdbuf()->sputn(std::bit_cast<const char*>(&next_pg), sizeof(next_pg));
-  std::println("Write free page: (pagenum: {}, next: {})", t_meta.get_pg_num(),
-               next_pg);
 }
 
 template <>
@@ -59,7 +57,6 @@ auto read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
 
   page_ptr_t next_pg{0};
   t_in.rdbuf()->sgetn(std::bit_cast<char*>(&next_pg), sizeof(next_pg));
-  std::println("Read free page: (pagenum: {}, next: {})", t_pg_num, next_pg);
   return {t_pg_num, next_pg};
 }
 
