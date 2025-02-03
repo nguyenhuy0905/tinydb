@@ -60,7 +60,7 @@ jobs:
       # if: runner.os == 'Linux' && ${{ matrix.c_compiler }} == 'gcc'
       if: runner.os == 'Linux'
       # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get update && sudo apt-get install ninja-build
+      run: sudo apt-get update && sudo apt-get install ninja-build libstdc++-14-dev
 
     # - name: Download Ninja, update compilers (Clang)
     #   if: runner.os == 'Linux' && ${{ matrix.c_compiler }} == 'clang'
@@ -84,7 +84,6 @@ jobs:
         -G "Ninja"
         -D CMAKE_CXX_COMPILER:STRING=${{ matrix.cpp_compiler }}
         -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
-        -D CMAKE_CXX_FLAGS:STRING="-stdlib=libc++"
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
