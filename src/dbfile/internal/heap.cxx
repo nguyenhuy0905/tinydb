@@ -1,3 +1,10 @@
+/**
+ * @file heap.cxx
+ * @brief Definitions for declarations in heap.hxx
+ *
+ * And some helper functions.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"

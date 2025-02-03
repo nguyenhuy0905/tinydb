@@ -1,3 +1,9 @@
+/**
+ * @file page_meta.cxx
+ * @brief Simply a module export for page_meta.hxx. If the project isn't built
+ * with modules enabled, this file is not compiled.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
@@ -13,11 +19,6 @@ export import :base;
 import std;
 #endif
 #else
-#include "dbfile/internal/page_base.hxx"
-#include "general/sizes.hxx"
-#include <cstdint>
-#include <utility>
-#include <cassert>
 #endif // ENABLE_MODULES
 
 #include "dbfile/internal/page_meta.hxx"

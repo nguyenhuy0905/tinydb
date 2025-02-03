@@ -1,3 +1,9 @@
+/**
+ * @file coltype.hxx
+ * @brief Defines available column types and some convenient functions to deal
+ * with column types.
+ */
+
 #ifndef TINYDB_DBFILE_COLTYPE_HXX
 #define TINYDB_DBFILE_COLTYPE_HXX
 #ifndef ENABLE_MODULES
@@ -22,9 +28,6 @@ template <class... Ts> overload(Ts...) -> overload<Ts...>;
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::column {
-
-// TODO: I'm planning to move column type definitions to here. I don't want the
-// client to have to depend on the table header file.
 
 /**
  * @enum ScalarColType

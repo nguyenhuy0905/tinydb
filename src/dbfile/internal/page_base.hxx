@@ -1,3 +1,9 @@
+/**
+ * @file page_base.hxx
+ * @brief Defines some basic (but essential) enum/types/variable names for any
+ * part of the database that deals with pages.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_BASE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_BASE_HXX
 
@@ -39,7 +45,7 @@ using err_num_t = std::underlying_type_t<PageReadErrCode>;
 /**
  * @class PageMixin
  * @brief Any page metadata should inherit this, publicly.
- * @details Adds page number functionality into any page.
+ * Adds page number functionality into any page.
  *
  */
 class PageMixin {
@@ -58,6 +64,9 @@ public:
 
 protected:
   // NOLINTBEGIN(*non-private*)
+
+  // Not written to the database file. Merely a convenient way to keep track of
+  // page numbers.
   uint32_t m_pg_num;
   // NOLINTEND(*non-private*)
 };

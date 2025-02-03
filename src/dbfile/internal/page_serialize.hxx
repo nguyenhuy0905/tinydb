@@ -1,17 +1,23 @@
+/**
+ * @file page_serialize.hxx
+ * @brief Declares read/write functions for page metadata.
+ *
+ * Also provides a type-erased `PageSerializer`, which can be constructed using
+ * any of the page meta. See page meta.
+ * Supposedly helpful for caching pages to further reduce I/O instructions. We
+ * will see about that later.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_SERIALIZE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_SERIALIZE_HXX
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
-#include "general/sizes.hxx"
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include <cassert>
-#include <bit>
-#include <cstdint>
 #include <iosfwd>
 #include <memory>
-#include <optional>
 #include <print>
 #include <utility>
 #endif // !ENABLE_MODULES
@@ -172,6 +178,5 @@ private:
 };
 
 } // namespace tinydb::dbfile::internal
-
 
 #endif // !TINYDB_DBFILE_INTERNAL_PAGE_SERIALIZE_HXX

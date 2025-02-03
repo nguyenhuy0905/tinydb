@@ -1,3 +1,18 @@
+/**
+ * @file dbfile.hxx
+ * @brief Declares the user-facing interface for handling a database file.
+ *
+ * NOTE: The interface of reading and constructing a database file will probably
+ * be delegated to a new class. This interface is supposed to be used only for
+ * modifying rows of the database.
+ *
+ * WARNING: most of the interface is not yet defined. DO NOT USE.
+ *
+ * It is possible to assign any arbitrary stream as the database file, so long
+ * as that stream derives from `std::iostream`. For example, one can mock-test a
+ * database using an `std::stringstream`.
+ */
+
 #ifndef TINYDB_DBFILE_DBFILE_HXX
 #define TINYDB_DBFILE_DBFILE_HXX
 
@@ -5,11 +20,7 @@
 #ifndef ENABLE_MODULES
 #include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/tbl.hxx"
-#include "version.hxx"
-#include <bit>
-#include <cstdint>
 #include <iostream>
 #include <memory>
 #endif // !ENABLE_MODULES
@@ -21,6 +32,7 @@ namespace tinydb::dbfile {
  * @class DbFile
  * @brief The database file itself.
  *
+ * Once a database file is created, one can NOT modify its columns.
  */
 class DbFile {
 public:

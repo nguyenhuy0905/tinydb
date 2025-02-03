@@ -1,3 +1,8 @@
+/**
+ * @file page_serialize.cxx
+ * @brief Definitions for page_serialize.hxx.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
@@ -24,7 +29,6 @@ import std;
 #include <bit>
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <print>
 #include <utility>
 #endif // ENABLE_MODULES

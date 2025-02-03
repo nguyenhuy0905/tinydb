@@ -1,14 +1,17 @@
+/**
+ * @file freelist.hxx
+ * @brief Declares an internal interface for freelist.
+ *
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_FREELIST_HXX
 #define TINYDB_DBFILE_INTERNAL_FREELIST_HXX
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_base.hxx"
-#include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/page_serialize.hxx"
 #include "general/modules.hxx"
-#include "general/offsets.hxx"
-#include <bit>
 #include <iosfwd>
 #endif // !ENABLE_MODULES
 
@@ -18,11 +21,18 @@ namespace tinydb::dbfile::internal {
 /**
  * @class FreeList
  * @brief Contains data about the freelist of a database file.
- * @details The streams passed into any function of this class are expected to
- * be the same, or at the very least, point to the same file/string.
  *
- * This is be guaranteed if the FreeList is only used in context of a database
- * file.
+ * The streams passed into any function of this class is expected to
+ * be the same, or at the very least, points to the same file/string.
+ * This is guaranteed if the FreeList is only used in context of a database
+ * file. The end-user shouldn't tinker with this interface anyways.
+ *
+ * The free list manages free pages. See page meta.
+ * It can keep track, "allocate" and "deallocate" free pages.
+ * - "Allocate" means repurposing a free page into a different page type.
+ *   - If it runs out of free pages, it simply creates a new free page.
+ * - "Deallocate" means repurposing a page of different type back into a free
+ * page.
  *
  */
 class FreeList {

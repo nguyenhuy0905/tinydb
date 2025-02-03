@@ -1,3 +1,11 @@
+/**
+ * @file heap.hxx
+ * @brief Declares the internal interface for Heap.
+ *
+ * Heap is probably a poorly-chosen name. But it's common for this type of
+ * allocation, so Imma stick with it.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_HEAP_HXX
 #define TINYDB_DBFILE_INTERNAL_HEAP_HXX
 
@@ -9,24 +17,28 @@
 #include <cassert>
 #include <cmath>
 #include <iosfwd>
-#include <type_traits>
 #include <utility>
-#include <variant>
 #endif // !ENABLE_MODULES
 
 namespace tinydb::dbfile::internal {
 
 /**
  * @class Heap
- * @brief A freelist allocator.
+ * @brief A dynamic storage allocator.
  *
  * This allocator is created from 2 levels of linked lists. The first level is a
- * singly-linked list between the heap pages. Inside each heap page contains a
- * singly-linked list of memory fragments.
- * To find a new allocation, the program first traverses the list of heap pages
+ * doubly-linked list between the heap pages. Inside each heap page contains a
+ * singly-linked list of unused memory fragments.
+ *
+ * To make a new allocation, the program first traverses the list of heap pages
  * until it finds a page whose max fragment is large enough to accomodate the
  * requested size. Then, it traverses the inner linked list of the heap page
  * to find the first fragment that can accomodate the requested size.
+ *
+ * To free a fragment, the program simply rebrands the fragment as an unused
+ * fragment, and check with the 2 closest unused fragments (if exists). If
+ * they are next to each other, a coalesce is done, resulting in a bigger
+ * fragment.
  *
  */
 TINYDB_EXPORT
@@ -38,7 +50,7 @@ public:
 
   /**
    * @brief Allocates a large enough chunk of memory. t_size must be smaller
-   * than or equal to 4096 - HeapMeta::DEFAULT_FREE_OFF -
+   * than or equal to SIZEOF_PAGE - HeapMeta::DEFAULT_FREE_OFF -
    * USED_FRAG_HEADER_SIZE (which, at the moment of writing the documentation,
    * is 4076).
    * If is_chained is true, the maximum size is only 4070
@@ -74,14 +86,16 @@ public:
    * @brief Releases the memory held by a fragment. Fragment must be of type
    * Used.
    *
-   * COALESCE NOT IMPLEMENTED YET.
-   *
    * @param t_frag The fragment to free, must be of type Used.
    * @param t_fl In case the heap page the fragment points to is entirely
    * free. Then, that page is released to the freelist.
    * @param t_io The database read/write stream.
    *
-   * @details
+   * Also attempts to coalesce the fragment with its closest 2 unused fragments
+   * (if exists).
+   *
+   * For chained fragments, free must be called manually for each of the
+   * fragments in the chain.
    */
   void free(Fragment&& t_frag, [[maybe_unused]] FreeList& t_fl,
             std::iostream& t_io);

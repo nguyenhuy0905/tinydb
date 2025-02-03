@@ -1,3 +1,9 @@
+/**
+ * @file page_base.cxx
+ * @brief Simply a module export for page_base.hxx. Won't be compiled if the
+ * project is built without modules enabled.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"

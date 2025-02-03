@@ -1,3 +1,8 @@
+/**
+ * @file dbfile.cxx
+ * @brief Definitions for DbFile's interface (dbfile.hxx).
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
@@ -17,7 +22,6 @@ import tinydb.dbfile.internal.tbl;
 import std;
 #endif // IMPORT_STD
 #else
-#include "general/modules.hxx"
 #include "version.hxx"
 #include <bit>
 #include <cstdint>

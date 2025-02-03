@@ -1,12 +1,21 @@
+/**
+ * @file heap_base.hxx
+ * @brief Defines structures that the heap will use. See heap.
+ *
+ * Defines the structures of Ptr and Fragment. A Ptr is, well, a pointer to a
+ * position in the file. A Fragment represents a memory fragment inside a heap
+ * page.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_HEAP_BASE_HXX
 #define TINYDB_DBFILE_INTERNAL_HEAP_BASE_HXX
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_base.hxx"
-#include <variant>
 #include <cassert>
 #include <utility>
+#include <variant>
 #endif // !ENABLE_MODULES
 
 namespace tinydb::dbfile::internal {
@@ -133,6 +142,6 @@ struct Fragment {
 static_assert(std::is_trivially_copy_assignable_v<Fragment>);
 static_assert(std::is_trivially_copy_constructible_v<Fragment>);
 
-}
+} // namespace tinydb::dbfile::internal
 
 #endif // !TINYDB_DBFILE_INTERNAL_HEAP_BASE_HXX

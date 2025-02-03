@@ -1,3 +1,8 @@
+/**
+ * @file freelist.cxx
+ * @brief Defines the interfaces declared in freelist.hxx
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
@@ -15,6 +20,7 @@ import std;
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/page_serialize.hxx"
+#include "general/offsets.hxx"
 #include <bit>
 #include <iostream>
 #endif // ENABLE_MODULES

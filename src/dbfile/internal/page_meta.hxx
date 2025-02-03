@@ -1,3 +1,36 @@
+/**
+ * @file page_meta.hxx
+ * @brief Defines the metadata for different page types.
+ *
+ * A file is basically an array of blocks of size `SIZEOF_PAGE` (whose size is
+ * whatever `getconf PAGESIZE` on Linux returns (most likely 4096 on a 64-bit
+ * machine)). IIRC, that makes it more efficient to read/write, because disk
+ * operations are VERY slow, and definitely too slow to do byte-by-byte. That's
+ * too slow even for RAM memory (I believe each read is equivalent to the
+ * bit-size of the machine, so, 64-bit machines read 64 bits/8 bytes at once).
+ *
+ * TL;DR, a "page" is the basic functional block of disk memory. If we organize
+ * our data in terms of pages, it would be MUCH faster to operate on.
+ *
+ * In our database files, each page can function in 1 of the 4 following ways
+ * (maybe 5, the first page is reserved for metadata of the entire database
+ * file): as a free page, a BTree's leaf page, a BTree's internal page, or a
+ * heap page.
+ * Which can be grouped into 2 higher categories: indexing and storage
+ * management.
+ *
+ * For indexing, see btree.
+ * For memory management, see freelist and heap.
+ *
+ * The page metadata is a small section at the start of a page that records:
+ * - The page type.
+ * - And other data relevant to that type of page.
+ *
+ * Terminology:
+ * - Page number: total offset divided by `SIZEOF_PAGE`. Total offset of a
+ * stream can be retrieved using `tellg()` or `tellp()`.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 
@@ -18,6 +51,9 @@ namespace tinydb::dbfile::internal {
  * @class FreePageMeta
  * @brief Contains metadata about a free page
  *
+ * These pages are managed by the `FreeList`, and forms a singly-linked list
+ * (probably will be upgraded to a doubly-linked list some day), sorted in
+ * ascending page number, with other free pages.
  */
 class FreePageMeta : public PageMixin {
 public:
@@ -47,6 +83,8 @@ private:
  * @class BTreeLeafMeta
  * @brief Contains metadata about a BTree's leaf page.
  *
+ * A BTree leaf contains ONLY data, sorted in ascending order of the key.
+ * Since the BTree hasn't been implemented, documentation cannot provide more.
  */
 class BTreeLeafMeta : public PageMixin {
 public:
@@ -82,6 +120,11 @@ private:
  * @class BTreeInternalMeta
  * @brief Contains metadata about a BTree's internal page.
  *
+ * A BTree internal node contains pointer-key pairs, and one more pointer at the
+ * very end of the pointer-key array.
+ * In a pointer-key pair, the pointer points to a BTree's internal or leaf node
+ * whose all keys are smaller than or equal to the key to the right of the
+ * pointer, and larger than to the key to the left of the pointer.
  */
 class BTreeInternalMeta : public PageMixin {
 public:
@@ -127,6 +170,11 @@ public:
  * @class HeapMeta
  * @brief Contains metadata about a heap page.
  *
+ * Managed by the Heap (see heap). Heap pages form a doubly-linked list with one
+ * another. Inside each heap page is (yet again) a doubly-linked list formed by
+ * unused memory fragments. See fragment.
+ * For quicker access, data about the free memory fragment with the maximum size
+ * in a heap page is also recorded.
  */
 class HeapMeta : public PageMixin {
 private:

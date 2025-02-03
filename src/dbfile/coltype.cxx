@@ -1,3 +1,9 @@
+/**
+ * @file coltype.cxx
+ * @brief Simply a module export of coltype.hxx. If the project isn't built with
+ * module support, this file isn't compiled.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
