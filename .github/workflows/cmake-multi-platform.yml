@@ -58,7 +58,6 @@ jobs:
 
     - name: Download Ninja, update compilers (GCC)
       if: runner.os == 'Linux' && matrix.c_compiler == 'gcc'
-      if: runner.os == 'Linux'
       # the ancient stuff that comes with this VM won't cut it.
       run: sudo apt-get update && sudo apt-get install ninja-build
 
