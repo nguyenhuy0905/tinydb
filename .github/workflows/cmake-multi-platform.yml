@@ -26,21 +26,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [clang, cl]
+        c_compiler: [gcc, clang, cl]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
           # gcc currently gives out a compiler segfault.
-          # - os: ubuntu-latest
-          #   c_compiler: gcc
-          #   cpp_compiler: g++-14
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++-14
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++-18
         exclude:
-          # - os: windows-latest
-          #   c_compiler: gcc
+          - os: windows-latest
+            c_compiler: gcc
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
@@ -70,7 +70,6 @@ jobs:
         -G "Ninja"
         -D CMAKE_CXX_COMPILER:STRING=${{ matrix.cpp_compiler }}
         -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
-        -D CMAKE_CXX_FLAGS:STRING="-stdlib=libc++"
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
