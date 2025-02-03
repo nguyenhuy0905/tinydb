@@ -68,7 +68,7 @@ jobs:
     #   run: sudo apt-get update && sudo apt-get install ninja-build libc++-18-dev libc++abi-18-dev
     #
     - name: Configure CMake (Linux, GCC)
-      if: runner.os == 'Linux' && ${{ matrix.c_compiler }} == 'gcc'
+      if: runner.os == 'Linux' && matrix.c_compiler == 'gcc'
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
@@ -78,7 +78,7 @@ jobs:
         -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
 
     - name: Configure CMake (Linux, Clang)
-      if: runner.os == 'Linux' && ${{ matrix.c_compiler }} == 'clang'
+      if: runner.os == 'Linux' && matrix.c_compiler == 'clang'
       run: >
         cmake --preset debug
         -G "Ninja"
