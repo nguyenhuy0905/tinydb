@@ -2,6 +2,7 @@
 #define TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 
 #ifndef ENABLE_MODULES
+#include "dbfile/internal/heap_base.hxx"
 #include "dbfile/internal/page_base.hxx"
 #include "general/modules.hxx"
 #include "general/sizes.hxx"
@@ -35,6 +36,7 @@ public:
   }
 
 private:
+  // offset 0: 1 byte, equivalent to `PageType::Free`.
   // offset 1: pointer to next page. Set to 0 if this is the last free page.
   //   If set to 0, the next free page should be the page right below this
   //   page in memory order.
@@ -66,12 +68,14 @@ public:
   }
 
 private:
+  // offset 0: 1 byte, equivalent to `PageType::BTreeLeaf`.
   // offset 1: 2 bytes, number of rows stored inside this leaf.
   n_rows_t m_n_rows;
   // offset 3: 2 bytes, the first free offset.
   //   default to 5, since 4 is the last byte of the metadata chunk.
   page_off_t m_first_free;
-  static constexpr page_off_t DEFAULT_FREE_OFF = 5;
+  static constexpr page_off_t DEFAULT_FREE_OFF =
+      sizeof(m_n_rows) + sizeof(m_first_free);
 };
 
 /**
@@ -81,9 +85,21 @@ private:
  */
 class BTreeInternalMeta : public PageMixin {
 public:
-  static constexpr page_off_t DEFAULT_FREE_OFF = 5;
   // number of keys
   using n_keys_t = uint16_t;
+
+private:
+  // offset 0: 1 byte, equivalent to `PageType::BTreeInternal`.
+  // offset 1: 2 bytes, number of keys currently stored inside this internal
+  // node.
+  n_keys_t m_n_keys;
+  // offset 3: 2 bytes, the first free offset.
+  //   default to 5, since 4 is the last byte of the metadata chunk.
+  page_off_t m_first_free;
+
+public:
+  static constexpr page_off_t DEFAULT_FREE_OFF =
+      sizeof(PageType) + sizeof(m_n_keys) + sizeof(m_first_free);
 
   /**
    * @brief The "placeholder" constructor. This is the same as an empty BTree
@@ -105,14 +121,6 @@ public:
       -> page_off_t {
     return m_first_free;
   }
-
-private:
-  // offset 1: 2 bytes, number of keys currently stored inside this internal
-  // node.
-  n_keys_t m_n_keys;
-  // offset 3: 2 bytes, the first free offset.
-  //   default to 5, since 4 is the last byte of the metadata chunk.
-  page_off_t m_first_free;
 };
 
 /**
@@ -121,17 +129,35 @@ private:
  *
  */
 class HeapMeta : public PageMixin {
+private:
+  // offset 0: 1 byte, equivalent to `PageType::Heap`.
+  // offset 1: 4 bytes, pointer to the next heap page.
+  //   Default to 0, which means this heap page is the last one.
+  //   In that case, if a new heap page is needed, a new heap page will be
+  //   allocated from the free list.
+  page_ptr_t m_next_pg;
+  // offset 5: 4 bytes, pointer to the previous heap page.
+  //   Default to 0, which means this heap page is the first one.
+  page_ptr_t m_prev_pg;
+  // offset 9: 2 bytes, offset to the first free fragment.
+  page_off_t m_first_free;
+  // offset 11: 2 bytes, maximum heap size.
+  // offset 13: 2 bytes, maximum heap local offset.
+  std::pair<page_off_t, page_off_t> m_max;
+
 public:
-  static constexpr page_off_t DEFAULT_FREE_OFF = 15;
+  static constexpr page_off_t DEFAULT_FREE_OFF =
+      sizeof(PageType) + sizeof(m_next_pg) + sizeof(m_prev_pg) +
+      sizeof(m_first_free) + sizeof(m_max.first) + sizeof(m_max.second);
   explicit HeapMeta(page_ptr_t t_page_num)
-      : PageMixin{t_page_num}, m_next_pg{0}, m_prev_pg{0},
+      : PageMixin{t_page_num}, m_next_pg{NULL_PAGE}, m_prev_pg{NULL_PAGE},
         m_first_free{DEFAULT_FREE_OFF},
         m_max{std::make_pair(
             // the definition isn't available here: 5 is the size of a free
             // fragment header. You can imagine a heap page as a list of
             // different types of fragments.
             static_cast<page_off_t>(SIZEOF_PAGE - DEFAULT_FREE_OFF -
-                                    5), // NOLINT
+                                    Fragment::FREE_FRAG_HEADER_SIZE),
             static_cast<page_off_t>(DEFAULT_FREE_OFF))} {}
   HeapMeta(page_ptr_t t_page_num, page_ptr_t t_next_pg, page_ptr_t t_prev_pg,
            page_off_t t_first_free, std::pair<page_off_t, page_off_t> t_max)
@@ -198,7 +224,7 @@ public:
   }
 
   /**
-   * @brief Updates the maximum fragment.
+   * @brief Updates the maximum free fragment.
    *
    * Set `t_size` = 0 and `t_off` = 0 to indicate invalid pair.
    *
@@ -212,8 +238,9 @@ public:
    */
   constexpr auto update_max_pair(page_off_t t_size, page_off_t t_off) {
     assert((t_size == 0 && t_off == 0) ||
-           (t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF && t_size > 0 &&
-            t_off < SIZEOF_PAGE));
+           (t_size <= SIZEOF_PAGE - DEFAULT_FREE_OFF -
+                          Fragment::FREE_FRAG_HEADER_SIZE &&
+            t_size > 0 && t_off < SIZEOF_PAGE));
     m_max = std::make_pair(t_size, t_off);
   }
 
@@ -234,21 +261,6 @@ public:
     assert(t_val == 0 || (t_val >= DEFAULT_FREE_OFF && t_val <= SIZEOF_PAGE));
     m_first_free = t_val;
   }
-
-private:
-  // offset 1: 4 bytes, pointer to the next heap page.
-  //   Default to 0, which means this heap page is the last one.
-  //   In that case, if a new heap page is needed, a new heap page will be
-  //   allocated from the free list.
-  page_ptr_t m_next_pg;
-  // offset 5: 4 bytes, pointer to the previous heap page.
-  //   Default to 0, which means this heap page is the first one.
-  page_ptr_t m_prev_pg;
-  // offset 9: 2 bytes, offset to the first free fragment.
-  page_off_t m_first_free;
-  // offset 11: 2 bytes, maximum heap size.
-  // offset 13: 2 bytes, maximum heap local offset.
-  std::pair<page_off_t, page_off_t> m_max;
 };
 
 } // namespace tinydb::dbfile::internal

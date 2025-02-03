@@ -24,6 +24,7 @@ import std;
 #include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/page_base.hxx"
+#include "dbfile/internal/heap_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "general/offsets.hxx"
 #include "general/sizes.hxx"
