@@ -1,3 +1,10 @@
+/**
+ * @file tbl.cxx
+ * @brief Defines the declarations in tbl.hxx
+ *
+ * NOTE: as with tbl.hxx, a huge revamp is expected.
+ */
+
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
@@ -19,7 +26,6 @@ import tinydb.dbfile.coltype;
 import std;
 #endif
 #else
-#include "general/modules.hxx"
 #include "general/offsets.hxx"
 #include <cstdint>
 #include <iostream>
@@ -28,8 +34,6 @@ import std;
 #include <ranges>
 #include <sstream>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
 #endif // ENABLE_MODULES
 
 #include "dbfile/internal/tbl.hxx"

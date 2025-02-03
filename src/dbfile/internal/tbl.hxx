@@ -1,15 +1,23 @@
+/**
+ * @file tbl.hxx
+ * @brief Declares internal interface for table.
+ *
+ * This is a table database, so we want to "simulate" the table storage. Kinda
+ * like a spreadsheet.
+ *
+ * NOTE: huge revamp in this part of the codebase expected soon.
+ */
+
 #ifndef TINYDB_DBFILE_INTERNAL_TBL_HXX
 #define TINYDB_DBFILE_INTERNAL_TBL_HXX
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
-#include "general/offsets.hxx"
 #include "dbfile/coltype.hxx"
 #include <cstdint>
 #include <iosfwd>
 #include <optional>
 #include <print>
-#include <ranges>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
