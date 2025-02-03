@@ -7,7 +7,7 @@
 #include <type_traits>
 #endif // !ENABLE_MODULES
 
-EXPORT
+TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 // general numeric type

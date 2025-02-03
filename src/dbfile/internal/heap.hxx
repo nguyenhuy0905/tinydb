@@ -26,7 +26,7 @@ namespace tinydb::dbfile::internal {
  * @brief Points to some position. That's why it's named a pointer, duh.
  *
  */
-EXPORT
+TINYDB_EXPORT
 struct Ptr {
   // offset 0: 4-byte page pointer.
   // offset 4: 2-byte offset relative to the start of the page.
@@ -44,7 +44,7 @@ static_assert(std::is_trivial_v<Ptr>);
  *
  * @return If 2 AllocPtrs are the same.
  */
-EXPORT
+TINYDB_EXPORT
 [[nodiscard]] constexpr auto operator==(const Ptr& lhs, const Ptr& rhs)
     -> bool {
   return (lhs.pagenum == rhs.pagenum) && (lhs.offset == rhs.offset);
@@ -53,7 +53,7 @@ EXPORT
 /**
  * @brief Bad.
  */
-EXPORT
+TINYDB_EXPORT
 constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
 
 /**
@@ -63,7 +63,7 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  * Default-construct a `Fragment` returns an invalid fragment.
  *
  */
-EXPORT
+TINYDB_EXPORT
 struct Fragment {
   enum class FragType : char { // char so that I don't have to cast.
     Free = 0,
@@ -156,7 +156,7 @@ static_assert(std::is_trivially_copy_constructible_v<Fragment>);
  * to find the first fragment that can accomodate the requested size.
  *
  */
-EXPORT
+TINYDB_EXPORT
 class Heap {
 public:
   Heap() = default;

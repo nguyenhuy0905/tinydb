@@ -10,7 +10,7 @@
 #endif // !ENABLE_MODULES
 #include "general/modules.hxx"
 
-EXPORT
+TINYDB_EXPORT
 namespace tinydb {
 
 template <class... Ts> struct overload : Ts... {
@@ -20,7 +20,7 @@ template <class... Ts> overload(Ts...) -> overload<Ts...>;
 
 } // namespace tinydb
 
-EXPORT
+TINYDB_EXPORT
 namespace tinydb::dbfile::column {
 
 // TODO: I'm planning to move column type definitions to here. I don't want the

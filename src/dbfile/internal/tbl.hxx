@@ -15,7 +15,7 @@
 #include <unordered_map>
 #endif // !ENABLE_MODULES
 
-EXPORT
+TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 using ColID = uint8_t;

@@ -12,7 +12,7 @@
 #include <iosfwd>
 #endif // !ENABLE_MODULES
 
-EXPORT
+TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 /**
