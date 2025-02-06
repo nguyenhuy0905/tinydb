@@ -114,6 +114,8 @@ private:
   page_off_t m_first_free;
   static constexpr page_off_t DEFAULT_FREE_OFF =
       sizeof(m_n_rows) + sizeof(m_first_free);
+
+  friend class BTree;
 };
 
 /**
@@ -164,6 +166,8 @@ public:
       -> page_off_t {
     return m_first_free;
   }
+
+  friend class BTree;
 };
 
 /**

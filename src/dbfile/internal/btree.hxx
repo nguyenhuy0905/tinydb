@@ -7,11 +7,11 @@
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
+#include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/tbl.hxx"
 #include <cstddef>
 #include <iosfwd>
 #include <span>
-#include <vector>
 #endif // !ENABLE_MODULES
 
 #ifndef TINYDB_DBFILE_INTERNAL_BTREE_HXX
@@ -28,11 +28,18 @@ class BTree {
   // TODO: sit at a board and design this thing.
 public:
   BTree();
-  void add_row(const TableMeta&, std::iostream&);
+  // I dunno if I can do any better than `span` for now.
+  // `span` is the value of the key.
+
+  void add_row(std::span<std::byte>, std::iostream&);
+  auto remove_row(std::span<std::byte>, std::iostream&);
+  auto get_row(std::span<std::byte>, std::iostream&);
 
 private:
-  auto get_row_bytes(const TableMeta&, std::span<std::byte>, std::string_view,
-                     std::iostream&) -> std::vector<std::byte>;
+  auto split_leaf_node(BTreeLeafMeta&);
+  auto split_internal_node(BTreeInternalMeta&);
+
+  TableMeta m_tbl;
 };
 
 } // namespace tinydb::dbfile::internal

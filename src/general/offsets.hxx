@@ -12,10 +12,11 @@ constexpr uint16_t VERSION_MINOR_OFF =
 constexpr uint16_t VERSION_PATCH_OFF =
     VERSION_MINOR_OFF + SIZEOF_VERSION_NUM; // 4
 constexpr uint16_t DBFILE_SIZE_OFF =
-    VERSION_PATCH_OFF + SIZEOF_VERSION_NUM;                               // 6
-constexpr uint16_t FREELIST_PTR_OFF = DBFILE_SIZE_OFF + SIZEOF_FILESIZ;   // 10
-constexpr uint16_t HEAP_OFF = FREELIST_PTR_OFF + SIZEOF_FREELIST_PTR; // 14
-constexpr uint16_t TBL_OFF = HEAP_OFF + SIZEOF_HEAP;              // 18
+    VERSION_PATCH_OFF + SIZEOF_VERSION_NUM;                             // 6
+constexpr uint16_t FREELIST_PTR_OFF = DBFILE_SIZE_OFF + SIZEOF_FILESIZ; // 10
+constexpr uint16_t HEAP_OFF = FREELIST_PTR_OFF + SIZEOF_FREELIST_PTR;   // 14
+constexpr uint16_t TBL_OFF = HEAP_OFF + SIZEOF_HEAP;                    // 18
+// The BTree offset should be right after the table.
 
 }; // namespace tinydb
 
