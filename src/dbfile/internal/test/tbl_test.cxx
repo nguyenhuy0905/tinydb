@@ -25,7 +25,7 @@ TEST(tbl, init) {
                                 .m_col_id = 1,
                                 .m_offset = 0});
   tbltest.add_column(ColumnMeta{.m_name{"col2"},
-                                .m_type{column::TextType(128)},
+                                .m_type{column::TextType{}},
                                 .m_col_id = 2,
                                 .m_offset = 1});
   // NOLINTEND
@@ -42,8 +42,4 @@ TEST(tbl, init) {
             column::type_id(read_col2.m_type));
   ASSERT_EQ(column::type_id(initial_col2.m_type),
             column::type_id(column::TextType{}));
-  // here it's safe to yank out TextType in both of these columns.
-  auto initial_txt = std::get<column::TextType>(initial_col2.m_type);
-  auto read_txt = std::get<column::TextType>(read_col2.m_type);
-  ASSERT_EQ(initial_txt.get_size(), read_txt.get_size());
 }

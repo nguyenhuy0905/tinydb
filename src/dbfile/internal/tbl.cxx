@@ -43,7 +43,7 @@ namespace tinydb::dbfile::internal {
 void TableMeta::write_to(std::ostream& t_out) {
   t_out.seekp(TBL_OFF);
   // table format:
-  // tblname{col1-name,col1-idcol1-typecol1-sizecol1-offsetcol2-name,col2-id...coln-name,coln-id,coln-type,coln-size,coln-offset;}
+  // tblname{col1-name,col1-idcol1-typecol1-offsetcol2-namecol2-id...coln-name,coln-idcoln-typecoln-offset;}
   //
   // Basically:
   // - anything from TBL_OFF to before { is the table name.
@@ -70,14 +70,12 @@ void TableMeta::write_to(std::ostream& t_out) {
        m_entries | std::views::transform(
                        [](const auto& pair) { return pair.second; })) {
     auto type_id = column::type_id(colmeta.m_type);
-    auto typesiz = column::type_size(colmeta.m_type);
     write_string(colmeta.m_name);
     rdbuf.sputc(',');
     // with this, I don't really need the commas anymore.
     // The numbers' bounds are their sizes.
     write(colmeta.m_col_id);
     write(type_id);
-    write(typesiz);
     write(colmeta.m_offset);
   }
   t_out << '}';
@@ -123,11 +121,10 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
     auto typenum = fill_num.operator()<column::coltype_num_t>();
 
     auto type = column::type_of(typenum).value();
-    auto size = fill_num.operator()<uint64_t>();
     type = column::map_type(
-        type, [](auto t_scl) { return column::ColType{t_scl}; },
+        type, [&](auto t_scl) { return column::ColType{t_scl}; },
         [&](column::TextType&) mutable {
-          return column::ColType{column::TextType{size}};
+          return column::ColType{column::TextType{}};
         });
 
     auto off = fill_num.operator()<uint8_t>();

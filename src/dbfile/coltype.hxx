@@ -7,6 +7,7 @@
 #ifndef TINYDB_DBFILE_COLTYPE_HXX
 #define TINYDB_DBFILE_COLTYPE_HXX
 #ifndef ENABLE_MODULES
+#include "dbfile/internal/heap_base.hxx"
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -93,12 +94,7 @@ struct TextType {
       static_cast<std::underlying_type_t<ScalarColType>>(
           ScalarColType::Float64) +
       1;
-  /**
-   * @return The size of the underlying data.
-   */
-  [[nodiscard]] constexpr auto get_size() const -> uint64_t { return m_size; }
-
-  uint64_t m_size;
+  internal::Ptr m_pos;
 };
 
 using ColType = std::variant<ScalarColType, TextType>;
@@ -146,13 +142,13 @@ constexpr auto map_type(Col& t_type, FScalarMap auto&& t_f_scalar,
  * @details The return value is 64 bytes to accomodate the actual size of
  * TextType.
  */
-constexpr auto type_size(const ColType& t_type) -> uint64_t {
+constexpr auto type_size(const ColType& t_type) -> decltype(auto) {
   return map_type(
       t_type,
       [](ScalarColType t_scalar) {
-        return static_cast<uint64_t>(scalar_size(t_scalar));
+        return static_cast<uint16_t>(scalar_size(t_scalar));
       },
-      [](const TextType& t_txt) { return t_txt.get_size(); });
+      [](const TextType&) { return internal::Ptr::SIZE; });
 }
 
 /**
@@ -184,7 +180,7 @@ constexpr auto type_of(coltype_num_t t_num) -> std::optional<ColType> {
     return ScalarColType{t_num};
   }
   if (t_num == TextType::TYPE_ID) {
-    return TextType{1};
+    return TextType{};
   }
   return std::nullopt;
 }
