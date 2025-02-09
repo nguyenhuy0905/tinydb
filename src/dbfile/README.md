@@ -23,7 +23,8 @@ The entire repo now uses modules. So, very few headers remained.
   - ~~`malloc`~~, ~~`free`~~.
   - ~~`free` should also coalesce free fragments that are next to each
   other, if it can create a combined fragment whose size is a power of 2.~~
-- Change TextType to simply hold a pointer (so, it's 6 bytes in size).
+~- Change TextType to simply hold a pointer (so, it's 6 bytes in size).~ Kind of
+done, I guess?
 - If the user wants to set a string-type row as the key, auto-add an 8-byte column
 (or more like, whatever size\_t equals to) that holds the hashcode.
   - Maybe a quad-probe solution? By just adding some numbers to the hashcode.
