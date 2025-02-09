@@ -10,8 +10,8 @@ import std;
 import tinydb.dbfile.internal.tbl;
 import tinydb.dbfile.coltype;
 #else
-#include "dbfile/internal/tbl.hxx"
 #include "dbfile/coltype.hxx"
+#include "dbfile/internal/tbl.hxx"
 #endif // ENABLE_MODULES
 TEST(tbl, init) {
   using namespace tinydb::dbfile;
@@ -21,11 +21,11 @@ TEST(tbl, init) {
   test_stream.exceptions(std::stringstream::failbit);
   // NOLINTBEGIN
   tbltest.add_column(ColumnMeta{.m_name{"col1"},
-                                .m_type{column::ScalarColType::Uint8},
+                                .m_type = column::ColType::Uint8,
                                 .m_col_id = 1,
                                 .m_offset = 0});
   tbltest.add_column(ColumnMeta{.m_name{"col2"},
-                                .m_type{column::TextType{}},
+                                .m_type = column::ColType::Text,
                                 .m_col_id = 2,
                                 .m_offset = 1});
   // NOLINTEND
@@ -41,5 +41,5 @@ TEST(tbl, init) {
   ASSERT_EQ(column::type_id(initial_col2.m_type),
             column::type_id(read_col2.m_type));
   ASSERT_EQ(column::type_id(initial_col2.m_type),
-            column::type_id(column::TextType{}));
+            column::type_id(column::ColType::Text));
 }

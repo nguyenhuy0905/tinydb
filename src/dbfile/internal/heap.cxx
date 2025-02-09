@@ -28,13 +28,13 @@ import tinydb.dbfile.internal.freelist;
 import std;
 #endif // IMPORT_STD
 #else
-#include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/heap_base.hxx"
+#include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "general/offsets.hxx"
 #include "general/sizes.hxx"
+#include "general/utils.hxx"
 #include <bit>
 #include <cassert>
 #include <cmath>
@@ -309,11 +309,13 @@ void Heap::free(Fragment&& t_frag, [[maybe_unused]] FreeList& t_fl,
   assert(t_frag.type != Fragment::FragType::Free);
   auto heap_meta{read_from<HeapMeta>(t_frag.pos.pagenum, t_io)};
   if (t_frag.type == Fragment::FragType::Chained) {
-    t_frag.size = static_cast<page_off_t>(t_frag.size + Fragment::CHAINED_FRAG_HEADER_SIZE -
-                  Fragment::FREE_FRAG_HEADER_SIZE);
+    t_frag.size = static_cast<page_off_t>(t_frag.size +
+                                          Fragment::CHAINED_FRAG_HEADER_SIZE -
+                                          Fragment::FREE_FRAG_HEADER_SIZE);
   } else {
-    t_frag.size = static_cast<page_off_t>(t_frag.size + Fragment::USED_FRAG_HEADER_SIZE -
-                  Fragment::FREE_FRAG_HEADER_SIZE);
+    t_frag.size =
+        static_cast<page_off_t>(t_frag.size + Fragment::USED_FRAG_HEADER_SIZE -
+                                Fragment::FREE_FRAG_HEADER_SIZE);
   }
   t_frag.type = Fragment::FragType::Free;
   t_frag.extra = Fragment::FreeFragExtra{};

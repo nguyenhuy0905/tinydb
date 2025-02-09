@@ -121,11 +121,6 @@ auto TableMeta::read_from(std::istream& t_in) -> TableMeta {
     auto typenum = fill_num.operator()<column::coltype_num_t>();
 
     auto type = column::type_of(typenum).value();
-    type = column::map_type(
-        type, [&](auto t_scl) { return column::ColType{t_scl}; },
-        [&](column::TextType&) mutable {
-          return column::ColType{column::TextType{}};
-        });
 
     auto off = fill_num.operator()<uint8_t>();
 
