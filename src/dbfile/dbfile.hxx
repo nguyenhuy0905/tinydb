@@ -82,6 +82,8 @@ private:
   std::unique_ptr<std::iostream> m_rw;
   internal::FreeList m_freelist;
   // for now there's no need for heap yet.
+
+  friend class RowBuilder;
 };
 
 } // namespace tinydb::dbfile

@@ -12,6 +12,7 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #endif // !ENABLE_MODULES
 #include "general/modules.hxx"
 
@@ -39,7 +40,26 @@ enum class ColType : char {
   Text,
 };
 
+// The column, but represented as in-memory data.
+using InMemCol =
+    std::variant<int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+                 uint64_t, float, double, internal::Ptr>;
+
 using coltype_num_t = std::underlying_type_t<ColType>;
+
+/**
+ * @param t_coltype The in-memory column value.
+ * @return
+ * - The contained value, if C is the right type.
+ * - Throw std::bad_variant_access otherwise.
+ * This is basically a wrapper around std::get.
+ */
+template <ColType C> constexpr auto get_value(InMemCol t_coltype) {
+  return std::get<static_cast<coltype_num_t>(C)>(t_coltype);
+}
+
+// just to check if the template above is correct.
+// constexpr int8_t TEST{get_value<ColType::Int8>({static_cast<int8_t>(1)})};
 
 /**
  * @return The byte size of the specified scalar type.
