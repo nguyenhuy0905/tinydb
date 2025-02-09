@@ -101,11 +101,10 @@ public:
     return m_n_rows;
   }
 
-  void update_n_rows(n_rows_t t_new_n_rows) {
-    m_n_rows = t_new_n_rows;
-  }
+  void update_n_rows(n_rows_t t_new_n_rows) { m_n_rows = t_new_n_rows; }
 
-  [[nodiscard]] constexpr auto get_first_free_off() const noexcept -> page_off_t {
+  [[nodiscard]] constexpr auto get_first_free_off() const noexcept
+      -> page_off_t {
     return m_first_free;
   }
 
@@ -154,9 +153,9 @@ private:
   // keys are stored alongside page pointers like so:
   //   ptr key ptr key ptr key ... ptr key ptr
   // ptr here is the page pointer.
-  // The BTree page a pointer points to contains only keys smaller than
-  // the key in this pointer's right hand side, and larger than or equal to that
-  // of the pointer's left.
+  // In a BTree page, a pointer points to pages containing only keys smaller
+  // than the key in this pointer's right hand side, and larger than or equal to
+  // that of the pointer's left.
 
 public:
   static constexpr page_off_t DEFAULT_FREE_OFF =
