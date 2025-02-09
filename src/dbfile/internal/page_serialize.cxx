@@ -70,7 +70,7 @@ void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out) {
   t_out.rdbuf()->sputc(static_cast<pt_num_t>(PageType::BTreeLeaf));
   auto nrows = t_meta.get_n_rows();
   t_out.rdbuf()->sputn(std::bit_cast<const char*>(&nrows), sizeof(nrows));
-  auto first_free = t_meta.get_first_free();
+  auto first_free = t_meta.get_first_free_off();
   t_out.rdbuf()->sputn(std::bit_cast<const char*>(&first_free),
                        sizeof(first_free));
 }

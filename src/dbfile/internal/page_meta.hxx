@@ -101,8 +101,18 @@ public:
     return m_n_rows;
   }
 
-  [[nodiscard]] constexpr auto get_first_free() const noexcept -> page_off_t {
+  void update_n_rows(n_rows_t t_new_n_rows) {
+    m_n_rows = t_new_n_rows;
+  }
+
+  [[nodiscard]] constexpr auto get_first_free_off() const noexcept -> page_off_t {
     return m_first_free;
+  }
+
+  void update_first_free(page_off_t t_new_first_free) {
+    assert(t_new_first_free >= DEFAULT_FREE_OFF);
+    assert(t_new_first_free < SIZEOF_PAGE);
+    m_first_free = t_new_first_free;
   }
 
 private:
@@ -141,6 +151,12 @@ private:
   // offset 3: 2 bytes, the first free offset.
   //   default to 5, since 4 is the last byte of the metadata chunk.
   page_off_t m_first_free;
+  // keys are stored alongside page pointers like so:
+  //   ptr key ptr key ptr key ... ptr key ptr
+  // ptr here is the page pointer.
+  // The BTree page a pointer points to contains only keys smaller than
+  // the key in this pointer's right hand side, and larger than or equal to that
+  // of the pointer's left.
 
 public:
   static constexpr page_off_t DEFAULT_FREE_OFF =
@@ -162,9 +178,19 @@ public:
     return m_n_keys;
   }
 
+  constexpr void update_n_keys(n_keys_t t_new_n_keys) {
+    m_n_keys = t_new_n_keys;
+  }
+
   [[nodiscard]] constexpr auto get_first_free_off() const noexcept
       -> page_off_t {
     return m_first_free;
+  }
+
+  constexpr void update_first_free_off(page_off_t t_new_free_off) {
+    assert(t_new_free_off >= DEFAULT_FREE_OFF);
+    assert(t_new_free_off < SIZEOF_PAGE);
+    m_first_free = t_new_free_off;
   }
 
   friend class BTree;
