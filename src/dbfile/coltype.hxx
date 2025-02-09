@@ -8,6 +8,7 @@
 #define TINYDB_DBFILE_COLTYPE_HXX
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/heap_base.hxx"
+#include "general/utils.hxx"
 #include <cstdint>
 #include <optional>
 #include <type_traits>
@@ -53,9 +54,33 @@ using coltype_num_t = std::underlying_type_t<ColType>;
  * - The contained value, if C is the right type.
  * - Throw std::bad_variant_access otherwise.
  * This is basically a wrapper around std::get.
+ * Hence, cannot be used for runtime dispatch. For that purpose, use `get_if`
+ * and run a check.
  */
 template <ColType C> constexpr auto get_value(InMemCol t_coltype) {
   return std::get<static_cast<coltype_num_t>(C)>(t_coltype);
+}
+
+/**
+ * @return the `ColType` enum value corresponding to the active variant
+ * of `t_col`.
+ */
+[[nodiscard]] constexpr auto in_mem_col_type(InMemCol t_col) noexcept {
+  using enum ColType;
+  std::visit(overload{
+                 [](int8_t) { return Int8; },
+                 [](uint8_t) { return Uint8; },
+                 [](int16_t) { return Int16; },
+                 [](uint16_t) { return Uint16; },
+                 [](int32_t) { return Int32; },
+                 [](uint32_t) { return Uint32; },
+                 [](int64_t) { return Int64; },
+                 [](uint64_t) { return Uint64; },
+                 [](float) { return Float32; },
+                 [](double) { return Float64; },
+                 [](internal::Ptr) { return Text; },
+             },
+             t_col);
 }
 
 // just to check if the template above is correct.
