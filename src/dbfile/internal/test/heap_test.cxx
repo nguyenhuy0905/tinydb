@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 #ifdef ENABLE_MODULES
 #ifndef IMPORT_STD
-#include <iostream>
 #include <print>
 #include <sstream>
 #else
