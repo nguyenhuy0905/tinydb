@@ -7,6 +7,7 @@
 module;
 #include "general/modules.hxx"
 #include "general/offsets.hxx"
+#include "general/utils.hxx"
 #ifndef IMPORT_STD
 #include <bit>
 #include <iostream>
@@ -21,6 +22,7 @@ import std;
 #include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/page_serialize.hxx"
 #include "general/offsets.hxx"
+#include "general/utils.hxx"
 #include <bit>
 #include <iostream>
 #endif // ENABLE_MODULES

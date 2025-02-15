@@ -23,8 +23,11 @@ namespace tinydb::dbfile {
 class RowBuilder {
 public:
   explicit RowBuilder(DbFile&);
+  /**
+   * @brief Adds one column data to the row.
+   */
   auto add_column_data(std::string_view, column::InMemCol);
-  auto remove_column(std::string_view);
+  auto change_column_data(std::string_view, column::InMemCol);
   auto get_column(std::string_view t_sv);
 
 private:

@@ -10,6 +10,7 @@ module;
 #include "general/modules.hxx"
 #include "general/offsets.hxx"
 #include "general/sizes.hxx"
+#include "general/utils.hxx"
 #include <cassert>
 #ifndef IMPORT_STD
 #include <bit>
@@ -21,6 +22,7 @@ module;
 #include <variant>
 #endif
 export module tinydb.dbfile.internal.heap;
+export import tinydb.dbfile.internal.heap.base;
 import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;
@@ -28,8 +30,8 @@ import tinydb.dbfile.internal.freelist;
 import std;
 #endif // IMPORT_STD
 #else
+#include "dbfile/heap_base.hxx"
 #include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/heap_base.hxx"
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include "general/offsets.hxx"

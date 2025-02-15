@@ -12,7 +12,7 @@
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
-#include "dbfile/internal/page_base.hxx"
+#include "general/utils.hxx"
 #include <cassert>
 #include <utility>
 #include <variant>

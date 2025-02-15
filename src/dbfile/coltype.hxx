@@ -7,7 +7,7 @@
 #ifndef TINYDB_DBFILE_COLTYPE_HXX
 #define TINYDB_DBFILE_COLTYPE_HXX
 #ifndef ENABLE_MODULES
-#include "dbfile/internal/heap_base.hxx"
+#include "dbfile/heap_base.hxx"
 #include "general/utils.hxx"
 #include <cstdint>
 #include <optional>

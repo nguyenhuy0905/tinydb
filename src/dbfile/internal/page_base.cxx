@@ -7,6 +7,7 @@
 #ifdef ENABLE_MODULES
 module;
 #include "general/modules.hxx"
+#include "general/utils.hxx"
 #include <cstdint>
 #ifndef IMPORT_STD
 #include <type_traits>

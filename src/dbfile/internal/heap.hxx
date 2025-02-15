@@ -11,8 +11,9 @@
 
 #include "general/modules.hxx"
 #ifndef ENABLE_MODULES
+#include "general/utils.hxx"
 #include "dbfile/internal/freelist.hxx"
-#include "dbfile/internal/heap_base.hxx"
+#include "dbfile/heap_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
 #include <cassert>
 #include <cmath>

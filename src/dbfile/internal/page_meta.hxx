@@ -35,7 +35,7 @@
 #define TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 
 #ifndef ENABLE_MODULES
-#include "dbfile/internal/heap_base.hxx"
+#include "dbfile/heap_base.hxx"
 #include "dbfile/internal/page_base.hxx"
 #include "general/modules.hxx"
 #include "general/sizes.hxx"

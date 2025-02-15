@@ -11,17 +11,13 @@
 #ifndef ENABLE_MODULES
 #include <cstdint>
 #include <type_traits>
+#include "general/utils.hxx"
 #endif // !ENABLE_MODULES
 
 TINYDB_EXPORT
 namespace tinydb::dbfile::internal {
 
 // general numeric type
-
-// Page pointer.
-using page_ptr_t = uint32_t;
-// Offset relative to the start of a page.
-using page_off_t = uint16_t;
 
 /**
  * @brief A flag that each page has.

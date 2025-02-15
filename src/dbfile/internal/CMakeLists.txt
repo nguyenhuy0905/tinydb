@@ -30,6 +30,7 @@ target_link_libraries(tinydb_dbfile_internal
     PUBLIC
     tinydb_general
     tinydb_coltype
+    tinydb_heap_base
     PRIVATE
     tinydb_compile_opts
 )

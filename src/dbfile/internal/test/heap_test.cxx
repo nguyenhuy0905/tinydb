@@ -1,4 +1,5 @@
 #include "sizes.hxx"
+#include "general/utils.hxx"
 #include <gtest/gtest.h>
 #ifdef ENABLE_MODULES
 #ifndef IMPORT_STD
@@ -14,7 +15,6 @@ import tinydb.dbfile.internal.page;
 #else
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/heap.hxx"
-#include "dbfile/internal/page_base.hxx"
 #endif // ENABLE_MODULES
 
 TEST(heap, init) {
