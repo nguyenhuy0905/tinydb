@@ -1,4 +1,0 @@
-Diagnostics:
-  Suppress: [
-    err_global_module_introducer_not_at_start,
-  ]
