@@ -1,0 +1,39 @@
+add_library(tinydb_dbfile_internal OBJECT)
+target_module_if_enabled(tinydb_dbfile_internal
+  HEADERS
+  page_base.hxx
+  page_meta.hxx
+  page_serialize.hxx
+  btree.hxx
+  freelist.hxx
+  tbl.hxx
+  heap.hxx
+  MODULES
+  page.cxx
+  page_base.cxx
+  page_meta.cxx
+  page_serialize.cxx
+  btree.cxx
+  freelist.cxx
+  tbl.cxx
+  heap.cxx
+  SOURCES
+  page_base.cxx
+  page_meta.cxx
+  page_serialize.cxx
+  btree.cxx
+  freelist.cxx
+  tbl.cxx
+  heap.cxx
+)
+target_link_libraries(tinydb_dbfile_internal
+    PUBLIC
+    tinydb_general
+    tinydb_coltype
+    tinydb_heap_base
+    PRIVATE
+    tinydb_compile_opts
+)
+if(tinydb_ENABLE_UNIT_TEST)
+  add_subdirectory(test)
+endif()

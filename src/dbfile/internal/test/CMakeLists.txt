@@ -1,0 +1,16 @@
+target_sources(
+    tinydb_test
+    PRIVATE
+    page_test.cxx
+    tbl_test.cxx
+    heap_test.cxx
+)
+target_link_libraries(tinydb_test
+    PRIVATE
+    tinydb_compile_opts
+    tinydb_dbfile_internal
+    tinydb_heap_base
+    tinydb_coltype
+    GTest::gtest
+)
+include(GoogleTest)
