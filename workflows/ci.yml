@@ -1,0 +1,135 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-24.04, macos-15, windows-2022 ]
+        compiler: [ gcc-14, llvm-18, apple-clang, msvc ]
+        build_type: [ Debug, RelWithDebInfo ]
+        exclude:
+          - os: 'windows-2022'
+            compiler: gcc-14
+          - os: 'windows-2022'
+            compiler: llvm-18
+          - os: 'windows-2022'
+            compiler: apple-clang
+          - os: 'ubuntu-24.04'
+            compiler: msvc
+          - os: 'ubuntu-24.04'
+            compiler: apple-clang
+          - os: 'macos-15'
+            compiler: msvc
+          - os: 'macos-15'
+            compiler: llvm-18
+          - os: 'macos-15'
+            compiler: gcc-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./conan/
+            ~/.conan2
+            ${{ env.APPDATA }}/.conan2
+            ${{ env.LOCALAPPDATA }}/.conan2
+            ~/.cache/ccache
+            ~/.ccache
+            ~/.config/ccache
+            ~/Library/Caches/ccache
+            ${{ env.LOCALAPPDATA }}/ccache
+            ${{ env.XDG_CACHE_HOME }}/ccache
+          key: ${{ runner.os }}-conan-${{ matrix.build_type }}-${{ hashFiles('**/CMakeLists.txt', '**/conanfile.py') }}
+          restore-keys: |
+            ${{ runner.os }}-conan-${{ matrix.build_type }}-
+
+      - name: Setup Cpp
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          vcvarsall: ${{ contains(matrix.os, 'windows') }}
+          cmake: true
+          conan: true
+
+      - name: Setup conan profile
+        run: conan profile detect -f
+
+      - name: Conan install
+        run: >
+          conan install . -s build_type=${{ matrix.build_type }}
+          -s compiler.cppstd=20
+          -b missing
+
+      - name: CMake setup (Debug, Unix)
+        if: ${{ matrix.build_type == 'Debug' && runner.os != 'Windows' }}
+        run: |
+          cmake --preset=dev-ci-unix
+
+      - name: CMake setup (RelWithDebInfo, Unix)
+        if: ${{ matrix.build_type == 'RelWithDebInfo' && runner.os != 'Windows' }}
+        run: |
+          cmake --preset=release-ci-unix
+
+      - name: CMake setup (Debug, Windows)
+        if: ${{ matrix.build_type == 'Debug' && runner.os == 'Windows' }}
+        run: |
+          cmake --preset=dev-ci-msvc
+
+      - name: CMake setup (RelWithDebInfo, Windows)
+        if: ${{ matrix.build_type == 'RelWithDebInfo' && runner.os == 'Windows' }}
+        run: |
+          cmake --preset=release-ci-msvc
+
+      - name: Build
+        run: |
+          cmake --build build/${{ matrix.build_type }} --config ${{ matrix.build_type }}
+
+      - name: Test
+        run: |
+          ctest --test-dir build/${{ matrix.build_type }}
+
+  gh-page:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CMake and graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install cmake graphviz -y
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get install wget -y
+          wget 'https://www.doxygen.nl/files/doxygen-1.13.2.linux.bin.tar.gz'
+          tar -xvf doxygen-1.13.2.linux.bin.tar.gz
+
+      - name: Configure CMake
+        run: cmake -D CMAKE_PROGRAM_PATH:STRING=./doxygen-1.13.2/bin --preset docs
+
+      - name: Build docs
+        run: cmake --build build --target docs
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/docs/html

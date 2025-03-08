@@ -1,0 +1,15 @@
+/**
+* \mainpage
+* \tableofcontents
+* This is the main page of this CMake template.
+* You can add subpages, sections, or references as you would like.
+* Please refer to the
+* [Doxygen documentation](https://www.doxygen.nl/manual/index.html).
+* \section gh GitHub
+* [Here is the link](https://github.com/nguyenhuy0905/cmake-template)
+* \section license Licensing
+* Since it's a template, I just threw a Unlicense in.
+* Here is the license statement:
+*
+* \include{doc} LICENSE
+*/
