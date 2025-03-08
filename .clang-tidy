@@ -12,9 +12,11 @@ ImplementationFileExtensions:
   - cc
   - cpp
   - cxx
-HeaderFilterRegex: ''
+HeaderFilterRegex: '^build.*'
 CheckOptions:
   - key: readability-identifier-length.IgnoredVariableNames
     value: '_|i|j|k|p'
   - key: readability-identifier-length.IgnoredParameterNames
     value: '_|i|j|k|p'
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
