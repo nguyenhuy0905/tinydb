@@ -6,7 +6,7 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
+
 #include <cstdint>
 #ifndef IMPORT_STD
 #include <functional>
@@ -16,6 +16,7 @@ module;
 #include <variant>
 #endif
 export module tinydb.dbfile.coltype;
+import tinydb.dbfile.internal.heap_base;
 #ifdef IMPORT_STD
 import std;
 #endif

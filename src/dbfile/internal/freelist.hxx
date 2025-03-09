@@ -7,16 +7,18 @@
 #ifndef TINYDB_DBFILE_INTERNAL_FREELIST_HXX
 #define TINYDB_DBFILE_INTERNAL_FREELIST_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_serialize.hxx"
-#include "general/modules.hxx"
 #include <iosfwd>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
 
 /**
  * @class FreeList
@@ -35,7 +37,7 @@ namespace tinydb::dbfile::internal {
  * page.
  *
  */
-class FreeList {
+class TINYDB_EXPORT FreeList {
 public:
   // This should be written into the header of the database file.
   // This is constant-sized so I expect this to be written before the table

@@ -11,7 +11,7 @@
 #ifndef TINYDB_DBFILE_INTERNAL_TBL_HXX
 #define TINYDB_DBFILE_INTERNAL_TBL_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/coltype.hxx"
 #include <cstdint>
@@ -23,8 +23,11 @@
 #include <unordered_map>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // !ENABLE_MODULES
 
 using ColID = uint8_t;
 using EntrySiz = uint8_t;
@@ -34,7 +37,7 @@ using EntrySiz = uint8_t;
  * @brief Metadata of one column
  *
  */
-struct ColumnMeta {
+struct TINYDB_EXPORT ColumnMeta {
   std::string m_name;
   column::ColType m_type;
   ColID m_col_id;
@@ -46,7 +49,7 @@ struct ColumnMeta {
  * @brief The table meta contains a bunch of column metas.
  *
  */
-class TableMeta {
+class TINYDB_EXPORT TableMeta {
   static_assert(!std::is_trivially_copyable_v<ColumnMeta>);
 
 public:

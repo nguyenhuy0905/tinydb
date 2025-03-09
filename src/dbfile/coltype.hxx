@@ -6,6 +6,8 @@
 
 #ifndef TINYDB_DBFILE_COLTYPE_HXX
 #define TINYDB_DBFILE_COLTYPE_HXX
+
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/heap_base.hxx"
 #include <cstdint>
@@ -13,10 +15,12 @@
 #include <type_traits>
 #include <utility>
 #endif // !ENABLE_MODULES
-#include "general/modules.hxx"
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::column {
+#else
 namespace tinydb::dbfile::column {
+#endif // ENABLE_MODULES
 
 /**
  * @enum ScalarColType
@@ -25,7 +29,7 @@ namespace tinydb::dbfile::column {
  * saves more space. The only problem, we lose access to the entire formatting
  * output of streams.
  */
-enum class ColType : char {
+enum TINYDB_EXPORT class ColType : char {
   Int8 = 0,
   Uint8,
   Int16,
@@ -45,7 +49,7 @@ using coltype_num_t = std::underlying_type_t<ColType>;
  * @return The byte size of the specified scalar type.
  * @param t_type The specified scalar type.
  */
-constexpr auto type_size(ColType t_type) -> uint8_t {
+constexpr TINYDB_EXPORT auto type_size(ColType t_type) -> uint8_t {
   using enum ColType;
   switch (t_type) {
   case Int8:
@@ -76,7 +80,7 @@ constexpr auto type_size(ColType t_type) -> uint8_t {
  * @param t_type The ColType passed in.
  * @return The type id of the specified column type.
  */
-constexpr auto type_id(const ColType& t_type) -> coltype_num_t {
+constexpr TINYDB_EXPORT auto type_id(const ColType& t_type) -> coltype_num_t {
   return static_cast<coltype_num_t>(t_type);
 }
 
@@ -86,7 +90,7 @@ constexpr auto type_id(const ColType& t_type) -> coltype_num_t {
  * @param t_num The numeric representation of a column type.
  * @return The appropriate column type.
  */
-constexpr auto type_of(coltype_num_t t_num) -> std::optional<ColType> {
+constexpr TINYDB_EXPORT auto type_of(coltype_num_t t_num) -> std::optional<ColType> {
   if (t_num >= 0 && t_num <= static_cast<coltype_num_t>(ColType::Text)) {
     return static_cast<ColType>(t_num);
   }

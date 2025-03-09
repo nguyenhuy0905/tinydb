@@ -67,7 +67,7 @@ TEST(heap, init) {
   test_heap.free(std::move(frag6.first), fl, test_stream);
   test_heap.free(std::move(frag2.first), fl, test_stream);
   std::println("Reallocating frag1 with size 4070, and Chained.\n"
-      "Should be in page 1");
+               "Should be in page 1");
   // if coalesced successfully, frag1 should be in page 1.
   frag1 = test_heap.malloc(4070, true, fl, test_stream);
   std::println("frag1 - pagenum: {} - offset: {} - size: {}",

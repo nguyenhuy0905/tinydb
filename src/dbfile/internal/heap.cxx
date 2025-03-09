@@ -7,9 +7,9 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
 #include "general/offsets.hxx"
 #include "general/sizes.hxx"
+#include "general/utils.hxx"
 #include <cassert>
 #ifndef IMPORT_STD
 #include <bit>
@@ -21,6 +21,7 @@ module;
 #include <variant>
 #endif
 export module tinydb.dbfile.internal.heap;
+export import tinydb.dbfile.internal.heap_base;
 import tinydb.dbfile.coltype;
 import tinydb.dbfile.internal.page;
 import tinydb.dbfile.internal.freelist;

@@ -5,7 +5,6 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
 #include "general/offsets.hxx"
 #ifndef IMPORT_STD
 #include <bit>

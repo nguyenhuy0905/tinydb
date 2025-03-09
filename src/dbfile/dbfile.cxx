@@ -5,7 +5,7 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
+
 #include "version.hxx"
 #ifndef IMPORT_STD
 #include <bit>

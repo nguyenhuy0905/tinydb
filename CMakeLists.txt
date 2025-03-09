@@ -34,9 +34,16 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 add_library(tinydb_compile_opts INTERFACE)
 target_compile_features(tinydb_compile_opts
                         INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
+target_include_directories(tinydb_compile_opts INTERFACE
+  "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tinydb>"
+)
 
 message(STATUS "Configure project options")
 include(CMakeOptions.cmake)
+include(GenerateExportHeader)
+add_library(tinydb)
+generate_export_header(tinydb)
 
 if(NOT MSVC)
   # there's no such thing as a "C standard" in MSVC

@@ -5,7 +5,7 @@
  * NOT IMPLEMENTED YET.
  */
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_meta.hxx"
 #include "dbfile/internal/tbl.hxx"
@@ -17,14 +17,17 @@
 #ifndef TINYDB_DBFILE_INTERNAL_BTREE_HXX
 #define TINYDB_DBFILE_INTERNAL_BTREE_HXX
 
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
 
 /**
  * @brief The B+ Tree.
  * The TableMeta being passed in should be the same one every time.
  */
-TINYDB_EXPORT
-class BTree {
+class TINYDB_EXPORT BTree {
   // TODO: sit at a board and design this thing.
 public:
   BTree();

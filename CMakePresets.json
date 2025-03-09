@@ -34,6 +34,14 @@
                 "CMAKE_C_EXTENSIONS": "OFF",
                 "CMAKE_CXX_EXTENSIONS": "OFF"
             }
+        },
+        {
+          "name": "debug-import-std-unix",
+            "displayName": "Debug build, and with unit test, using 'import std', for Mac/Linux for now",
+            "inherits": ["debug-import-std"],
+            "cacheVariables": {
+              "CMAKE_CXX_FLAGS": "-stdlib=libc++"
+            }
         }
     ],
     "buildPresets": [

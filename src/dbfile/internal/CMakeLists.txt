@@ -1,7 +1,24 @@
-add_library(tinydb_dbfile_internal OBJECT)
-target_module_if_enabled(tinydb_dbfile_internal
+add_library(tinydb_dbfile_internal_base)
+target_module_if_enabled(tinydb_dbfile_internal_base
   HEADERS
   page_base.hxx
+  heap_base.hxx
+  MODULES
+  page_base.cxx
+  heap_base.cxx
+  SOURCES
+  page_base.cxx
+)
+target_link_libraries(tinydb_dbfile_internal_base
+  PUBLIC
+  tinydb_general
+  PRIVATE
+  tinydb_compile_opts
+)
+
+add_library(tinydb_dbfile_internal)
+target_module_if_enabled(tinydb_dbfile_internal
+  HEADERS
   page_meta.hxx
   page_serialize.hxx
   btree.hxx
@@ -10,7 +27,6 @@ target_module_if_enabled(tinydb_dbfile_internal
   heap.hxx
   MODULES
   page.cxx
-  page_base.cxx
   page_meta.cxx
   page_serialize.cxx
   btree.cxx
@@ -18,7 +34,6 @@ target_module_if_enabled(tinydb_dbfile_internal
   tbl.cxx
   heap.cxx
   SOURCES
-  page_base.cxx
   page_meta.cxx
   page_serialize.cxx
   btree.cxx
@@ -30,6 +45,7 @@ target_link_libraries(tinydb_dbfile_internal
     PUBLIC
     tinydb_general
     tinydb_coltype
+    tinydb_dbfile_internal_base
     PRIVATE
     tinydb_compile_opts
 )

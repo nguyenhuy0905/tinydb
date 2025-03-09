@@ -5,7 +5,6 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
 #include "general/sizes.hxx"
 #include <cassert>
 #ifndef IMPORT_STD
@@ -17,7 +16,7 @@ module;
 #include <utility>
 #endif
 export module tinydb.dbfile.internal.page:serialize;
-import :base;
+import tinydb.dbfile.internal.page_base;
 import :meta;
 #ifdef IMPORT_STD
 import std;
@@ -25,8 +24,8 @@ import std;
 #else
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
-#include <cassert>
 #include <bit>
+#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <print>

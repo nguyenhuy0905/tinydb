@@ -34,18 +34,21 @@
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_META_HXX
 
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/heap_base.hxx"
 #include "dbfile/internal/page_base.hxx"
-#include "general/modules.hxx"
 #include "general/sizes.hxx"
 #include <cassert>
 #include <cstdint>
 #include <utility>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
 
 /**
  * @class FreePageMeta
@@ -55,7 +58,7 @@ namespace tinydb::dbfile::internal {
  * (probably will be upgraded to a doubly-linked list some day), sorted in
  * ascending page number, with other free pages.
  */
-class FreePageMeta : public PageMixin {
+class TINYDB_EXPORT FreePageMeta : public PageMixin {
 public:
   explicit FreePageMeta(page_ptr_t t_page_num)
       : PageMixin{t_page_num}, m_next_pg{0} {}
@@ -86,7 +89,7 @@ private:
  * A BTree leaf contains ONLY data, sorted in ascending order of the key.
  * Since the BTree hasn't been implemented, documentation cannot provide more.
  */
-class BTreeLeafMeta : public PageMixin {
+class TINYDB_EXPORT BTreeLeafMeta : public PageMixin {
 public:
   // number of rows
   using n_rows_t = uint16_t;
@@ -138,7 +141,7 @@ private:
  * whose all keys are smaller than or equal to the key to the right of the
  * pointer, and larger than to the key to the left of the pointer.
  */
-class BTreeInternalMeta : public PageMixin {
+class TINYDB_EXPORT BTreeInternalMeta : public PageMixin {
 public:
   // number of keys
   using n_keys_t = uint16_t;
@@ -206,7 +209,7 @@ public:
  * For quicker access, data about the free memory fragment with the maximum size
  * in a heap page is also recorded.
  */
-class HeapMeta : public PageMixin {
+class TINYDB_EXPORT HeapMeta : public PageMixin {
 private:
   // offset 0: 1 byte, equivalent to `PageType::Heap`.
   // offset 1: 4 bytes, pointer to the next heap page.

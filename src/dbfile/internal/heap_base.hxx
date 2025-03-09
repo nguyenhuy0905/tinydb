@@ -10,7 +10,7 @@
 #ifndef TINYDB_DBFILE_INTERNAL_HEAP_BASE_HXX
 #define TINYDB_DBFILE_INTERNAL_HEAP_BASE_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_base.hxx"
 #include <cassert>
@@ -18,15 +18,19 @@
 #include <variant>
 #endif // !ENABLE_MODULES
 
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // !ENABLE_MODULES
 
 /**
  * @class Ptr
  * @brief Points to some position. That's why it's named a pointer, duh.
  *
  */
-TINYDB_EXPORT
-struct Ptr {
+
+struct TINYDB_EXPORT Ptr {
   // offset 0: 4-byte page pointer.
   // offset 4: 2-byte offset relative to the start of the page.
   // The position is thus (pagenum * SIZEOF_PAGE) + offset
@@ -43,8 +47,7 @@ static_assert(std::is_trivial_v<Ptr>);
  *
  * @return If 2 AllocPtrs are the same.
  */
-TINYDB_EXPORT
-[[nodiscard]] constexpr auto operator==(const Ptr& lhs, const Ptr& rhs)
+[[nodiscard]] constexpr TINYDB_EXPORT auto operator==(const Ptr& lhs, const Ptr& rhs)
     -> bool {
   return (lhs.pagenum == rhs.pagenum) && (lhs.offset == rhs.offset);
 }
@@ -52,8 +55,8 @@ TINYDB_EXPORT
 /**
  * @brief Bad.
  */
-TINYDB_EXPORT
-constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
+
+constexpr TINYDB_EXPORT Ptr NullPtr{.pagenum = 0, .offset = 0};
 
 /**
  * @class Fragment
@@ -62,8 +65,8 @@ constexpr Ptr NullPtr{.pagenum = 0, .offset = 0};
  * Default-construct a `Fragment` returns an invalid fragment.
  *
  */
-TINYDB_EXPORT
-struct Fragment {
+
+struct TINYDB_EXPORT Fragment {
   enum class FragType : char { // char so that I don't have to cast.
     Free = 0,
     Used,

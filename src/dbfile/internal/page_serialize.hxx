@@ -11,7 +11,7 @@
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_SERIALIZE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_SERIALIZE_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/page_base.hxx"
 #include "dbfile/internal/page_meta.hxx"
@@ -22,8 +22,12 @@
 #include <utility>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
+
 
 /**
  * @brief Specialize this method for each serializable type. This includes page
@@ -36,26 +40,26 @@ namespace tinydb::dbfile::internal {
  * @return
  */
 template <typename T>
-auto read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
+auto TINYDB_EXPORT read_from(page_ptr_t t_pg_num, std::istream& t_in) -> T;
 
 template <>
-auto read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
+auto TINYDB_EXPORT read_from<FreePageMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> FreePageMeta;
 
 template <>
-auto read_from<BTreeLeafMeta>(page_ptr_t t_pg_num, std::istream& t_in)
+auto TINYDB_EXPORT read_from<BTreeLeafMeta>(page_ptr_t t_pg_num, std::istream& t_in)
     -> BTreeLeafMeta;
 
 template <>
-auto read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta;
+auto TINYDB_EXPORT read_from<HeapMeta>(page_ptr_t t_pg_num, std::istream& t_in) -> HeapMeta;
 
-void write_to(const FreePageMeta& t_meta, std::ostream& t_out);
+void TINYDB_EXPORT write_to(const FreePageMeta& t_meta, std::ostream& t_out);
 
-void write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out);
+void TINYDB_EXPORT write_to(const BTreeLeafMeta& t_meta, std::ostream& t_out);
 
-void write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
+void TINYDB_EXPORT write_to(const BTreeInternalMeta& t_meta, std::ostream& t_out);
 
-void write_to(const HeapMeta& t_meta, std::ostream& t_out);
+void TINYDB_EXPORT write_to(const HeapMeta& t_meta, std::ostream& t_out);
 
 template <typename Pg>
 concept PageSerializable =
@@ -75,7 +79,7 @@ concept PageSerializable =
  * Pretty useless otherwise.
  *
  */
-class PageSerializer {
+class TINYDB_EXPORT PageSerializer {
 public:
   explicit PageSerializer(PageSerializable auto&& t_page)
       : m_impl{new PageModel<std::remove_cvref_t<decltype(t_page)>>(

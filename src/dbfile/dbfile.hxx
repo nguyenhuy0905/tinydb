@@ -16,7 +16,7 @@
 #ifndef TINYDB_DBFILE_DBFILE_HXX
 #define TINYDB_DBFILE_DBFILE_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/coltype.hxx"
 #include "dbfile/internal/freelist.hxx"
@@ -25,8 +25,11 @@
 #include <memory>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile {
+#else
 namespace tinydb::dbfile {
+#endif // ENABLE_MODULES
 
 /**
  * @class DbFile

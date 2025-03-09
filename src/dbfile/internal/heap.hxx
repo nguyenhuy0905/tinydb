@@ -9,7 +9,7 @@
 #ifndef TINYDB_DBFILE_INTERNAL_HEAP_HXX
 #define TINYDB_DBFILE_INTERNAL_HEAP_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include "dbfile/internal/freelist.hxx"
 #include "dbfile/internal/heap_base.hxx"
@@ -20,7 +20,11 @@
 #include <utility>
 #endif // !ENABLE_MODULES
 
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
 
 /**
  * @class Heap
@@ -41,8 +45,8 @@ namespace tinydb::dbfile::internal {
  * fragment.
  *
  */
-TINYDB_EXPORT
-class Heap {
+
+class TINYDB_EXPORT Heap {
 public:
   Heap() = default;
   explicit Heap(page_ptr_t t_first_heap_pg)

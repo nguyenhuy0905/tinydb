@@ -7,14 +7,17 @@
 #ifndef TINYDB_DBFILE_INTERNAL_PAGE_BASE_HXX
 #define TINYDB_DBFILE_INTERNAL_PAGE_BASE_HXX
 
-#include "general/modules.hxx"
+#include "tinydb_export.h"
 #ifndef ENABLE_MODULES
 #include <cstdint>
 #include <type_traits>
 #endif // !ENABLE_MODULES
 
-TINYDB_EXPORT
+#ifdef ENABLE_MODULES
+export namespace tinydb::dbfile::internal {
+#else
 namespace tinydb::dbfile::internal {
+#endif // ENABLE_MODULES
 
 // general numeric type
 
@@ -27,14 +30,16 @@ using page_off_t = uint16_t;
  * @brief A flag that each page has.
  * Determines how a page is formatted.
  * */
-enum class PageType : char {
+
+enum class TINYDB_EXPORT PageType : char {
   Free = 0,
   BTreeLeaf,
   BTreeInternal,
   Heap,
 };
 
-enum class PageReadErrCode : uint8_t {
+
+enum class TINYDB_EXPORT PageReadErrCode : uint8_t {
   WrongPageType = 1,
 };
 
@@ -48,7 +53,7 @@ using err_num_t = std::underlying_type_t<PageReadErrCode>;
  * Adds page number functionality into any page.
  *
  */
-class PageMixin {
+class TINYDB_EXPORT PageMixin {
 public:
   PageMixin() = delete;
   /**
@@ -71,7 +76,7 @@ protected:
   // NOLINTEND(*non-private*)
 };
 
-constexpr page_ptr_t NULL_PAGE = 0;
+constexpr TINYDB_EXPORT page_ptr_t NULL_PAGE = 0;
 
 } // namespace tinydb::dbfile::internal
 

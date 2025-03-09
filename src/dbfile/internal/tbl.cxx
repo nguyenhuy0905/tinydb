@@ -7,7 +7,6 @@
 
 #ifdef ENABLE_MODULES
 module;
-#include "general/modules.hxx"
 #include "general/offsets.hxx"
 #include <cstdint>
 #ifndef IMPORT_STD

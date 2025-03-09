@@ -1,13 +1,11 @@
 include(GenerateExportHeader)
 include(${PROJECT_SOURCE_DIR}/cmake/ModuleIfEnabled.cmake)
-add_library(tinydb)
 target_module_if_enabled(tinydb
   MODULES
   tinydb.cxx
   SOURCES
   tinydb.cxx
 )
-generate_export_header(tinydb)
 target_include_directories(tinydb_compile_opts
     INTERFACE
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -21,17 +19,7 @@ target_link_libraries(tinydb
 
 # unit test
 if(tinydb_ENABLE_UNIT_TEST)
-  include(${PROJECT_SOURCE_DIR}/cmake/CPM.cmake)
-  # The precompiled GTest bit me good times.
-  # Probably because of different build flags used.
-  find_package(GTest)
-  if(NOT GTest_FOUND)
-    CPMAddPackage(
-        GTest
-        URL
-        https://github.com/google/googletest/releases/download/v1.15.0/googletest-1.15.0.tar.gz
-    )
-  endif()
+  find_package(GTest REQUIRED)
   # target_sources this one.
   add_executable(tinydb_test)
   target_link_libraries(tinydb_test

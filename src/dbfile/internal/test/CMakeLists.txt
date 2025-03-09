@@ -9,6 +9,6 @@ target_link_libraries(tinydb_test
     PRIVATE
     tinydb_compile_opts
     tinydb_dbfile_internal
-    GTest::gtest
+    tinydb_dbfile_internal_base
 )
 include(GoogleTest)
