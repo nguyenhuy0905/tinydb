@@ -1,12 +1,12 @@
-#ifdef TEMPLATE_MODULE
+#ifdef TINYDB_MODULE
 module;
 export module lib;
 export {
 #endif
 #include "lib.hpp"
-#ifdef TEMPLATE_MODULE
+#ifdef TINYDB_MODULE
 }
-#endif // TEMPLATE_MODULE
+#endif // TINYDB_MODULE
 
 namespace lib {
   auto return_true() -> bool {

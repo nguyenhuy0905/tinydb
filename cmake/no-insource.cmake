@@ -1,5 +1,5 @@
 # Prevents in-source builds
-function(template_no_insource_build)
+function(tinydb_no_insource_build)
   get_filename_component(srcdir "${CMAKE_SOURCE_DIR}" REALPATH)
   get_filename_component(bindir "${CMAKE_BINARY_DIR}" REALPATH)
   if("${srcdir}" STREQUAL "${bindir}")
@@ -9,4 +9,4 @@ function(template_no_insource_build)
   endif()
 endfunction()
 
-template_no_insource_build()
+tinydb_no_insource_build()

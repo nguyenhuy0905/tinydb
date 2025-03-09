@@ -1,6 +1,6 @@
 include(cmake/no-insource.cmake)
 cmake_minimum_required(VERSION 3.28.0)
-if(CMAKE_VERSION VERSION_GREATER 3.30 AND template_IMPORT_STD)
+if(CMAKE_VERSION VERSION_GREATER 3.30 AND tinydb_IMPORT_STD)
   set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD
   # This specific value changes as experimental support evolves. See
   # `Help/dev/experimental.rst` in the CMake source corresponding to
@@ -8,10 +8,10 @@ if(CMAKE_VERSION VERSION_GREATER 3.30 AND template_IMPORT_STD)
   "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
 endif()
 
-project(template
+project(tinydb
     VERSION 0.1.0
     HOMEPAGE_URL "https://example.com"
-    DESCRIPTION "Another CMake template"
+    DESCRIPTION "Supposedly simple database"
     LANGUAGES CXX)
 
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -29,18 +29,18 @@ include(cmake/folders.cmake)
 
 # target_sources inside the src/ directory
 
-if(NOT template_MODULE)
-  add_library(template_lib)
-  target_include_directories(template_lib ${WARNING_GUARD}
+if(NOT tinydb_MODULE)
+  add_library(tinydb_lib)
+  target_include_directories(tinydb_lib ${WARNING_GUARD}
     PUBLIC
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   )
-  add_library(template::template ALIAS template_lib)
+  add_library(tinydb::tinydb ALIAS tinydb_lib)
 endif()
 
 include(CMakeDependentOption)
-cmake_dependent_option(template_DEV "Enable if you plan to work on this project"
+cmake_dependent_option(tinydb_DEV "Enable if you plan to work on this project"
     OFF "PROJECT_IS_TOP_LEVEL" OFF
 )
 

@@ -43,7 +43,7 @@
       "hidden": true,
       "inherits": [ "base-cfg" ],
       "cacheVariables": {
-        "template_COV": "ON"
+        "tinydb_COV": "ON"
       }
     },
     {
@@ -51,8 +51,8 @@
       "description": "Only there to generate documentation, not for building a binary",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "template_DOCS": "ON",
-        "CMAKE_CXX_FLAGS": "-D TEMPLATE_MODULE"
+        "tinydb_DOCS": "ON",
+        "CMAKE_CXX_FLAGS": "-D TINYDB_MODULE"
       }
     },
     {
@@ -63,9 +63,9 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "template_ASAN": "ON",
-        "template_UBSAN": "ON",
-        "template_DEV": "ON"
+        "tinydb_ASAN": "ON",
+        "tinydb_UBSAN": "ON",
+        "tinydb_DEV": "ON"
       }
     },
     {
@@ -73,7 +73,7 @@
       "hidden": true,
       "description": "Module build without import std, due to C++20 only",
       "cacheVariables": {
-        "template_MODULE": "ON"
+        "tinydb_MODULE": "ON"
       }
     },
     {
@@ -107,16 +107,16 @@
       "name": "dev-ci-unix",
       "inherits": ["dev-conan-unix"],
       "cacheVariables": {
-        "template_DOCS": "OFF",
-        "template_COV": "OFF"
+        "tinydb_DOCS": "OFF",
+        "tinydb_COV": "OFF"
       }
     },
     {
       "name": "dev-ci-msvc",
       "inherits": ["dev-conan-msvc"],
       "cacheVariables": {
-        "template_DOCS": "OFF",
-        "template_COV": "OFF"
+        "tinydb_DOCS": "OFF",
+        "tinydb_COV": "OFF"
       }
     },
     {
@@ -158,16 +158,16 @@
       "name": "release-ci-unix",
       "inherits": ["release-conan-unix", "test"],
       "cacheVariables": {
-        "template_DOCS": "OFF",
-        "template_COV": "OFF"
+        "tinydb_DOCS": "OFF",
+        "tinydb_COV": "OFF"
       }
     },
     {
       "name": "release-ci-msvc",
       "inherits": ["release-conan-msvc", "test"],
       "cacheVariables": {
-        "template_DOCS": "OFF",
-        "template_COV": "OFF"
+        "tinydb_DOCS": "OFF",
+        "tinydb_COV": "OFF"
       }
     }
   ]

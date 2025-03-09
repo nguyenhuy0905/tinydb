@@ -1,42 +1,42 @@
 if(CMAKE_SKIP_INSTALL_RULES)
   return()
 endif()
-if(template_MODULE)
-  set(template_INSTALLS template_lib_module template_compile_options)
+if(tinydb_MODULE)
+  set(tinydb_INSTALLS tinydb_lib_module tinydb_compile_options)
 else()
-  set(template_INSTALLS template_lib template_compile_options)
+  set(tinydb_INSTALLS tinydb_lib tinydb_compile_options)
 endif()
 include(GNUInstallDirs)
-install(TARGETS ${template_INSTALLS}
-  EXPORT templateTargets
-  FILE_SET CXX_MODULES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/template
-  FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/template
+install(TARGETS ${tinydb_INSTALLS}
+  EXPORT tinydbTargets
+  FILE_SET CXX_MODULES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tinydb
+  FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tinydb
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/template
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tinydb
 )
-if(EXISTS "${PROJECT_BINARY_DIR}/template_export.h")
+if(EXISTS "${PROJECT_BINARY_DIR}/tinydb_export.h")
   install(FILES
-    ${PROJECT_BINARY_DIR}/template_export.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/template
+    ${PROJECT_BINARY_DIR}/tinydb_export.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tinydb
   )
 endif()
-install(EXPORT templateTargets
-  FILE templateTargets.cmake
-  NAMESPACE template::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/template
+install(EXPORT tinydbTargets
+  FILE tinydbTargets.cmake
+  NAMESPACE tinydb::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tinydb
 )
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  "${PROJECT_BINARY_DIR}/templateConfigVersion.cmake"
+  "${PROJECT_BINARY_DIR}/tinydbConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
 )
 
 install(FILES "${CMAKE_CURRENT_LIST_DIR}/install-config.cmake"
-  RENAME "templateConfig.cmake"
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/template
+  RENAME "tinydbConfig.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tinydb
 )
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/templateConfigVersion.cmake"
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/template)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tinydbConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tinydb)

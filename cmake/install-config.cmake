@@ -1,3 +1,3 @@
 include(CMakeFindDependencyMacro)
-find_dependency(template)
-include("${CMAKE_CURRENT_LIST_DIR}/templateTargets.cmake")
+find_dependency(tinydb)
+include("${CMAKE_CURRENT_LIST_DIR}/tinydbTargets.cmake")
