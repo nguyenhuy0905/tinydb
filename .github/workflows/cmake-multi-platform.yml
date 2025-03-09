@@ -94,7 +94,7 @@ jobs:
 
     - name: CMake setup (Debug)
       run: |
-        cmake --preset=debug
+        cmake --preset=debug-conan
 
     - name: Build
       run: |
