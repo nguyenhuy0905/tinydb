@@ -7,5 +7,5 @@ import lib;
 #endif // TINYDB_MODULE
 
 TEST(Simply, TheTruth) {
-  ASSERT_TRUE(lib::return_true()) << "return_true is not the truth"; 
+  ASSERT_TRUE(lib::return_true()) << "return_true is not the truth";
 }

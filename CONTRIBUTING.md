@@ -1,6 +1,6 @@
 # Contributing
 
-<!-- 
+<!--
     Style, guidelines, PRs,...
 -->
 
