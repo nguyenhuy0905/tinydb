@@ -24,27 +24,26 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        build_type: [Release]
-        c_compiler: [gcc, clang, cl]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          # gcc currently gives out a compiler segfault.
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++-14
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++-18
+        os: [ ubuntu-24.04, macos-15, windows-2022 ]
+        build_type: [ Debug ]
+        c_compiler: [ gcc-14, llvm-18, apple-clang, msvc ]
         exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
+          - os: 'windows-2022'
+            compiler: gcc-14
+          - os: 'windows-2022'
+            compiler: llvm-18
+          - os: 'windows-2022'
+            compiler: apple-clang
+          - os: 'ubuntu-24.04'
+            compiler: msvc
+          - os: 'ubuntu-24.04'
+            compiler: apple-clang
+          - os: 'macos-15'
+            compiler: msvc
+          - os: 'macos-15'
+            compiler: llvm-18
+          - os: 'macos-15'
+            compiler: gcc-14
 
     steps:
     - uses: actions/checkout@v4
@@ -56,46 +55,51 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build/Debug" >> "$GITHUB_OUTPUT"
 
-    - name: Download Ninja, update compilers (GCC)
-      if: runner.os == 'Linux' && matrix.c_compiler == 'gcc'
-      # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get update && sudo apt-get install ninja-build
+    - name: Cache
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.conan2
+          ${{ env.APPDATA }}/.conan2
+          ${{ env.LOCALAPPDATA }}/.conan2
+          ~/.cache/ccache
+          ~/.ccache
+          ~/.config/ccache
+          ~/Library/Caches/ccache
+          ${{ env.LOCALAPPDATA }}/ccache
+          ${{ env.XDG_CACHE_HOME }}/ccache
+        key: ${{ runner.os }}-conan-${{ matrix.build_type }}-${{ hashFiles('**/conanfile.py') }}
+        restore-keys: |
+          ${{ runner.os }}-conan-${{ matrix.build_type }}-
 
-    - name: Download Ninja, update compilers (Clang)
-      if: runner.os == 'Linux' && matrix.c_compiler == 'clang'
-      # the ancient stuff that comes with this VM won't cut it.
-      run: sudo apt-get update && sudo apt-get install ninja-build libc++-18-dev libc++abi-18-dev
+    - name: Setup Cpp
+      uses: aminya/setup-cpp@v1
+      with:
+        compiler: ${{ matrix.compiler }}
+        vcvarsall: ${{ contains(matrix.os, 'windows') }}
+        cmake: true
+        conan: true
+        ninja: true
 
-    - name: Configure CMake (Linux, GCC)
-      if: runner.os == 'Linux' && matrix.c_compiler == 'gcc'
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+    - name: Setup conan profile
+      run: conan profile detect -f
+
+    - name: Conan install
       run: >
-        cmake --preset debug
-        -G "Ninja"
-        -D CMAKE_CXX_COMPILER:STRING=${{ matrix.cpp_compiler }}
-        -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
+        conan install . -s build_type=${{ matrix.build_type }}
+        -s compiler.cppstd=23
+        -b missing
+        -c tools.cmake.cmaketoolchain:generator=Ninja
 
-    - name: Configure CMake (Linux, Clang)
-      if: runner.os == 'Linux' && matrix.c_compiler == 'clang'
-      run: >
-        cmake --preset debug
-        -G "Ninja"
-        -D CMAKE_CXX_COMPILER:STRING=${{ matrix.cpp_compiler }}
-        -D CMAKE_C_COMPILER:STRING=${{ matrix.c_compiler }}
-        -D CMAKE_CXX_FLAGS:STRING="-stdlib=libc++"
-
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
-      run: >
-        cmake --preset debug
+    - name: CMake setup (Debug)
+      run: |
+        cmake --preset=debug
 
     - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: |
+        cmake --build build/${{ matrix.build_type }} --config ${{ matrix.build_type }}
 
     - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: |
+        ctest --test-dir build/${{ matrix.build_type }}
