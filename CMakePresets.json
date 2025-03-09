@@ -9,7 +9,7 @@
         {
             "name": "debug",
             "displayName": "Debug build, and with unit test",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/Debug",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -22,7 +22,7 @@
         {
             "name": "debug-import-std",
             "displayName": "Debug build, and with unit test, using 'import std'",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/Debug-module",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
