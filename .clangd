@@ -1,4 +1,5 @@
+CompileFlags:
+  Add: -Wno-unknown-warning-option
+  Remove: [-m*, -f*, -forward-unknown-to-host-compiler, --generate-code*]
 Diagnostics:
-  Suppress: [
-    err_global_module_introducer_not_at_start,
-  ]
+  Suppress: [drv_unknown_argument,drv_unsupported_opt]
