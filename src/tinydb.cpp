@@ -3,7 +3,7 @@ module;
 export module lib;
 export {
 #endif
-#include "lib.hpp"
+#include "tinydb.hpp"
 #ifdef TINYDB_MODULE
 }
 #endif // TINYDB_MODULE

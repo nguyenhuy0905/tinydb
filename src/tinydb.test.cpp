@@ -3,7 +3,7 @@
 #ifdef TINYDB_MODULE
 import lib;
 #else
-#include "lib.hpp"
+#include "tinydb.hpp"
 #endif // TINYDB_MODULE
 
 TEST(Simply, TheTruth) {

@@ -4,7 +4,7 @@ if(tinydb_MODULE)
   target_sources(tinydb_lib_module
     PUBLIC
     FILE_SET CXX_MODULES FILES
-    lib.cpp
+    tinydb.cpp
   )
   target_link_libraries(tinydb_lib_module
     PRIVATE
@@ -14,10 +14,10 @@ else()
   target_sources(tinydb_lib
     PUBLIC
     FILE_SET HEADERS FILES
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/lib.hpp>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tinydb/lib.hpp>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/tinydb.hpp>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tinydb/tinydb.hpp>
     PRIVATE
-    lib.cpp
+    tinydb.cpp
   )
   target_link_libraries(tinydb_lib
     PRIVATE
@@ -33,7 +33,7 @@ if(BUILD_TESTING)
   add_executable(tinydb_lib_test)
   target_sources(tinydb_lib_test
     PRIVATE
-    lib.test.cpp
+    tinydb.test.cpp
   )
   if(tinydb_MODULE)
     target_link_libraries(tinydb_lib_test
