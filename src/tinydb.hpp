@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace lib {
+namespace tinydb {
   /**
    * @brief Returns true.
    *

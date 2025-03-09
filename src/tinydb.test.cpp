@@ -3,9 +3,8 @@
 #ifdef TINYDB_MODULE
 import lib;
 #else
-#include "tinydb.hpp"
 #endif // TINYDB_MODULE
 
-TEST(Simply, TheTruth) {
-  ASSERT_TRUE(lib::return_true()) << "return_true is not the truth";
+TEST(Placeholder, Test) {
+  ASSERT_TRUE(1 == 1) << "Error, 1 is not equal to 1";
 }

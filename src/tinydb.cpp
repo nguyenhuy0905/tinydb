@@ -8,7 +8,7 @@ export {
 }
 #endif // TINYDB_MODULE
 
-namespace lib {
+namespace tinydb {
   auto return_true() -> bool {
     return true;
   }

@@ -1,3 +1,4 @@
+add_subdirectory(internal)
 # ---- library definition ----
 
 if(tinydb_MODULE)
