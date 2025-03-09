@@ -20,29 +20,31 @@
             }
         },
         {
+          "name": "debug-conan",
+          "displayName": "Debug build, with unit test, using conan",
+          "inherits": ["debug"],
+          "cacheVariables": {
+            "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/Debug/generators/conan_toolchain.cmake"
+          }
+        },
+        {
             "name": "debug-import-std",
             "displayName": "Debug build, and with unit test, using 'import std'",
             "binaryDir": "${sourceDir}/build/Debug-module",
+            "inherits": ["debug"],
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "tinydb_WARNING_AS_ERR": "ON",
-                "tinydb_ENABLE_UNIT_TEST": "ON",
                 "tinydb_ENABLE_MODULE": "ON",
                 "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "0e5b6991-d74f-4b3d-a41c-cf096e0b2508",
                 "CMAKE_CXX_MODULE_STD": "ON",
-                "CMAKE_C_EXTENSIONS": "OFF",
-                "CMAKE_CXX_EXTENSIONS": "OFF"
             }
         },
         {
-          "name": "debug-import-std-unix",
-            "displayName": "Debug build, and with unit test, using 'import std', for Mac/Linux for now",
-            "inherits": ["debug-import-std"],
-            "cacheVariables": {
-              "CMAKE_CXX_FLAGS": "-stdlib=libc++"
-            }
-        }
+          "name": "debug-import-std-conan",
+          "inherits": ["debug-import-std"],
+          "cacheVariables": {
+            "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/Debug/generators/conan_toolchain.cmake"
+          }
+        },
     ],
     "buildPresets": [
         {
