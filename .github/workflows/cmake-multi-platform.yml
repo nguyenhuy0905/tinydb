@@ -26,7 +26,7 @@ jobs:
       matrix:
         os: [ ubuntu-24.04, macos-15, windows-2022 ]
         build_type: [ Debug ]
-        c_compiler: [ gcc-14, llvm-18, apple-clang, msvc ]
+        compiler: [ gcc-14, llvm-18, apple-clang, msvc ]
         exclude:
           - os: 'windows-2022'
             compiler: gcc-14
@@ -76,7 +76,7 @@ jobs:
     - name: Setup Cpp
       uses: aminya/setup-cpp@v1
       with:
-        compiler: ${{ matrix.c_compiler }}
+        compiler: ${{ matrix.compiler }}
         vcvarsall: ${{ contains(matrix.os, 'windows') }}
         cmake: true
         conan: true
