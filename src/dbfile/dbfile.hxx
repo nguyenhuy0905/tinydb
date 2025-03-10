@@ -37,7 +37,7 @@ namespace tinydb::dbfile {
  *
  * Once a database file is created, one can NOT modify its columns.
  */
-class DbFile {
+class TINYDB_EXPORT DbFile {
 public:
   /**
    * @brief Read the stream passed in and constructs a database file.
