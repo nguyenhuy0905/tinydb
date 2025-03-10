@@ -74,6 +74,22 @@ public:
    */
   void add_column(std::string&& t_name, column::ColType t_coltype);
 
+  /**
+   * @brief Set the key of the database.
+   * @param t_key The key to be set.
+   * @return Whether the key was set.
+   *
+   * The key is not set if it doesn't exist in the table.
+   */
+  auto set_key(std::string_view t_key) -> bool;
+
+  /**
+   * @return The current key.
+   *
+   * If no key was set, it returns a nullopt.
+   */
+  [[nodiscard]] auto get_key() const -> std::optional<std::string_view>;
+
 private:
   template <class T1, class T2>
     requires std::is_same_v<T1, internal::TableMeta> &&
