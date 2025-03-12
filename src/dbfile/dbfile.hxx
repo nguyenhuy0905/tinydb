@@ -51,13 +51,6 @@ public:
   static auto construct_from(std::unique_ptr<std::iostream> t_io) -> DbFile;
 
   /**
-   * @brief Nuke the stream to prepare writing a new database into it.
-   *
-   * @param t_io The stream.
-   */
-  static auto new_empty(std::unique_ptr<std::iostream> t_io) -> DbFile;
-
-  /**
    * @brief Writes the database metadata into the stream it was assigned to.
    * Equivalent to nuking the database if you write_init into an already
    * formatted file.
@@ -65,26 +58,7 @@ public:
   void write_init();
 
   /**
-   * @brief Add a column into the table.
-   * Equivalent to nuking the database if you add a column into an
-   * already-written database file.
-   *
-   * @param t_name The column name. Must be special. Embrace difference.
-   * @param t_coltype The column type.
-   */
-  void add_column(std::string&& t_name, column::ColType t_coltype);
-
-  /**
-   * @brief Set the key of the database.
-   * @param t_key The key to be set.
-   * @return Whether the key was set.
-   *
-   * The key is not set if it doesn't exist in the table.
-   */
-  auto set_key(std::string_view t_key) -> bool;
-
-  /**
-   * @return The current key.
+   * @return The name of the current key.
    *
    * If no key was set, it returns a nullopt.
    */

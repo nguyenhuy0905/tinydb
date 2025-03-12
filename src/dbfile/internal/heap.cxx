@@ -38,7 +38,6 @@ import std;
 #include "general/utils.hxx"
 #include <bit>
 #include <cassert>
-#include <cmath>
 #include <iostream>
 #include <optional>
 #include <type_traits>

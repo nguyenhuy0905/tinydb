@@ -21,10 +21,13 @@ add_library(tinydb_dbfile)
 target_module_if_enabled(tinydb_dbfile
   HEADERS
   dbfile.hxx
+  tbl_builder.hxx
   SOURCES
   dbfile.cxx
+  tbl_builder.cxx
   MODULES
   dbfile.cxx
+  tbl_builder.cxx
 )
 target_link_libraries(tinydb_dbfile
     PRIVATE
