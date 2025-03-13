@@ -12,7 +12,11 @@
 #include <vector>
 #endif // !TINYDB_MODULE
 
+#ifdef TINYDB_MODULE
+export namespace tinydb::stmt {
+#else
 namespace tinydb::stmt {
+#endif // TINYDB_MODULE
 /**
  * @class Statement
  * @brief Compiled from a string

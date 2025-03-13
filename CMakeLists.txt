@@ -29,6 +29,11 @@ include(cmake/folders.cmake)
 
 include(GenerateExportHeader)
 add_library(tinydb)
+# needs C++20 to consume the library.
+# the internal working is C++23 though.
+target_compile_features(tinydb
+  INTERFACE cxx_std_20
+)
 generate_export_header(tinydb
   BASE_NAME TINYDB
 )
