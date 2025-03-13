@@ -1,11 +1,8 @@
 if(CMAKE_SKIP_INSTALL_RULES)
   return()
 endif()
-if(tinydb_MODULE)
-  set(tinydb_INSTALLS tinydb_lib_module tinydb_compile_options)
-else()
-  set(tinydb_INSTALLS tinydb_lib tinydb_compile_options)
-endif()
+set(tinydb_INSTALLS tinydb tinydb_compile_options)
+
 include(GNUInstallDirs)
 install(TARGETS ${tinydb_INSTALLS}
   EXPORT tinydbTargets

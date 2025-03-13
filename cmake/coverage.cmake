@@ -10,3 +10,8 @@ add_custom_target(coverage
   --html ${PROJECT_BINARY_DIR}/docs/coverage.html
   --gcov-executable ${GCOV_EXE}
 )
+add_custom_target(rm_cov
+  COMMENT "Remove coverage data"
+  COMMAND ${CMAKE_COMMAND} -E
+  rm -rf *.gcda
+)

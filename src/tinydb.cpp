@@ -1,6 +1,11 @@
 #ifdef TINYDB_MODULE
 module;
-export module lib;
+#ifndef TINYDB_IMPORT_STD
+#endif // !TINYDB_IMPORT_STD
+export module tinydb;
+#ifdef TINYDB_IMPORT_STD
+import std;
+#endif // TINYDB_IMPORT_STD
 export {
 #endif
 #include "tinydb.hpp"
@@ -9,7 +14,4 @@ export {
 #endif // TINYDB_MODULE
 
 namespace tinydb {
-  auto return_true() -> bool {
-    return true;
-  }
 }

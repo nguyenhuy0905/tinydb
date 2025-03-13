@@ -15,7 +15,7 @@ project(tinydb
     LANGUAGES CXX)
 
 if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD 23)
 endif()
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -29,15 +29,18 @@ include(cmake/folders.cmake)
 
 # target_sources inside the src/ directory
 
-if(NOT tinydb_MODULE)
-  add_library(tinydb_lib)
-  target_include_directories(tinydb_lib ${WARNING_GUARD}
-    PUBLIC
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-  )
-  add_library(tinydb::tinydb ALIAS tinydb_lib)
-endif()
+include(GenerateExportHeader)
+add_library(tinydb)
+generate_export_header(tinydb
+  BASE_NAME TINYDB
+)
+target_include_directories(tinydb_compile_options
+  INTERFACE
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
+  "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+add_library(tinydb::tinydb ALIAS tinydb)
 
 include(CMakeDependentOption)
 cmake_dependent_option(tinydb_DEV "Enable if you plan to work on this project"

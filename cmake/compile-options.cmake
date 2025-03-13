@@ -114,19 +114,10 @@ cmake_dependent_option(tinydb_IMPORT_STD "Whether to use import std" OFF
   "CMAKE_CXX_STANDARD GREATER_EQUAL 23;tinydb_MODULE" OFF
 )
 if(tinydb_MODULE)
-  include(GenerateExportHeader)
   target_compile_definitions(tinydb_compile_options INTERFACE TINYDB_MODULE)
-  add_library(tinydb_lib_module)
-  generate_export_header(tinydb_lib_module
-    BASE_NAME tinydb
-    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/tinydb_export.h
-  )
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    # otherwise, nasty GCC module bug.
-    # to be honest, even doing the other way doesn't fix it.
-  endif()
   if(tinydb_IMPORT_STD)
-    target_compile_definitions(tinydb_compile_options INTERFACE TINYDB_IMPORT_STD)
+    target_compile_definitions(tinydb_compile_options INTERFACE
+      TINYDB_IMPORT_STD)
   endif()
 endif()
 
