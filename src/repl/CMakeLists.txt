@@ -1,16 +1,3 @@
-add_library(tinydb_stmt)
-target_module_if_enabled(tinydb_stmt
-  MODULES
-  stmt.cpp
-  SOURCES
-  stmt.cpp
-)
-target_link_libraries(tinydb_stmt
-  PRIVATE
-  tinydb_compile_options
-  fmt::fmt
-)
-
 add_executable(tinydb_repl)
 target_sources(tinydb_repl
   PRIVATE

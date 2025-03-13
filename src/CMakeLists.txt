@@ -53,6 +53,7 @@ endfunction()
 
 # ---- library definition ----
 
+add_subdirectory(stmt)
 target_module_if_enabled(tinydb
   HEADERS
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tinydb.hpp>
