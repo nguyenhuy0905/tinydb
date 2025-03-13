@@ -71,11 +71,7 @@ private:
    * @class Ast
    * @brief The abstract syntax tree. Duh.
    */
-  struct Ast {
-    Ast(const Ast &) = delete;
-    auto operator=(const Ast &) -> Ast & = delete;
-    Ast(Ast &&) = delete;
-    auto operator=(Ast &&) -> Ast & = delete;
+  struct Ast { // NOLINT(*special-member-function*)
     virtual ~Ast() = default;
     /**
      * @return A clone of the derived struct of Ast.
