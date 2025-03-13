@@ -14,12 +14,10 @@ project(tinydb
     DESCRIPTION "Supposedly simple database"
     LANGUAGES CXX)
 
-if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 23)
-endif()
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+set(CMAKE_CXX_MODULE_STD 1)
 
 include(cmake/top-level.cmake)
 include(cmake/compile-options.cmake)
