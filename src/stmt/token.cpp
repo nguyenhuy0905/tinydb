@@ -4,12 +4,13 @@ module;
 #include <cstddef>
 #include <cstdint>
 #ifndef TINYDB_IMPORT_STD
-#include <algorithm>
-#include <array>
+#include <cctype>
 #include <functional>
+#include <memory>
 #include <optional>
-#include <string>
+#include <ranges>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #endif // !TINYDB_IMPORT_STD
@@ -18,123 +19,182 @@ export module tinydb.stmt:token;
 import std;
 #endif // TINYDB_IMPORT_STD
 #else
-#include <algorithm>
-#include <array>
 #include <cassert>
+#include <cctype>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <string_view>
-#include <utility>
+#include <unordered_map>
 #include <vector>
 #endif // TINYDB_MODULE
+#include "token.detail.hpp"
 #include "token.hpp"
 
-namespace {
-using namespace tinydb::stmt;
-
-struct MapPair {
-  std::string_view key;
-  TokenType token;
-};
-static_assert(std::is_trivially_copyable_v<MapPair>);
-// why the hell can constinit throw an exception though.
-
-[[maybe_unused]] constexpr auto keyword_search(std::string_view t_kw)
-    -> std::optional<MapPair> {
-  [[maybe_unused]] static constinit const std::array keyword_lut =
-      []() noexcept {
-        std::array ret{
-            MapPair{.key = "let", .token = TokenType::Let},
-            MapPair{.key = "and", .token = TokenType::And},
-            MapPair{.key = "or", .token = TokenType::Or},
-            MapPair{.key = "not", .token = TokenType::Not},
-        };
-        std::ranges::sort(ret, std::less{}, &MapPair::key);
-        return ret;
-      }();
-
-  int64_t left = 0;
-  int64_t right = keyword_lut.size() - 1;
-  int64_t mid = 0;
-  while (left <= right) {
-    mid = (left + right) / 2;
-    const MapPair &mid_elem = keyword_lut.at(static_cast<size_t>(mid));
-    if (mid_elem.key == t_kw) {
-      return mid_elem;
-    }
-    if (mid_elem.key > t_kw) {
-      left = static_cast<int64_t>(mid + 1);
-      continue;
-    }
-    right = static_cast<int64_t>(mid - 1);
-  }
-  return std::nullopt;
-}
-
-enum struct TokenizeState : uint8_t {
-  InitialState,
-  IdentifierState,
-  NumberState,
-  StringState,
-  LtState,
-  GtState,
-};
-
-class TokenizerData {
-public:
-  auto move_token_list() && { return m_tokens; }
-
-private:
-  std::vector<Token> m_tokens;
-  Token m_curr_token{};
-  void add_token() { m_tokens.push_back(std::move(m_curr_token)); }
-  friend class Tokenizer;
-};
-
-class Tokenizer {
-public:
-  Tokenizer() : m_tok_fn{tokenize_initial} {}
-  auto operator()(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-
-private:
-  static auto tokenize_initial(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-  static auto tokenize_identifier(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-  static auto tokenize_number(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-  static auto tokenize_string(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-  static auto tokenize_lt(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-  static auto tokenize_gt(TokenizerData &t_data, char t_c)
-      -> std::expected<Tokenizer, ParseError>;
-
-  std::expected<Tokenizer, ParseError> (*m_tok_fn)(TokenizerData &, char);
-};
-static_assert(std::is_trivially_copyable_v<Tokenizer>);
-
-auto Tokenizer::tokenize_initial(TokenizerData &t_data, char t_c)
-    -> std::expected<Tokenizer, ParseError> {
-  // LSP shutting-up
-  [[maybe_unused]] auto lsp_shut = std::make_tuple(t_data, t_c);
-  std::unreachable();
-  // TODO: impl all the tokenize functions
-}
-
-} // namespace
-
 namespace tinydb::stmt {
+
+auto keyword_lookup(std::string_view t_sv) noexcept
+    -> std::optional<TokenType> {
+  using namespace std::literals;
+  static const std::unordered_map<std::string_view, TokenType,
+                                  TransparentStrHash, std::equal_to<>>
+      lookup{{"and"sv, TokenType::And},   {"or"sv, TokenType::Or},
+             {"not"sv, TokenType::Not},   {"select"sv, TokenType::Select},
+             {"from"sv, TokenType::From}, {"where"sv, TokenType::Where},
+             {"ya"sv, TokenType::Ya},     {"na"sv, TokenType::Na}};
+  auto ret = lookup.find(t_sv);
+  if (ret == lookup.end()) {
+    return std::nullopt;
+  }
+  return (*ret).second;
+}
 
 auto tokenize(std::string_view t_sv)
     -> std::expected<std::vector<Token>, ParseError> {
   assert(t_sv == t_sv);
 
-  return std::unexpected{
-      ParseError{.pos = 0, .type = ParseError::ErrType::EmptyStmt}};
+  return std::unexpected{ParseError{.type = ParseError::ErrType::UnendedStmt}};
+}
+
+auto Tokenizer::tokenize_initial(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  // why the cast:
+  // https://en.cppreference.com/w/cpp/string/byte/isalpha
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+  if (peek_char == static_cast<unsigned char>(' ')) {
+    t_data.pop_next_char();
+    return Tokenizer{tokenize_initial};
+  }
+  if (std::isalpha(peek_char) == 0) {
+    return Tokenizer{tokenize_identifier};
+  }
+  if (std::isdigit(peek_char) == 0) {
+    return Tokenizer{tokenize_number};
+  }
+  return Tokenizer{tokenize_symbol};
+}
+
+auto Tokenizer::tokenize_symbol(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+  if (peek_char == static_cast<unsigned char>(' ')) {
+    return Tokenizer{tokenize_symbol};
+  }
+  t_data.finish_current_token();
+  assert(t_data.is_token_empty());
+
+  switch (peek_char) {
+  // for parentheses:
+  // - whatever token was being built, is expected to be done at this point.
+  case '"': {
+    t_data.set_token_type(TokenType::String);
+    t_data.pop_next_char();
+
+    return Tokenizer{tokenize_string};
+  }
+  case '(': {
+    t_data.set_token_type(TokenType::LeftParen);
+    break;
+  }
+  case ')': {
+    t_data.set_token_type(TokenType::RightParen);
+    break;
+  }
+  case '+': {
+    t_data.set_token_type(TokenType::Plus);
+    break;
+  }
+  case '-': {
+    t_data.set_token_type(TokenType::Minus);
+    break;
+  }
+  case '*': {
+    t_data.set_token_type(TokenType::Star);
+    break;
+  }
+  case '/': {
+    t_data.set_token_type(TokenType::Slash);
+    break;
+  }
+  case ',': {
+    t_data.set_token_type(TokenType::Comma);
+    break;
+  }
+  case ';': {
+    t_data.set_token_type(TokenType::Semicolon);
+    break;
+  }
+  case '=': {
+    t_data.set_token_type(TokenType::Equal);
+    break;
+  }
+  case '>': {
+    t_data.set_token_type(TokenType::Greater);
+    t_data.add_next_char();
+    t_data.finish_current_token();
+    assert(t_data.is_token_empty());
+    return Tokenizer{tokenize_gt};
+  }
+  case '<': {
+    t_data.set_token_type(TokenType::Less);
+    t_data.add_next_char();
+    t_data.finish_current_token();
+    assert(t_data.is_token_empty());
+    return Tokenizer{tokenize_lt};
+  }
+  default:
+    return std::unexpected{ParseError{ParseError::ErrType::UnexpectedChar}};
+  }
+
+  t_data.add_next_char();
+  t_data.finish_current_token();
+  assert(t_data.is_token_empty());
+  return Tokenizer{tokenize_initial};
+}
+
+auto Tokenizer::tokenize_identifier(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+  if (std::isalpha(peek_char) == 0) {
+    t_data.add_next_char();
+    if (t_data.is_null_token()) {
+      t_data.set_token_type(TokenType::Identifier);
+    }
+
+    return Tokenizer{tokenize_identifier};
+  }
+  if (std::isdigit(peek_char) == 0) {
+    assert(t_data.m_curr_token.type == TokenType::Identifier &&
+           !t_data.is_null_token());
+    t_data.add_next_char();
+    return Tokenizer{tokenize_identifier};
+  }
+  switch (peek_char) {
+  case '_':
+    t_data.add_next_char();
+    return Tokenizer{tokenize_identifier};
+  default:
+    auto keyword = keyword_lookup({t_data.m_curr_token.lexeme});
+    if (keyword) {
+      t_data.change_token_type(*keyword);
+    }
+    [[maybe_unused]] bool token_added = t_data.finish_current_token();
+    assert(token_added);
+    return Tokenizer{tokenize_symbol};
+  }
 }
 
 } // namespace tinydb::stmt
