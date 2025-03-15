@@ -17,7 +17,9 @@ project(tinydb
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
-set(CMAKE_CXX_MODULE_STD 1)
+if(tinydb_IMPORT_STD)
+  set(CMAKE_CXX_MODULE_STD 1)
+endif()
 
 include(cmake/top-level.cmake)
 include(cmake/compile-options.cmake)
