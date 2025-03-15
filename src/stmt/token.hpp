@@ -9,6 +9,7 @@
 #ifndef TINYDB_MODULE
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,28 +28,52 @@ namespace tinydb::stmt {
 enum struct TokenType : uint8_t {
   Eof, // end-of-file
   // single character stuff
-  LeftParen,  // (
-  RightParen, // )
-  Semicolon,  // ;
-  Comma,      // ,
-  Star,       // *
-  Plus,       // +
-  Minus,      // -
-  Slash,      // /
-  Dot,        // .
-  Colon,      // :
+  LeftParen,   // (
+  RightParen,  // )
+  Semicolon,   // ;
+  Comma,       // ,
+  Star,        // *
+  Plus,        // +
+  Minus,       // -
+  Slash,       // /
+  Dot,         // .
+  Colon,       // :
+  Exclamation, // !
+  Greater,     // >
+  Less,        // <
+  // more complex symbols
+  ExclamationEqual, // !=
+  EqualEqual,       // ==
+  GreaterEqual,     // >=
+  LessEqual,        // <=
   // literals
   String,     // inside single or double-quote
   Number,     // 1, 2, -3.4, ...
   Identifier, // looks like a string, but has no quote
   // keywords
   Let,
-  Select,
-  From,
-  Where,
   And,
   Or,
   Not,
+};
+
+/**
+ * @class ParseError
+ * @brief Return value when a parse error is encountered
+ */
+struct ParseError {
+  enum struct ErrType : uint8_t {
+    EmptyStmt = 1,
+    UnexpectedChar,
+  };
+  /**
+   * @brief The character where the parsing fail.
+   */
+  size_t pos;
+  /**
+   * @brief The type of failure.
+   */
+  ErrType type;
 };
 
 /**
@@ -57,7 +82,7 @@ enum struct TokenType : uint8_t {
  *
  */
 struct Token {
-  std::pmr::string lexeme;
+  std::string lexeme;
   size_t line;
   TokenType type;
 };
@@ -67,7 +92,8 @@ struct Token {
  *
  * @param t_sv The string.
  */
-auto tokenize(std::string_view t_sv) -> std::pmr::vector<Token>;
+auto tokenize(std::string_view t_sv)
+    -> std::expected<std::vector<Token>, ParseError>;
 }
 
 #endif // !TINYDB_REPL_TOKEN_HPP

@@ -3,6 +3,7 @@
 
 #include "tinydb_export.h"
 #ifndef TINYDB_MODULE
+#include "token.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -23,24 +24,6 @@ namespace tinydb::stmt {
  */
 class TINYDB_EXPORT Statement {
 public:
-  /**
-   * @class ParseError
-   * @brief Return value when a parse error is encountered
-   */
-  struct ParseError {
-    enum struct ErrType : uint8_t {
-      EmptyStmt = 1,
-    };
-    /**
-     * @brief The character where the parsing fail.
-     */
-    size_t pos;
-    /**
-     * @brief The type of failure.
-     */
-    ErrType type;
-  };
-
   /**
    * @class EvalResult
    * @brief Result of calling eval.
