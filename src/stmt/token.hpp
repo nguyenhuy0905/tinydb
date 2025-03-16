@@ -38,9 +38,9 @@ enum struct TokenType : uint8_t {
   Minus,      // -
   Slash,      // /
   // Dot,        // .
-  Equal,      // =
-  Greater,    // >
-  Less,       // <
+  Equal,   // =
+  Greater, // >
+  Less,    // <
   // more complex symbols
   GreaterEqual, // >=
   LessEqual,    // <=
@@ -65,8 +65,9 @@ enum struct TokenType : uint8_t {
  */
 struct ParseError {
   enum struct ErrType : uint8_t {
+    Done, // is it really an error?
     // Can be an error, or we can just politely ask for more input.
-    UnendedStmt = 0,
+    UnendedStmt,
     // Anything other than ```[a-zA-Z0-9(),;+-*/=!<>.]```,
     // aka, not:
     //   - alphanumeric
@@ -98,15 +99,14 @@ struct Token {
    */
   static auto new_empty_at(
       // it's not required that const_iterator is a pointer.
-      std::string_view::const_iterator t_pos, // NOLINT(*identifier-naming*)
       size_t t_line) -> Token {
     return Token{
-        .lexeme{t_pos, t_pos}, .line = t_line, .type = TokenType::Null};
+        .lexeme{}, .line = t_line, .type = TokenType::Null};
   }
   /**
    * @brief String representation of the token, e.g. "and"
    */
-  std::string_view lexeme;
+  std::string lexeme;
   /**
    * @brief Mainly for better error message.
    */

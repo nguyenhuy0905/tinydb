@@ -24,7 +24,6 @@ import std;
 #include <cstddef>
 #include <functional>
 #include <optional>
-#include <ranges>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -60,6 +59,10 @@ auto tokenize(std::string_view t_sv)
 auto Tokenizer::tokenize_initial(TokenizerData &t_data)
     -> std::expected<Tokenizer, ParseError> {
   if (!t_data.peek_next_char()) {
+    if (!t_data.m_tokens.empty() &&
+        t_data.m_tokens.back().type == TokenType::Semicolon) {
+      return std::unexpected{ParseError{ParseError::ErrType::Done}};
+    }
     return std::unexpected{
         ParseError{.type = ParseError::ErrType::UnendedStmt}};
   }
@@ -70,10 +73,10 @@ auto Tokenizer::tokenize_initial(TokenizerData &t_data)
     t_data.pop_next_char();
     return Tokenizer{tokenize_initial};
   }
-  if (std::isalpha(peek_char) == 0) {
+  if (std::isalpha(peek_char) != 0) {
     return Tokenizer{tokenize_identifier};
   }
-  if (std::isdigit(peek_char) == 0) {
+  if (std::isdigit(peek_char) != 0) {
     return Tokenizer{tokenize_number};
   }
   return Tokenizer{tokenize_symbol};
@@ -90,7 +93,7 @@ auto Tokenizer::tokenize_symbol(TokenizerData &t_data)
     return Tokenizer{tokenize_symbol};
   }
   t_data.finish_current_token();
-  assert(t_data.is_token_empty());
+  assert(t_data.is_null_token());
 
   switch (peek_char) {
   // for parentheses:
@@ -168,7 +171,7 @@ auto Tokenizer::tokenize_identifier(TokenizerData &t_data)
         ParseError{.type = ParseError::ErrType::UnendedStmt}};
   }
   auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
-  if (std::isalpha(peek_char) == 0) {
+  if (std::isalpha(peek_char) != 0) {
     t_data.add_next_char();
     if (t_data.is_null_token()) {
       t_data.set_token_type(TokenType::Identifier);
@@ -176,25 +179,116 @@ auto Tokenizer::tokenize_identifier(TokenizerData &t_data)
 
     return Tokenizer{tokenize_identifier};
   }
-  if (std::isdigit(peek_char) == 0) {
+  if (std::isdigit(peek_char) != 0) {
     assert(t_data.m_curr_token.type == TokenType::Identifier &&
            !t_data.is_null_token());
     t_data.add_next_char();
     return Tokenizer{tokenize_identifier};
   }
-  switch (peek_char) {
-  case '_':
+  if (peek_char == '_') {
     t_data.add_next_char();
     return Tokenizer{tokenize_identifier};
-  default:
-    auto keyword = keyword_lookup({t_data.m_curr_token.lexeme});
-    if (keyword) {
-      t_data.change_token_type(*keyword);
-    }
-    [[maybe_unused]] bool token_added = t_data.finish_current_token();
-    assert(token_added);
-    return Tokenizer{tokenize_symbol};
   }
+  auto keyword = keyword_lookup({t_data.m_curr_token.lexeme});
+  if (keyword) {
+    t_data.change_token_type(*keyword);
+  }
+  [[maybe_unused]] bool token_added = t_data.finish_current_token();
+  assert(token_added);
+  return Tokenizer{tokenize_symbol};
+}
+
+auto Tokenizer::tokenize_number(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+  if (t_data.is_null_token()) {
+    t_data.set_token_type(TokenType::Number);
+  }
+  if (std::isdigit(peek_char) != 0) {
+    t_data.add_next_char();
+    return Tokenizer{tokenize_number};
+  }
+  if (peek_char == ' ') {
+    assert(t_data.m_curr_token.type == TokenType::Number);
+    t_data.pop_next_char();
+    t_data.finish_current_token();
+    return Tokenizer{tokenize_initial};
+  }
+  if (peek_char == '.') {
+    auto dotpos = t_data.m_curr_token.lexeme.find('.');
+    if (dotpos != std::string_view::npos) {
+      return std::unexpected{ParseError{ParseError::ErrType::UnexpectedChar}};
+    }
+    t_data.add_next_char();
+    return Tokenizer{tokenize_number};
+  }
+  // deal with e later
+  if (std::isalpha(peek_char) != 0) {
+    return std::unexpected{ParseError{ParseError::ErrType::UnexpectedChar}};
+  }
+  // some sort of symbol here. That's not really related to this current number
+  t_data.finish_current_token();
+  return Tokenizer{tokenize_symbol};
+}
+
+auto Tokenizer::tokenize_string(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+  if (t_data.is_null_token()) {
+    t_data.set_token_type(TokenType::String);
+  }
+  if (peek_char == '"') {
+    assert(t_data.m_curr_token.type == TokenType::String);
+    t_data.pop_next_char();
+    t_data.finish_current_token();
+    return Tokenizer{tokenize_initial};
+  }
+  t_data.add_next_char();
+  return Tokenizer{tokenize_string};
+}
+
+auto Tokenizer::tokenize_lt(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  assert(t_data.m_curr_token.type == TokenType::Less);
+  assert(t_data.m_curr_token.lexeme == "<");
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+
+  if (peek_char == '=') {
+    t_data.change_token_type(TokenType::LessEqual);
+    t_data.add_next_char();
+  }
+  t_data.finish_current_token();
+  return Tokenizer{tokenize_initial};
+}
+
+auto Tokenizer::tokenize_gt(TokenizerData &t_data)
+    -> std::expected<Tokenizer, ParseError> {
+  assert(t_data.m_curr_token.type == TokenType::Greater);
+  assert(t_data.m_curr_token.lexeme == ">");
+  if (!t_data.peek_next_char()) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
+
+  if (peek_char == '=') {
+    t_data.change_token_type(TokenType::GreaterEqual);
+    t_data.add_next_char();
+  }
+  t_data.finish_current_token();
+  return Tokenizer{tokenize_initial};
 }
 
 } // namespace tinydb::stmt

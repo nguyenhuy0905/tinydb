@@ -39,6 +39,13 @@ target_compile_features(tinydb
 generate_export_header(tinydb
   BASE_NAME TINYDB
 )
+# test target
+if(BUILD_TESTING)
+  include(GoogleTest)
+  find_package(GTest REQUIRED)
+  add_executable(tinydb_test)
+  gtest_discover_tests(tinydb_test)
+endif()
 target_include_directories(tinydb_compile_options
   INTERFACE
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"

@@ -16,3 +16,10 @@ target_link_libraries(tinydb_stmt
   tinydb_compile_options
   fmt::fmt
 )
+
+if(BUILD_TESTING)
+  target_sources(tinydb_test
+    PRIVATE
+    token.test.cpp
+  )
+endif()

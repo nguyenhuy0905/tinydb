@@ -5,7 +5,6 @@
 #include <cassert>
 #include <functional>
 #include <string>
-#include <ranges>
 #include <string_view>
 #endif
 #include "token.hpp"
@@ -35,19 +34,7 @@ struct TransparentStrHash {
   }
 };
 
-auto keyword_lookup(std::string_view t_sv) noexcept
-    -> std::optional<TokenType>;
-
-enum struct TokenizeState : uint8_t {
-  InitialState,
-  SymbolState,
-  IdentifierState,
-  NumberState,
-  StringState,
-  ExclState,
-  LtState,
-  GtState,
-};
+auto keyword_lookup(std::string_view t_sv) noexcept -> std::optional<TokenType>;
 
 /**
  * @class TokenizerData
@@ -69,7 +56,7 @@ public:
 private:
   std::vector<Token> m_tokens;
   std::string_view m_remain_str;
-  Token m_curr_token = Token::new_empty_at(m_remain_str.cbegin(), 1);
+  Token m_curr_token = Token::new_empty_at(1);
 
   [[nodiscard]] constexpr auto is_null_token() const -> bool {
     return m_curr_token.type == TokenType::Null;
@@ -83,8 +70,8 @@ private:
     if (m_remain_str.empty()) {
       return std::nullopt;
     }
-    char ret = m_remain_str.front();
-    m_remain_str = {m_remain_str | std::views::drop(1)};
+    auto ret = m_remain_str.front();
+    m_remain_str.remove_prefix(1);
     return ret;
   }
 
@@ -105,8 +92,8 @@ private:
       return false;
     }
 
-    m_curr_token.lexeme = {m_curr_token.lexeme.cbegin(),
-                           m_curr_token.lexeme.cend() + 1};
+    m_curr_token.lexeme.push_back(m_remain_str.front());
+    m_remain_str.remove_prefix(1);
     return true;
   }
 
@@ -137,13 +124,11 @@ private:
 
     // it's not required that const_iterator is a pointer.
     // NOLINTNEXTLINE(*qualified-auto*)
-    auto next_str_iter = m_curr_token.lexeme.cend();
     auto line_num = (m_curr_token.type == TokenType::Semicolon)
                         ? m_curr_token.line + 1
                         : m_curr_token.line;
     m_tokens.push_back(m_curr_token);
-    m_curr_token = Token::new_empty_at(next_str_iter, line_num);
-    m_remain_str = {next_str_iter, m_remain_str.end()};
+    m_curr_token = Token::new_empty_at(line_num);
     return true;
   }
   friend class Tokenizer;
@@ -159,7 +144,9 @@ class Tokenizer {
 public:
   Tokenizer() : m_tok_fn{tokenize_initial} {}
   auto operator()(TokenizerData &t_data)
-      -> std::expected<Tokenizer, ParseError>;
+      -> std::expected<Tokenizer, ParseError> {
+    return (*m_tok_fn)(t_data);
+  }
 
 private:
   explicit Tokenizer(
@@ -183,7 +170,6 @@ private:
   std::expected<Tokenizer, ParseError> (*m_tok_fn)(TokenizerData &);
 };
 static_assert(std::is_trivially_copyable_v<Tokenizer>);
-
 }
 
 #endif

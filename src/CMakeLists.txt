@@ -74,9 +74,6 @@ add_subdirectory(repl)
 # ---- testing ----
 
 if(BUILD_TESTING)
-  include(GoogleTest)
-  find_package(GTest REQUIRED)
-  add_executable(tinydb_test)
   target_sources(tinydb_test
     PRIVATE
     tinydb.test.cpp
@@ -84,8 +81,8 @@ if(BUILD_TESTING)
   target_link_libraries(tinydb_test
     PRIVATE
     tinydb
+    tinydb_stmt # defined in ./stmt
     tinydb_compile_options
     GTest::gtest_main
   )
-  gtest_discover_tests(tinydb_test)
 endif()
