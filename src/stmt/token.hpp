@@ -105,6 +105,14 @@ struct Token {
   }
   /**
    * @brief String representation of the token, e.g. "and"
+   *
+   * Before you complain about "heap allocation bad":
+   * - Almost every token is expected to be rather small in size; say, about
+   * fewer than 15 characters.
+   * - That's when short-string optimization kicks in. You can imagine the
+   * string being an union with 2 similar-size variants.
+   * - If the total size of the string is small enough, it can fit inside the
+   * union; hence, no heap allocation.
    */
   std::string lexeme;
   /**
