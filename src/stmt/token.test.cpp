@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #ifndef TINYDB_IMPORT_STD
+#include <array>
+#include <ranges>
 #include <string_view>
 #endif
 #ifdef TINYDB_MODULE
@@ -8,116 +10,74 @@ import tinydb.stmt;
 import std;
 #endif
 #else
-#include "token.detail.hpp"
+#include "token.hpp"
 #endif
 
 using namespace std::literals;
 using namespace tinydb::stmt;
 
 TEST(Tokenizer, Empty) {
-  TokenizerData test_data{""sv};
-  Tokenizer tok{};
-  auto tok_result = tok(test_data);
-  EXPECT_FALSE(tok_result);
-  EXPECT_EQ(tok_result.error().type, ParseError::ErrType::UnendedStmt);
-  EXPECT_TRUE(std::move(test_data).move_token_list().empty());
+    auto tok_result = tokenize(""sv);
+    EXPECT_FALSE(tok_result);
+    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::UnendedStmt);
 }
 
 TEST(Tokenizer, Num) {
+  
   {
-    TokenizerData test_data{"34;"sv};
-    Tokenizer tok{};
-    auto tok_result = [&]() {
-      auto ret = tok(test_data);
-      while (ret) {
-        ret = (*ret)(test_data);
-      }
-      return ret;
-    }();
-    auto tok_list = std::move(test_data).move_token_list();
+    auto tok_result = tokenize("12.34;"sv);
+    EXPECT_TRUE(tok_result);
+    auto &tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
-    EXPECT_EQ(tok_list.front().lexeme, "34"sv);
-    EXPECT_EQ(tok_list.front().type, TokenType::Number);
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::Done);
-  }
-  {
-    TokenizerData test_data{"12.34;"sv};
-    Tokenizer tok{};
-    auto tok_result = [&]() {
-      auto ret = tok(test_data);
-      while (ret) {
-        ret = (*ret)(test_data);
-      }
-      return ret;
-    }();
-    auto tok_list = std::move(test_data).move_token_list();
-    EXPECT_FALSE(tok_list.empty());
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::Done);
+    EXPECT_EQ(tok_list.back().lexeme, ";"sv);
+    EXPECT_EQ(tok_list.back().type, TokenType::Semicolon);
     EXPECT_EQ(tok_list.front().lexeme, "12.34"sv);
     EXPECT_EQ(tok_list.front().type, TokenType::Number);
   }
   {
-    TokenizerData test_data{"12.34 -56;"sv};
-    Tokenizer tok{};
-    auto tok_result = [&]() {
-      auto ret = tok(test_data);
-      while (ret) {
-        ret = (*ret)(test_data);
-      }
-      return ret;
-    }();
-    auto tok_list = std::move(test_data).move_token_list();
+    auto tok_result = tokenize("12.34 -56;"sv);
+    EXPECT_TRUE(tok_result);
+    std::array expected_lexemes{"12.34"sv, "-"sv, "56"sv, ";"sv};
+    using enum TokenType;
+    std::array expected_types{Number, Minus, Number, Semicolon};
+    auto &tok_list = *tok_result;
+    for (auto [tok, ex_lex, ex_typ] :
+         std::views::zip(tok_list, expected_lexemes, expected_types)) {
+      EXPECT_EQ(tok.lexeme, ex_lex);
+      EXPECT_EQ(tok.type, ex_typ);
+    }
     EXPECT_FALSE(tok_list.empty());
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::Done);
-    // NOLINTBEGIN(*unused-return-value*)
-    EXPECT_NO_THROW(tok_list.at(0));
-    EXPECT_NO_THROW(tok_list.at(1));
-    EXPECT_NO_THROW(tok_list.at(2));
-    // NOLINTEND(*unused-return-value*)
-    EXPECT_EQ(tok_list.at(0).lexeme, "12.34"sv);
-    EXPECT_EQ(tok_list.at(1).lexeme, "-"sv);
-    EXPECT_EQ(tok_list.at(1).type, TokenType::Minus);
-    EXPECT_EQ(tok_list.at(2).lexeme, "56"sv);
-    EXPECT_EQ(tok_list.front().type, TokenType::Number);
   }
 }
 
 TEST(Tokenizer, KwAndId) {
   {
-    TokenizerData test_data{"hEllo;"sv};
-    Tokenizer tok{};
-    auto tok_result = [&]() {
-      auto ret = tok(test_data);
-      while (ret) {
-        ret = (*ret)(test_data);
-      }
-      return ret;
-    }();
-    auto tok_list = std::move(test_data).move_token_list();
+    auto tok_result = tokenize("hEllo;"sv);
+    EXPECT_TRUE(tok_result);
+    auto& tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::Done);
-    EXPECT_EQ(tok_list.front().lexeme, "hEllo"sv);
-    EXPECT_EQ(tok_list.front().type, TokenType::Identifier);
+    // NOLINTBEGIN(*unused-return-value*)
+    EXPECT_NO_THROW(tok_list.at(0));
+    EXPECT_NO_THROW(tok_list.at(1));
+    // NOLINTEND(*unused-return-value*)
+    EXPECT_EQ(tok_list.at(0).lexeme, "hEllo"sv);
+    EXPECT_EQ(tok_list.at(0).type, TokenType::Identifier);
+    EXPECT_EQ(tok_list.at(1).lexeme, ";"sv);
+    EXPECT_EQ(tok_list.at(1).type, TokenType::Semicolon);
   }
   {
-    TokenizerData test_data{"and;"sv};
-    Tokenizer tok{};
-    auto tok_result = [&]() {
-      auto ret = tok(test_data);
-      while (ret) {
-        ret = (*ret)(test_data);
-      }
-      return ret;
-    }();
-    auto tok_list = std::move(test_data).move_token_list();
+    auto tok_result = tokenize("and;"sv);
+    EXPECT_TRUE(tok_result);
+    auto& tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::Done);
-    EXPECT_EQ(tok_list.front().lexeme, "and"sv);
-    EXPECT_EQ(tok_list.front().type, TokenType::And);
+    std::array expected_lexemes{"and"sv, ";"sv};
+    using enum TokenType;
+    std::array expected_types{TokenType::And, TokenType::Semicolon};
+    EXPECT_EQ(tok_list.size(), expected_lexemes.size());
+    EXPECT_EQ(tok_list.size(), expected_types.size());
+    for(auto [tok, exp_lex, exp_typ] : std::views::zip(tok_list, expected_lexemes, expected_types)) {
+      EXPECT_EQ(tok.lexeme, exp_lex);
+      EXPECT_EQ(tok.type, exp_typ);
+    }
   }
 }
