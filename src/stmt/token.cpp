@@ -262,7 +262,9 @@ auto Tokenizer::tokenize_symbol(TokenizerData &t_data)
   }
   auto peek_char = static_cast<unsigned char>(*t_data.peek_next_char());
   if (peek_char == static_cast<unsigned char>(' ')) {
-    return Tokenizer{tokenize_symbol};
+    t_data.finish_current_token();
+    t_data.pop_next_char();
+    return Tokenizer{tokenize_initial};
   }
   t_data.finish_current_token();
   assert(t_data.is_null_token());

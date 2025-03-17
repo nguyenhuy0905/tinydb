@@ -17,13 +17,13 @@ using namespace std::literals;
 using namespace tinydb::stmt;
 
 TEST(Tokenizer, Empty) {
-    auto tok_result = tokenize(""sv);
-    EXPECT_FALSE(tok_result);
-    EXPECT_EQ(tok_result.error().type, ParseError::ErrType::UnendedStmt);
+  auto tok_result = tokenize(""sv);
+  EXPECT_FALSE(tok_result);
+  EXPECT_EQ(tok_result.error().type, ParseError::ErrType::UnendedStmt);
 }
 
 TEST(Tokenizer, Num) {
-  
+
   {
     auto tok_result = tokenize("12.34;"sv);
     EXPECT_TRUE(tok_result);
@@ -54,7 +54,7 @@ TEST(Tokenizer, KwAndId) {
   {
     auto tok_result = tokenize("hEllo;"sv);
     EXPECT_TRUE(tok_result);
-    auto& tok_list = *tok_result;
+    auto &tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
     // NOLINTBEGIN(*unused-return-value*)
     EXPECT_NO_THROW(tok_list.at(0));
@@ -68,16 +68,33 @@ TEST(Tokenizer, KwAndId) {
   {
     auto tok_result = tokenize("and;"sv);
     EXPECT_TRUE(tok_result);
-    auto& tok_list = *tok_result;
+    auto &tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
     std::array expected_lexemes{"and"sv, ";"sv};
     using enum TokenType;
     std::array expected_types{TokenType::And, TokenType::Semicolon};
     EXPECT_EQ(tok_list.size(), expected_lexemes.size());
     EXPECT_EQ(tok_list.size(), expected_types.size());
-    for(auto [tok, exp_lex, exp_typ] : std::views::zip(tok_list, expected_lexemes, expected_types)) {
+    for (auto [tok, exp_lex, exp_typ] :
+         std::views::zip(tok_list, expected_lexemes, expected_types)) {
       EXPECT_EQ(tok.lexeme, exp_lex);
       EXPECT_EQ(tok.type, exp_typ);
+    }
+  }
+  {
+    auto tok_result = tokenize("select   col from HiEr;");
+    EXPECT_TRUE(tok_result);
+    auto &tok_list = *tok_result;
+    EXPECT_FALSE(tok_list.empty());
+    std::array expected_lexemes{"select"sv, "col"sv, "from"sv, "HiEr"sv, ";"sv};
+    using enum TokenType;
+    std::array expected_types{Select, Identifier, From, Identifier, Semicolon};
+    EXPECT_EQ(tok_list.size(), expected_lexemes.size());
+    EXPECT_EQ(tok_list.size(), expected_types.size());
+    for (auto [tok, exp_lex, exp_typ] :
+         std::views::zip(tok_list, expected_lexemes, expected_types)) {
+           EXPECT_EQ(tok.lexeme, exp_lex);
+           EXPECT_EQ(tok.type, exp_typ);
     }
   }
 }
