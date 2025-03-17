@@ -86,15 +86,17 @@ TEST(Tokenizer, KwAndId) {
     EXPECT_TRUE(tok_result);
     auto &tok_list = *tok_result;
     EXPECT_FALSE(tok_list.empty());
-    std::array expected_lexemes{"select"sv, "col"sv, "from"sv, "HiEr"sv, ";"sv, "select"sv, ";"sv};
+    std::array expected_lexemes{"select"sv, "col"sv,    "from"sv, "HiEr"sv,
+                                ";"sv,      "select"sv, ";"sv};
     using enum TokenType;
-    std::array expected_types{Select, Identifier, From, Identifier, Semicolon, Select, Semicolon};
+    std::array expected_types{Select,    Identifier, From,     Identifier,
+                              Semicolon, Select,     Semicolon};
     EXPECT_EQ(tok_list.size(), expected_lexemes.size());
     EXPECT_EQ(tok_list.size(), expected_types.size());
     for (auto [tok, exp_lex, exp_typ] :
          std::views::zip(tok_list, expected_lexemes, expected_types)) {
-           EXPECT_EQ(tok.lexeme, exp_lex);
-           EXPECT_EQ(tok.type, exp_typ);
+      EXPECT_EQ(tok.lexeme, exp_lex);
+      EXPECT_EQ(tok.type, exp_typ);
     }
   }
 }
