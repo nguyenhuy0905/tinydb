@@ -100,3 +100,22 @@ TEST(Tokenizer, KwAndId) {
     }
   }
 }
+
+TEST(Tokenizer, SomeSymbols) {
+  {
+    auto tok_result = tokenize(">=<=>;"sv);
+    EXPECT_TRUE(tok_result);
+    auto &tok_list = *tok_result;
+    EXPECT_FALSE(tok_list.empty());
+    std::array expected_lexemes{">="sv, "<="sv, ">"sv, ";"sv};
+    using enum TokenType;
+    std::array expected_types{GreaterEqual, LessEqual, Greater, Semicolon};
+    EXPECT_EQ(tok_list.size(), expected_lexemes.size());
+    EXPECT_EQ(tok_list.size(), expected_types.size());
+    for (auto [tok, exp_lex, exp_typ] :
+         std::views::zip(tok_list, expected_lexemes, expected_types)) {
+      EXPECT_EQ(tok.lexeme, exp_lex);
+      EXPECT_EQ(tok.type, exp_typ);
+    }
+  }
+}

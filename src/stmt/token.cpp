@@ -267,7 +267,7 @@ auto Tokenizer::tokenize_symbol(TokenizerData &t_data)
     return Tokenizer{tokenize_initial};
   }
   t_data.finish_current_token();
-  assert(t_data.is_null_token());
+  assert(t_data.is_token_empty());
 
   switch (peek_char) {
   // for parentheses:
@@ -317,15 +317,11 @@ auto Tokenizer::tokenize_symbol(TokenizerData &t_data)
   case '>': {
     t_data.set_token_type(TokenType::Greater);
     t_data.add_next_char();
-    t_data.finish_current_token();
-    assert(t_data.is_token_empty());
     return Tokenizer{tokenize_gt};
   }
   case '<': {
     t_data.set_token_type(TokenType::Less);
     t_data.add_next_char();
-    t_data.finish_current_token();
-    assert(t_data.is_token_empty());
     return Tokenizer{tokenize_lt};
   }
   default:
