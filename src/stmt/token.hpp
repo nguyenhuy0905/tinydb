@@ -3,8 +3,8 @@
  * @brief Defines and tokenizes an input string into separate tokens.
  */
 
-#ifndef TINYDB_REPL_TOKEN_HPP
-#define TINYDB_REPL_TOKEN_HPP
+#ifndef TINYDB_STMT_TOKEN_HPP
+#define TINYDB_STMT_TOKEN_HPP
 
 #ifndef TINYDB_MODULE
 #include <cstddef>
@@ -131,4 +131,4 @@ auto tokenize(std::string_view t_sv)
     -> std::expected<std::vector<Token>, ParseError>;
 }
 
-#endif // !TINYDB_REPL_TOKEN_HPP
+#endif // !TINYDB_STMT_TOKEN_HPP

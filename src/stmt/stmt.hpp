@@ -1,5 +1,5 @@
-#ifndef TINYDB_REPL_STMT_HPP
-#define TINYDB_REPL_STMT_HPP
+#ifndef TINYDB_STMT_STMT_HPP
+#define TINYDB_STMT_STMT_HPP
 
 #include "tinydb_export.h"
 #ifndef TINYDB_MODULE
@@ -94,4 +94,4 @@ private:
 };
 } // namespace tinydb::repl
 
-#endif // !TINYDB_REPL_STMT_HPP
+#endif // !TINYDB_STMT_STMT_HPP
