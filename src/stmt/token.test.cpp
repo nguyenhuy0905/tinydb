@@ -5,7 +5,7 @@
 #include <string_view>
 #endif
 #ifdef TINYDB_MODULE
-import tinydb.stmt;
+import tinydb.stmt.token;
 #ifdef TINYDB_IMPORT_STD
 import std;
 #endif

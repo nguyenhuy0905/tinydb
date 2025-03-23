@@ -14,7 +14,7 @@ module;
 #include <utility>
 #include <vector>
 #endif // !TINYDB_IMPORT_STD
-export module tinydb.stmt:token;
+export module tinydb.stmt.token;
 #ifdef TINYDB_IMPORT_STD
 import std;
 #endif // TINYDB_IMPORT_STD

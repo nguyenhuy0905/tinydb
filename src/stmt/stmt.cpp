@@ -12,6 +12,7 @@ module;
 import std;
 #endif // !TINYDB_IMPORT_STD
 export module tinydb.stmt;
-export import :token;
+import tinydb.stmt.token;
+import tinydb.stmt.parse;
 #endif // TINYDB_MODULE
 #include "stmt.hpp"

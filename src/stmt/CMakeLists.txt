@@ -3,12 +3,15 @@ target_module_if_enabled(tinydb_stmt
   HEADERS
   stmt.hpp
   token.hpp
+  parse.hpp
   MODULES
   stmt.cpp
   token.cpp
+  parse.cpp
   SOURCES
   stmt.cpp
   token.cpp
+  parse.cpp
 )
 find_package(fmt REQUIRED)
 target_link_libraries(tinydb_stmt
@@ -21,5 +24,6 @@ if(BUILD_TESTING)
   target_sources(tinydb_test
     PRIVATE
     token.test.cpp
+    parse.test.cpp
   )
 endif()
