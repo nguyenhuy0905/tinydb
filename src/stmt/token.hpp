@@ -77,6 +77,9 @@ struct ParseError {
     //   - comma and semicolon , ;
     //   - logical operation = ! < > != >= <= ==
     UnexpectedChar,
+    // Only procc'ed when parsing.
+    // Any language has some grammar rule, mofo.
+    UnexpectedToken,
   };
   /**
    * @brief The type of failure.
