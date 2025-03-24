@@ -32,18 +32,26 @@ enum struct TokenType : uint8_t {
   LeftParen,  // (
   RightParen, // )
   Semicolon,  // ;
+  Colon,      // :
   Comma,      // ,
   Star,       // *
   Plus,       // +
   Minus,      // -
   Slash,      // /
-  // Dot,        // .
-  Equal,   // =
-  Greater, // >
-  Less,    // <
+  Dot,        // .
+  Equal,      // =
+  Greater,    // >
+  Less,       // <
+  Bang,       // !
+  Ampersand,  // &
+  Beam,       // |
   // more complex symbols
+  EqualEqual,   // ==
+  BangEqual,    // !=
   GreaterEqual, // >=
   LessEqual,    // <=
+  AmAmpersand,  // &&
+  BeamBeam,     // ||
   // literals
   String,     // inside double-quote
   Number,     // 1, 2, -3.4, ...
@@ -52,6 +60,7 @@ enum struct TokenType : uint8_t {
   And,
   Or,
   Not,
+  Let,
   Select,
   From,
   Where,
@@ -103,8 +112,7 @@ struct Token {
   static auto new_empty_at(
       // it's not required that const_iterator is a pointer.
       size_t t_line) -> Token {
-    return Token{
-        .lexeme{}, .line = t_line, .type = TokenType::Null};
+    return Token{.lexeme{}, .line = t_line, .type = TokenType::Null};
   }
   /**
    * @brief String representation of the token, e.g. "and"

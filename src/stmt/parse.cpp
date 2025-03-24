@@ -6,6 +6,7 @@ module;
 #include <expected>
 #include <memory>
 #include <span>
+#include <variant>
 #else
 import std;
 #endif // !TINYDB_IMPORT_STD

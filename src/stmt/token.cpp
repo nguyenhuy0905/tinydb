@@ -5,6 +5,7 @@ module;
 #include <cstdint>
 #ifndef TINYDB_IMPORT_STD
 #include <cctype>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
