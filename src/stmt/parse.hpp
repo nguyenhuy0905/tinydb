@@ -32,9 +32,9 @@ struct ParseRet;
 
 class Ast {
 public:
-  Ast(const Ast &) = default;
+  Ast(const Ast &) = delete;
   Ast(Ast &&) = delete;
-  auto operator=(const Ast &) -> Ast & = default;
+  auto operator=(const Ast &) -> Ast & = delete;
   auto operator=(Ast &&) -> Ast & = delete;
   virtual ~Ast() = default;
 
@@ -44,19 +44,25 @@ public:
    * @param t_tokens The toke list.
    * @return @ref ParseRet if successful, certain @ref ParseError otherwise.
    */
-  auto parse(std::span<Token> t_tokens) -> std::expected<ParseRet, ParseError>;
+  static auto parse(std::span<Token> t_tokens)
+      -> std::expected<ParseRet, ParseError>;
 
 protected:
   /**
    * @brief Parse parse parse. The private virtual interface.
    *
-   * @param t_tokens The toke list.
+   * @param t_tokens The token list.
    * @return @ref ParseRet if successful, certain @ref ParseError otherwise.
    */
   virtual auto do_parse(std::span<Token> t_tokens)
       -> std::expected<ParseRet, ParseError> = 0;
 };
 
+/**
+ * @class ParseRet
+ * @brief Return value when parsing succeeded.
+ *
+ */
 struct ParseRet {
   /**
    * @brief The parse tree.
