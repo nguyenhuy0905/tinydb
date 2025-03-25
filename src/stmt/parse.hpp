@@ -57,14 +57,29 @@ template <typename T> auto clone(T &t_node) -> T;
 
 /**
  * @concept AstNode
- * @brief Requires template-specializing the following functions:
+ * @brief Requires the following member functions:
  * - @ref eval
  * - @ref clone
+ * - You probably also need the move constructor (for make_unique with the
+ * clone), but it should usually be defaulted anyways.
+ * These functions should work even in const.
  */
 template <typename T>
-concept AstNode = requires(T t_node) {
-  { tinydb::stmt::eval<T>(t_node) } -> std::same_as<EvalRet>;
-  { tinydb::stmt::clone<T>(t_node) } -> std::same_as<T>;
+concept AstNode = requires(const T t_node) {
+  { t_node.eval() } -> std::same_as<EvalRet>;
+  { t_node.clone() } -> std::same_as<T>;
+};
+
+/**
+ * @concept AstDump
+ * @brief The @ref AstNode satifying this concept allows you to dump the syntax
+ * tree.
+ *
+ * Recommended to also do an overload of libfmt's formatting.
+ * */
+template <typename T>
+concept AstDump = AstNode<T> && requires(const T t_node) {
+  { t_node.format() } -> std::same_as<std::string>;
 };
 
 /**
@@ -73,6 +88,7 @@ concept AstNode = requires(T t_node) {
  *
  * A syntax tree can have multiple nodes, or one node only, that's why this
  * takes the name @ref Ast but not @ref AstNode.
+ * To make life easier, just inherit the @c std::string fmt::formatter.
  */
 class Ast {
 public:
@@ -107,6 +123,7 @@ private:
   struct AstConcept {
     virtual auto do_eval() -> EvalRet = 0;
     virtual auto do_clone() -> std::unique_ptr<AstConcept> = 0;
+    virtual auto do_format() -> std::string = 0;
 
     virtual ~AstConcept() = default;
     AstConcept(const AstConcept &) = delete;
@@ -115,7 +132,24 @@ private:
     auto operator=(AstConcept &&) -> AstConcept & = delete;
   };
   template <AstNode A> struct AstModel : AstConcept {
-    auto do_eval() -> EvalRet override { return eval(m_data); }
+    auto do_eval() -> EvalRet override { return m_data.eval(); }
+    auto do_clone() -> std::unique_ptr<AstConcept> override {
+      return std::make_unique(m_data.clone());
+    }
+    auto format_node() -> std::string
+      requires AstDump<A>
+    {
+      return m_data.format();
+    }
+    auto format_node() -> std::string
+      // hopefully this doesn't break anything
+      requires true
+    {
+      return R"(#unformatted)";
+    }
+    auto do_format() -> std::string override {
+      return format_node();
+    }
     A m_data;
   };
 
