@@ -67,7 +67,7 @@ template <typename T> auto clone(T &t_node) -> T;
 template <typename T>
 concept AstNode = requires(const T t_node) {
   { t_node.eval() } -> std::same_as<EvalRet>;
-  { t_node.clone() } -> std::same_as<T>;
+  { t_node.clone() } -> std::same_as<std::remove_cvref_t<T>>;
 };
 
 /**
@@ -92,8 +92,10 @@ concept AstDump = AstNode<T> && requires(const T t_node) {
  */
 class Ast {
 public:
-  explicit Ast(AstNode auto &&t_node)
-      : m_impl{new AstModel<std::remove_cvref_t<decltype(t_node)>>} {}
+  template <AstNode A>
+  explicit Ast(A &&t_node)
+      : m_impl{new AstModel<std::remove_cvref_t<decltype(t_node)>>{
+            std::forward<decltype(t_node)>(t_node)}} {}
   Ast(const Ast &t_other) : m_impl{t_other.m_impl->do_clone()} {}
   auto operator=(const Ast &t_other) -> Ast & {
     if (this == &t_other) {
@@ -121,33 +123,40 @@ public:
 
 private:
   struct AstConcept {
-    virtual auto do_eval() -> EvalRet = 0;
-    virtual auto do_clone() -> std::unique_ptr<AstConcept> = 0;
-    virtual auto do_format() -> std::string = 0;
+    [[nodiscard]] virtual auto do_eval() const -> EvalRet = 0;
+    [[nodiscard]] virtual auto do_clone() const
+        -> std::unique_ptr<AstConcept> = 0;
+    [[nodiscard]] virtual auto do_format() const -> std::string = 0;
 
     virtual ~AstConcept() = default;
-    AstConcept(const AstConcept &) = delete;
-    AstConcept(AstConcept &&) = delete;
-    auto operator=(const AstConcept &) -> AstConcept & = delete;
-    auto operator=(AstConcept &&) -> AstConcept & = delete;
+    AstConcept() = default;
+    AstConcept(const AstConcept &) = default;
+    AstConcept(AstConcept &&) = default;
+    auto operator=(const AstConcept &) -> AstConcept & = default;
+    auto operator=(AstConcept &&) -> AstConcept & = default;
   };
-  template <AstNode A> struct AstModel : AstConcept {
-    auto do_eval() -> EvalRet override { return m_data.eval(); }
-    auto do_clone() -> std::unique_ptr<AstConcept> override {
-      return std::make_unique(m_data.clone());
+  template <AstNode A> struct AstModel : public AstConcept {
+    explicit AstModel(const A &t_data) : m_data{t_data} {}
+    explicit AstModel(A &&t_data) : m_data{std::move(t_data)} {}
+    [[nodiscard]] auto do_eval() const -> EvalRet override {
+      return m_data.eval();
     }
-    auto format_node() -> std::string
+    [[nodiscard]] auto do_clone() const
+        -> std::unique_ptr<AstConcept> override {
+      return std::make_unique<AstModel>(*this);
+    }
+    [[nodiscard]] auto format_node() const -> std::string
       requires AstDump<A>
     {
       return m_data.format();
     }
-    auto format_node() -> std::string
-      // hopefully this doesn't break anything
-      requires true
+    [[nodiscard]] auto format_node() const -> std::string
+        // hopefully this doesn't break anything
+      requires(!AstDump<A>)
     {
       return R"(#unformatted)";
     }
-    auto do_format() -> std::string override {
+    [[nodiscard]] auto do_format() const -> std::string override {
       return format_node();
     }
     A m_data;

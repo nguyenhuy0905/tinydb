@@ -26,8 +26,14 @@ import tinydb.stmt.token;
 #include <utility>
 #endif // TINYDB_MODULE
 #include "parse.hpp"
+#include "parse.detail.hpp"
 
 namespace tinydb::stmt {
+
+static_assert(AstNode<NumberAst>);
+static_assert(AstDump<NumberAst>);
+static_assert(AstNode<StrAst>);
+static_assert(AstDump<StrAst>);
 
 // TODO: maybe create a ParseData class to hold data necessary for parsing. The
 // parser here is just a state machine.

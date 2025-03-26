@@ -25,8 +25,6 @@ namespace tinydb::stmt {
  * create more complex expressions. Sometimes, you gotta appreciate the simple
  * things in life.
  */
-class NumberAst;
-
 class NumberAst {
 public:
   explicit NumberAst(int64_t t_num) : m_num(t_num) {}
@@ -40,8 +38,26 @@ private:
   int64_t m_num;
 };
 
-static_assert(AstNode<NumberAst>);
-static_assert(AstDump<NumberAst>);
+/**
+ * @class StrAst
+ * @brief Holds an owning literal string. Evaluates to a literal string.
+ *
+ */
+class StrAst {
+public:
+  template <typename S>
+  explicit StrAst(S &&t_str)
+    requires std::convertible_to<S, std::string_view>
+      : m_str{std::forward<S>(t_str)} {}
+  [[nodiscard]] auto eval() const -> EvalRet { return m_str; }
+  [[nodiscard]] auto clone() const -> StrAst { return StrAst{m_str}; }
+  [[nodiscard]] auto format() const -> std::string {
+    return fmt::format("(lit-str: {})", m_str);
+  }
+
+private:
+  std::string m_str;
+};
 
 } // tinydb::stmt
 
