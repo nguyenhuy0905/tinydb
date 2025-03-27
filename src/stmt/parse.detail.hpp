@@ -147,8 +147,11 @@ public:
    * std::vector<MulExprAst::UnExprGroup> some_vec{...};
    * ...
    * MulExprAst{some_unary_expr, std::from_range_t, some_vec}
-   * MulExprAst{some_unary_expr, {MulExprAst::UnExprGroup{...}, ...}}
-   * MulExprAst{some_unary_expr, {std::pair{...}, ...}}
+   * MulExprAst{some_unary_expr, std::from_range_t, some_vec.begin(),
+   * some_vec.end()}
+   * MulExprAst{some_unary_expr,
+   * std::initializer_list{MulExprAst::UnExprGroup{...}, {...}}}
+   * MulExprAst{some_unary_expr, std::pair{...}, ...}
    *
    * ```
    */

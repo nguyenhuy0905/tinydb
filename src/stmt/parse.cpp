@@ -1,6 +1,7 @@
 #ifdef TINYDB_MODULE
 module;
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fmt/color.h>
@@ -20,6 +21,7 @@ export module tinydb.stmt.parse;
 import tinydb.stmt.token;
 #else
 #include <algorithm> // IWYU pragma: keep
+#include <cassert>
 #include <cstddef>
 #include <expected>
 #include <fmt/color.h>
@@ -63,6 +65,50 @@ namespace tinydb::stmt {
         }
       }(),
       m_data.format());
+}
+
+[[nodiscard]] auto MulExprAst::eval() const -> EvalRet {
+  // TODO: better error handling some day
+  assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
+  int64_t retval = std::get<int64_t>(m_first_expr.eval());
+  for (const auto &un_expr : m_follow_exprs) {
+    assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
+    using enum MulOp;
+    switch (un_expr.first) {
+    case Multiply:
+      retval *= std::get<int64_t>(un_expr.second.eval());
+      break;
+    case Divide:
+      assert(std::get<int64_t>(un_expr.second.eval()) != 0);
+      retval /= std::get<int64_t>(un_expr.second.eval());
+    }
+  }
+  return retval;
+}
+
+[[nodiscard]] auto MulExprAst::clone() const -> MulExprAst {
+  return MulExprAst{m_first_expr, m_follow_exprs};
+}
+
+[[nodiscard]] auto MulExprAst::format() const -> std::string {
+  return fmt::format("(mul-expr: {}{})", m_first_expr.format(), [&]() {
+    std::string ret{};
+    for (const auto &un_expr : m_follow_exprs) {
+      ret.append(fmt::format(
+          "\n\t(mul-op: {}) {}",
+          [&]() {
+            switch (un_expr.first) {
+              using enum MulOp;
+            case Multiply:
+              return '*';
+            case Divide:
+              return '/';
+            }
+          }(),
+          un_expr.second.format()));
+    }
+    return ret;
+  }());
 }
 
 static_assert(AstNode<NumberAst>);

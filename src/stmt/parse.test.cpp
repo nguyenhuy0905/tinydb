@@ -9,6 +9,7 @@ import tinydb.stmt.parse;
 #include "parse.detail.hpp"
 #include "parse.hpp"
 #include <array>
+#include <print>
 #include <string_view>
 #include <variant>
 #endif // TINYDB_MODULE
@@ -59,5 +60,34 @@ TEST(Parse, Unary) {
     ASSERT_EQ(eval_res, -3);
     ASSERT_EQ(ast_test.do_format(),
               "(unary-expr: (unary-op: -) (lit-num: 3))"sv);
+  }
+}
+
+TEST(Parse, Mul) {
+  {
+    MulExprAst test_mul{
+        UnaryExprAst{UnaryExprAst::UnaryOp::Minus, NumberAst{3}}};
+    ASSERT_TRUE(std::holds_alternative<int64_t>(test_mul.eval()));
+    ASSERT_EQ(std::get<int64_t>(test_mul.eval()), -3);
+    Ast ast_test{test_mul};
+    ASSERT_TRUE(std::holds_alternative<int64_t>(ast_test.do_eval()));
+    ASSERT_EQ(std::get<int64_t>(ast_test.do_eval()), -3);
+  }
+  {
+    using enum MulExprAst::MulOp;
+    using enum UnaryExprAst::UnaryOp;
+    MulExprAst test_mul{
+        UnaryExprAst{Plus, NumberAst{2}},
+        std::initializer_list{
+            std::pair{Multiply, UnaryExprAst{Minus, NumberAst{3}}},
+
+            {Divide, {Minus, NumberAst{3}}},
+            {Multiply, {Plus, NumberAst{4}}},
+        },
+    };
+    ASSERT_TRUE(std::holds_alternative<int64_t>(test_mul.eval()));
+    ASSERT_EQ(std::get<int64_t>(test_mul.eval()), 8);
+    // j4f
+    std::println("{}", test_mul.format());
   }
 }
