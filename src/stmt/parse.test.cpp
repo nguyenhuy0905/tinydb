@@ -91,3 +91,27 @@ TEST(Parse, Mul) {
     std::println("{}", test_mul.format());
   }
 }
+
+TEST(Parse, Plus) {
+  {
+    using enum MulExprAst::MulOp;
+    MulExprAst test_mul{
+        UnaryExprAst{UnaryExprAst::UnaryOp::Plus, NumberAst{2}},
+        std::initializer_list{
+            std::pair{Multiply,
+                      UnaryExprAst{UnaryExprAst::UnaryOp::Minus, NumberAst{3}}},
+
+            {Divide, {UnaryExprAst::UnaryOp::Minus, NumberAst{3}}},
+            {Multiply, {UnaryExprAst::UnaryOp::Plus, NumberAst{4}}},
+        },
+    };
+    AddExprAst test_add{
+        test_mul,
+        std::initializer_list{std::pair{AddExprAst::AddOp::Plus, test_mul},
+                              {AddExprAst::AddOp::Minus, test_mul}}};
+    ASSERT_TRUE(std::holds_alternative<int64_t>(test_add.eval()));
+    ASSERT_EQ(std::get<int64_t>(test_add.eval()), 8);
+    // j4f
+    std::println("{}", test_add.format());
+  }
+}

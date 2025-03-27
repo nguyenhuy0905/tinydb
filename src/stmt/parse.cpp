@@ -27,12 +27,14 @@ import tinydb.stmt.token;
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <span>
+#include <string_view>
 #include <utility>
 #endif // TINYDB_MODULE
 #include "parse.detail.hpp"
 #include "parse.hpp"
 
 namespace tinydb::stmt {
+using namespace std::literals;
 // AST
 
 [[nodiscard]] auto UnaryExprAst::eval() const -> EvalRet {
@@ -106,6 +108,48 @@ namespace tinydb::stmt {
             }
           }(),
           un_expr.second.format()));
+    }
+    return ret;
+  }());
+}
+
+[[nodiscard]] auto AddExprAst::eval() const -> EvalRet {
+  assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
+  auto ret = std::get<int64_t>(m_first_expr.eval());
+  for (const auto &[op, mul] : m_follow_exprs) {
+    assert(std::holds_alternative<int64_t>(mul.eval()));
+    switch (op) {
+      using enum AddOp;
+    case Plus:
+      ret += std::get<int64_t>(mul.eval());
+      break;
+    case Minus:
+      ret -= std::get<int64_t>(mul.eval());
+      break;
+    }
+  }
+
+  return ret;
+}
+
+[[nodiscard]] auto AddExprAst::clone() const -> AddExprAst {
+  return AddExprAst{m_first_expr, m_follow_exprs};
+}
+
+[[nodiscard]] auto AddExprAst::format() const -> std::string {
+  return fmt::format("(add-expr: {}{})", m_first_expr.format(), [&]() {
+    std::string ret{};
+    for (const auto &[op, mul] : m_follow_exprs) {
+      switch (op) {
+        using enum AddOp;
+      case Plus:
+        ret.append("\n\t(add-op: +) "sv);
+        break;
+      case Minus:
+        ret.append("\n\t(add-op: -) "sv);
+        break;
+      }
+      ret.append(mul.format());
     }
     return ret;
   }());
