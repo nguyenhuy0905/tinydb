@@ -121,6 +121,8 @@ public:
    */
   auto do_clone() -> Ast { return Ast{m_impl->do_clone()}; }
 
+  auto do_format() -> std::string { return m_impl->do_format(); }
+
 private:
   struct AstConcept {
     [[nodiscard]] virtual auto do_eval() const -> EvalRet = 0;

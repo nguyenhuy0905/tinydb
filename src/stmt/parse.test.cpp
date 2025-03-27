@@ -45,3 +45,19 @@ TEST(Parse, Literals) {
     }
   }
 }
+
+TEST(Parse, Unary) {
+  {
+    NumberAst test_num{3};
+    UnaryExprAst test_un{UnaryExprAst::UnaryOp::Minus, test_num};
+    ASSERT_TRUE(std::holds_alternative<int64_t>(test_un.eval()));
+    auto eval_res = std::get<int64_t>(test_un.eval());
+    ASSERT_EQ(eval_res, -3);
+    Ast ast_test{test_un};
+    ASSERT_TRUE(std::holds_alternative<int64_t>(ast_test.do_eval()));
+    eval_res = std::get<int64_t>(ast_test.do_eval());
+    ASSERT_EQ(eval_res, -3);
+    ASSERT_EQ(ast_test.do_format(),
+              "(unary-expr: (unary-op: -) (lit-num: 3))"sv);
+  }
+}
