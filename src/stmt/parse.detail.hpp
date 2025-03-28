@@ -21,16 +21,12 @@ namespace tinydb::stmt {
 /**
  * @class ExprAst
  * @brief Top-level expression. Aka, ```exp```.
- * @see NumberAst
- * @see StrAst
  * @see AddExprAst
- * @see MulExprAst
- * @see UnaryExprAst
  * @note I'm not sure if I will use this one. For now, it's kind of just an
  * alias for @ref Ast.
  *
- * Definition:
- * NUM | STR | add-exp | un-exp | '(' exp ')'
+ * Definition (for now):
+ * add-exp
  */
 class ExprAst;
 /**
@@ -56,13 +52,24 @@ class MulExprAst;
 /**
  * @class UnaryExprAst
  * @brief Unary expression, aka, ```un-exp```
- * @see NumberAst
+ * @see LitExprAst
  *
  * Definition:
- * ('+' | '-')? NUM
+ * ('+' | '-')? lit-exp
  * (NUM preceded by one of '+', '-' or nothing at all)
  */
 class UnaryExprAst;
+/**
+ * @class LitExprAst
+ * @brief Evaluates to a literal expression. Aka, ```lit-exp```
+ * @see NumberAst
+ * @see StrAst
+ * @see ExprAst
+ *
+ * Definition:
+ * NUM | STR | '(' exp ')'
+ */
+class LitExprAst;
 /**
  * @class NumberAst
  * @brief Holds a literal number. Evaluates to a literal number. Aka, ```NUM```.
@@ -110,85 +117,83 @@ private:
   std::string m_str;
 };
 
+class LitExprAst {
+public:
+  LitExprAst(LitExprAst &&) = default;
+  auto operator=(const LitExprAst &) -> LitExprAst &;
+  auto operator=(LitExprAst &&) -> LitExprAst & = default;
+  explicit LitExprAst(std::variant<NumberAst, StrAst, ExprAst> t_data);
+  LitExprAst(const LitExprAst &);
+  ~LitExprAst() = default;
+  [[nodiscard]] auto eval() const -> EvalRet;
+  [[nodiscard]] auto clone() const -> LitExprAst;
+  [[nodiscard]] auto format() const -> std::string;
+
+private:
+  std::variant<NumberAst, StrAst, std::unique_ptr<ExprAst>> m_data;
+};
+
 class UnaryExprAst {
 public:
-  /**
-   * @brief Less error-prone than just @ref TokenType.
-   */
-  enum struct UnaryOp : uint8_t {
+  enum struct UnOp : uint8_t {
     Plus,
     Minus,
-    // more to come
   };
-  UnaryExprAst(UnaryOp t_op, NumberAst t_data) : m_data{t_data}, m_op{t_op} {}
+  explicit UnaryExprAst(UnOp t_op, LitExprAst t_lit);
   [[nodiscard]] auto eval() const -> EvalRet;
   [[nodiscard]] auto clone() const -> UnaryExprAst;
   [[nodiscard]] auto format() const -> std::string;
 
 private:
-  NumberAst m_data;
-  UnaryOp m_op;
+  LitExprAst m_lit;
+  UnOp m_op;
 };
 
 class MulExprAst {
 public:
   enum struct MulOp : bool {
-    Multiply,
-    Divide,
+    Mul,
+    Div,
   };
-  using UnExprGroup = std::pair<MulOp, UnaryExprAst>;
-
-  /**
-   * @note Some possible, (hopefully) working ways to construct:
-   *
-   * ```cpp
-   *
-   * UnaryExprAst some_unary_expr{...};
-   * std::vector<MulExprAst::UnExprGroup> some_vec{...};
-   * ...
-   * MulExprAst{some_unary_expr, std::from_range_t, some_vec}
-   * MulExprAst{some_unary_expr, std::from_range_t, some_vec.begin(),
-   * some_vec.end()}
-   * MulExprAst{some_unary_expr,
-   * std::initializer_list{MulExprAst::UnExprGroup{...}, {...}}}
-   * MulExprAst{some_unary_expr, std::pair{...}, ...}
-   *
-   * ```
-   */
-  template <typename... Args>
-    requires std::constructible_from<std::vector<UnExprGroup>, Args...>
-  explicit MulExprAst(UnaryExprAst t_un_expr, Args &&...t_args)
-      : m_follow_exprs{std::forward<Args>(t_args)...}, m_first_expr{t_un_expr} {
-  }
+  using MulGr = std::pair<MulOp, UnaryExprAst>;
+  MulExprAst(UnaryExprAst t_first, std::vector<MulGr> &&t_follows);
+  explicit MulExprAst(UnaryExprAst t_first);
   [[nodiscard]] auto eval() const -> EvalRet;
   [[nodiscard]] auto clone() const -> MulExprAst;
   [[nodiscard]] auto format() const -> std::string;
 
 private:
-  std::vector<UnExprGroup> m_follow_exprs;
-  UnaryExprAst m_first_expr;
+  std::vector<MulGr> m_follow;
+  UnaryExprAst m_first;
 };
 
 class AddExprAst {
 public:
   enum struct AddOp : bool {
-    Plus,
-    Minus,
+    Add,
+    Sub,
   };
-  using MulExprGroup = std::pair<AddOp, MulExprAst>;
-
-  template <typename... Args>
-    requires std::constructible_from<std::vector<MulExprGroup>, Args...>
-  explicit AddExprAst(MulExprAst t_mul_expr, Args &&...t_args)
-      : m_follow_exprs{std::forward<Args>(t_args)...},
-        m_first_expr{std::move(t_mul_expr)} {};
+  using AddGr = std::pair<AddOp, MulExprAst>;
+  AddExprAst(MulExprAst t_first, std::vector<AddGr> &&t_follows);
+  explicit AddExprAst(MulExprAst t_first);
   [[nodiscard]] auto eval() const -> EvalRet;
   [[nodiscard]] auto clone() const -> AddExprAst;
   [[nodiscard]] auto format() const -> std::string;
 
 private:
-  std::vector<MulExprGroup> m_follow_exprs;
-  MulExprAst m_first_expr;
+  std::vector<AddGr> m_follow;
+  MulExprAst m_first;
+};
+
+class ExprAst {
+public:
+  explicit ExprAst(AddExprAst t_add);
+  [[nodiscard]] auto eval() const -> EvalRet;
+  [[nodiscard]] auto clone() const -> ExprAst;
+  [[nodiscard]] auto format() const -> std::string;
+
+private:
+  AddExprAst m_add;
 };
 
 } // tinydb::stmt

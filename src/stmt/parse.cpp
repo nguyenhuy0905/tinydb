@@ -27,104 +27,129 @@ import tinydb.stmt.token;
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <span>
-#include <string_view>
 #include <utility>
 #endif // TINYDB_MODULE
 #include "parse.detail.hpp"
 #include "parse.hpp"
 
+namespace {
+template <typename... Vis> struct Visitor : Vis... {
+  using Vis::operator()...;
+};
+} // namespace
+
 namespace tinydb::stmt {
 using namespace std::literals;
 // AST
 
-[[nodiscard]] auto UnaryExprAst::eval() const -> EvalRet {
-  using enum UnaryOp;
-  switch (m_op) {
-  case Plus:
-    return m_data.eval();
-  case Minus:
-    // HACK: assumption that m_data is int64_t if it's in an unary expr.
-    // I will need a more complicated EvalRet in order to handle different types
-    // of numerics, and deliver an error when it's not a number.
-    return -1 * std::get<int64_t>(m_data.eval());
+LitExprAst::LitExprAst(std::variant<NumberAst, StrAst, ExprAst> t_data)
+    : m_data{std::visit(Visitor{[](const AstNode auto &t_data) {
+                                  return decltype(m_data){t_data};
+                                },
+                                [](const ExprAst &t_data) {
+                                  return decltype(m_data){
+                                      std::make_unique<ExprAst>(t_data)};
+                                }},
+                        t_data)} {}
+
+[[nodiscard]] auto LitExprAst::eval() const -> EvalRet {
+  return std::visit(
+      Visitor{[](const AstNode auto &t_data) { return t_data.eval(); },
+              [](const std::unique_ptr<ExprAst> &t_data) {
+                return t_data->eval();
+              }},
+      m_data);
+}
+
+[[nodiscard]] auto LitExprAst::clone() const -> LitExprAst { return {*this}; }
+
+[[nodiscard]] auto LitExprAst::format() const -> std::string {
+  return fmt::format(
+      "(lit-exp: {})",
+      std::visit(
+          Visitor{[](const AstNode auto &t_data) { return t_data.format(); },
+                  [](const std::unique_ptr<ExprAst> &t_data) {
+                    return t_data->format();
+                  }},
+          m_data));
+}
+
+LitExprAst::LitExprAst(const LitExprAst &t_other)
+    : m_data{
+          std::visit(Visitor{[](const AstNode auto &t_data) {
+                               return decltype(m_data){t_data};
+                             },
+                             [](const std::unique_ptr<ExprAst> &t_data) {
+                               return decltype(m_data){
+                                   std::make_unique<ExprAst>(t_data->clone())};
+                             }},
+                     t_other.m_data)} {}
+
+auto LitExprAst::operator=(const LitExprAst &t_other) -> LitExprAst & {
+  if (this == &t_other) {
+    return *this;
   }
+  m_data = std::visit(
+      Visitor{
+          [](const AstNode auto &t_data) { return decltype(m_data){t_data}; },
+          [](const std::unique_ptr<ExprAst> &t_data) {
+            return decltype(m_data){std::make_unique<ExprAst>(t_data->clone())};
+          }},
+      t_other.m_data);
+  return *this;
+}
+UnaryExprAst::UnaryExprAst(UnOp t_op, LitExprAst t_lit)
+    : m_lit{std::move(t_lit)}, m_op{t_op} {}
+
+[[nodiscard]] auto UnaryExprAst::eval() const -> EvalRet {
+  auto ret = m_lit.eval();
+  // TODO: better err handling
+  assert(std::holds_alternative<int64_t>(ret));
+  switch (m_op) {
+    using enum UnOp;
+  case Plus:
+    break;
+  case Minus:
+    std::get<int64_t>(ret) *= -1;
+    break;
+  }
+  return ret;
 }
 
 [[nodiscard]] auto UnaryExprAst::clone() const -> UnaryExprAst {
-  return UnaryExprAst{m_op, m_data.clone()};
+  return {*this};
 }
 
 [[nodiscard]] auto UnaryExprAst::format() const -> std::string {
-  return fmt::format(
-      "(unary-expr: (unary-op: {}) {})",
-      [this]() {
-        using enum UnaryOp;
-        switch (m_op) {
-        case Plus:
-          return '+';
-        case Minus:
-          return '-';
-        }
-      }(),
-      m_data.format());
+  char un_op = [&]() {
+    switch (m_op) {
+      using enum UnOp;
+    case Plus:
+      return '+';
+    case Minus:
+      return '-';
+    }
+  }();
+  return fmt::format("(un-exp: (un-op: {}) {})", un_op, m_lit.format());
 }
+MulExprAst::MulExprAst(UnaryExprAst t_first, std::vector<MulGr> &&t_follows)
+    : m_follow{std::move(t_follows)}, m_first{std::move(t_first)} {}
+
+MulExprAst::MulExprAst(UnaryExprAst t_first) : m_first{std::move(t_first)} {}
 
 [[nodiscard]] auto MulExprAst::eval() const -> EvalRet {
-  // TODO: better error handling some day
-  assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
-  int64_t retval = std::get<int64_t>(m_first_expr.eval());
-  for (const auto &un_expr : m_follow_exprs) {
-    assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
-    using enum MulOp;
-    switch (un_expr.first) {
-    case Multiply:
-      retval *= std::get<int64_t>(un_expr.second.eval());
-      break;
-    case Divide:
-      assert(std::get<int64_t>(un_expr.second.eval()) != 0);
-      retval /= std::get<int64_t>(un_expr.second.eval());
-    }
-  }
-  return retval;
-}
-
-[[nodiscard]] auto MulExprAst::clone() const -> MulExprAst {
-  return MulExprAst{m_first_expr, m_follow_exprs};
-}
-
-[[nodiscard]] auto MulExprAst::format() const -> std::string {
-  return fmt::format("(mul-expr: {}{})", m_first_expr.format(), [&]() {
-    std::string ret{};
-    for (const auto &un_expr : m_follow_exprs) {
-      ret.append(fmt::format(
-          "\n\t(mul-op: {}) {}",
-          [&]() {
-            switch (un_expr.first) {
-              using enum MulOp;
-            case Multiply:
-              return '*';
-            case Divide:
-              return '/';
-            }
-          }(),
-          un_expr.second.format()));
-    }
-    return ret;
-  }());
-}
-
-[[nodiscard]] auto AddExprAst::eval() const -> EvalRet {
-  assert(std::holds_alternative<int64_t>(m_first_expr.eval()));
-  auto ret = std::get<int64_t>(m_first_expr.eval());
-  for (const auto &[op, mul] : m_follow_exprs) {
-    assert(std::holds_alternative<int64_t>(mul.eval()));
+  assert(std::holds_alternative<int64_t>(m_first.eval()));
+  auto ret = std::get<int64_t>(m_first.eval());
+  for (const auto &[op, exp] : m_follow) {
+    assert(std::holds_alternative<int64_t>(exp.eval()));
     switch (op) {
-      using enum AddOp;
-    case Plus:
-      ret += std::get<int64_t>(mul.eval());
+      using enum MulOp;
+    case Mul:
+      ret *= std::get<int64_t>(exp.eval());
       break;
-    case Minus:
-      ret -= std::get<int64_t>(mul.eval());
+    case Div:
+      assert(std::get<int64_t>(exp.eval()) != 0);
+      ret /= std::get<int64_t>(exp.eval());
       break;
     }
   }
@@ -132,39 +157,95 @@ using namespace std::literals;
   return ret;
 }
 
-[[nodiscard]] auto AddExprAst::clone() const -> AddExprAst {
-  return AddExprAst{m_first_expr, m_follow_exprs};
-}
+[[nodiscard]] auto MulExprAst::clone() const -> MulExprAst { return {*this}; }
 
-[[nodiscard]] auto AddExprAst::format() const -> std::string {
-  return fmt::format("(add-expr: {}{})", m_first_expr.format(), [&]() {
+[[nodiscard]] auto MulExprAst::format() const -> std::string {
+  return fmt::format("(mul-exp: {}{})", m_first.format(), [&]() {
     std::string ret{};
-    for (const auto &[op, mul] : m_follow_exprs) {
-      switch (op) {
-        using enum AddOp;
-      case Plus:
-        ret.append("\n\t(add-op: +) "sv);
-        break;
-      case Minus:
-        ret.append("\n\t(add-op: -) "sv);
-        break;
-      }
-      ret.append(mul.format());
+    for (const auto &[op, exp] : m_follow) {
+      char c_op = [&]() {
+        using enum MulOp;
+        switch (op) {
+        case Mul:
+          return '*';
+        case Div:
+          return '/';
+        }
+      }();
+      ret.append(fmt::format("\n\t(mul-op: {}) {}", c_op, exp.format()));
     }
     return ret;
   }());
+}
+
+AddExprAst::AddExprAst(MulExprAst t_first, std::vector<AddGr> &&t_follows)
+    : m_follow{std::move(t_follows)}, m_first{std::move(t_first)} {}
+
+AddExprAst::AddExprAst(MulExprAst t_first) : m_first{std::move(t_first)} {}
+
+[[nodiscard]] auto AddExprAst::eval() const -> EvalRet {
+  assert(std::holds_alternative<int64_t>(m_first.eval()));
+  auto ret = std::get<int64_t>(m_first.eval());
+  for (const auto &[op, exp] : m_follow) {
+    assert(std::holds_alternative<int64_t>(exp.eval()));
+    switch (op) {
+      using enum AddOp;
+    case Add:
+      ret += std::get<int64_t>(exp.eval());
+      break;
+    case Sub:
+      ret -= std::get<int64_t>(exp.eval());
+      break;
+    }
+  }
+  return ret;
+}
+
+[[nodiscard]] auto AddExprAst::clone() const -> AddExprAst { return {*this}; }
+
+[[nodiscard]] auto AddExprAst::format() const -> std::string {
+  return fmt::format("(mul-exp: {}{})", m_first.format(), [&]() {
+    std::string ret{};
+    for (const auto &[op, exp] : m_follow) {
+      char c_op = [&]() {
+        using enum AddOp;
+        switch (op) {
+        case Add:
+          return '+';
+        case Sub:
+          return '-';
+        }
+      }();
+      ret.append(fmt::format("\n\t(mul-op: {}) {}", c_op, exp.format()));
+    }
+    return ret;
+  }());
+}
+
+ExprAst::ExprAst(AddExprAst t_add) : m_add{std::move(t_add)} {}
+
+[[nodiscard]] auto ExprAst::eval() const -> EvalRet { return m_add.eval(); }
+
+[[nodiscard]] auto ExprAst::clone() const -> ExprAst { return {*this}; }
+
+[[nodiscard]] auto ExprAst::format() const -> std::string {
+  return fmt::format("(expr: {})", m_add.format());
 }
 
 static_assert(AstNode<NumberAst>);
 static_assert(AstDump<NumberAst>);
 static_assert(AstNode<StrAst>);
 static_assert(AstDump<StrAst>);
+static_assert(AstNode<LitExprAst>);
+static_assert(AstDump<LitExprAst>);
 static_assert(AstNode<UnaryExprAst>);
 static_assert(AstDump<UnaryExprAst>);
 static_assert(AstNode<MulExprAst>);
 static_assert(AstDump<MulExprAst>);
 static_assert(AstNode<AddExprAst>);
 static_assert(AstDump<AddExprAst>);
+static_assert(AstNode<ExprAst>);
+static_assert(AstDump<ExprAst>);
 
 // TODO: maybe create a ParseData class to hold data necessary for parsing. The
 // parser here is just a state machine.

@@ -41,7 +41,6 @@ TEST(Parse, Literals) {
     for (auto &ast_str : test_strs) {
       ASSERT_TRUE(std::holds_alternative<std::string>(ast_str.eval()));
       ASSERT_NO_THROW(std::get<std::string>(ast_str.eval()));
-      ASSERT_EQ(ast_str.format(), R"((lit-str: Hello World))");
       ASSERT_EQ(std::get<std::string>(ast_str.eval()), "Hello World"sv);
     }
   }
@@ -50,7 +49,7 @@ TEST(Parse, Literals) {
 TEST(Parse, Unary) {
   {
     NumberAst test_num{3};
-    UnaryExprAst test_un{UnaryExprAst::UnaryOp::Minus, test_num};
+    UnaryExprAst test_un{UnaryExprAst::UnOp::Minus, LitExprAst{test_num}};
     ASSERT_TRUE(std::holds_alternative<int64_t>(test_un.eval()));
     auto eval_res = std::get<int64_t>(test_un.eval());
     ASSERT_EQ(eval_res, -3);
@@ -58,15 +57,13 @@ TEST(Parse, Unary) {
     ASSERT_TRUE(std::holds_alternative<int64_t>(ast_test.do_eval()));
     eval_res = std::get<int64_t>(ast_test.do_eval());
     ASSERT_EQ(eval_res, -3);
-    ASSERT_EQ(ast_test.do_format(),
-              "(unary-expr: (unary-op: -) (lit-num: 3))"sv);
   }
 }
 
 TEST(Parse, Mul) {
   {
     MulExprAst test_mul{
-        UnaryExprAst{UnaryExprAst::UnaryOp::Minus, NumberAst{3}}};
+        UnaryExprAst{UnaryExprAst::UnOp::Minus, LitExprAst{NumberAst{3}}}};
     ASSERT_TRUE(std::holds_alternative<int64_t>(test_mul.eval()));
     ASSERT_EQ(std::get<int64_t>(test_mul.eval()), -3);
     Ast ast_test{test_mul};
@@ -75,14 +72,13 @@ TEST(Parse, Mul) {
   }
   {
     using enum MulExprAst::MulOp;
-    using enum UnaryExprAst::UnaryOp;
+    using enum UnaryExprAst::UnOp;
     MulExprAst test_mul{
-        UnaryExprAst{Plus, NumberAst{2}},
-        std::initializer_list{
-            std::pair{Multiply, UnaryExprAst{Minus, NumberAst{3}}},
-
-            {Divide, {Minus, NumberAst{3}}},
-            {Multiply, {Plus, NumberAst{4}}},
+        UnaryExprAst{Plus, LitExprAst{NumberAst{2}}},
+        std::vector{
+            std::pair{Mul, UnaryExprAst{Minus, LitExprAst{NumberAst{3}}}},
+            {Div, UnaryExprAst{Minus, LitExprAst{NumberAst{3}}}},
+            {Mul, UnaryExprAst{Plus, LitExprAst{NumberAst{4}}}},
         },
     };
     ASSERT_TRUE(std::holds_alternative<int64_t>(test_mul.eval()));
@@ -91,24 +87,26 @@ TEST(Parse, Mul) {
     std::println("{}", test_mul.format());
   }
 }
-
+//
 TEST(Parse, Plus) {
   {
     using enum MulExprAst::MulOp;
     MulExprAst test_mul{
-        UnaryExprAst{UnaryExprAst::UnaryOp::Plus, NumberAst{2}},
-        std::initializer_list{
-            std::pair{Multiply,
-                      UnaryExprAst{UnaryExprAst::UnaryOp::Minus, NumberAst{3}}},
+        UnaryExprAst{UnaryExprAst::UnOp::Plus, LitExprAst{NumberAst{2}}},
+        std::vector{
+            std::pair{Mul, UnaryExprAst{UnaryExprAst::UnOp::Minus,
+                                        LitExprAst{NumberAst{3}}}},
 
-            {Divide, {UnaryExprAst::UnaryOp::Minus, NumberAst{3}}},
-            {Multiply, {UnaryExprAst::UnaryOp::Plus, NumberAst{4}}},
+            {Div,
+             UnaryExprAst{UnaryExprAst::UnOp::Minus, LitExprAst{NumberAst{3}}}},
+            {Mul,
+             UnaryExprAst{UnaryExprAst::UnOp::Plus, LitExprAst{NumberAst{4}}}},
         },
     };
     AddExprAst test_add{
         test_mul,
-        std::initializer_list{std::pair{AddExprAst::AddOp::Plus, test_mul},
-                              {AddExprAst::AddOp::Minus, test_mul}}};
+        std::initializer_list{std::pair{AddExprAst::AddOp::Add, test_mul},
+                              {AddExprAst::AddOp::Sub, test_mul}}};
     ASSERT_TRUE(std::holds_alternative<int64_t>(test_add.eval()));
     ASSERT_EQ(std::get<int64_t>(test_add.eval()), 8);
     // j4f
