@@ -1,46 +1,13 @@
-# template
+# tinydb
 
-> Yet another CMake template of mine.
+> Database, now the 4th attempt
+> Maybe I'm a bit bored of writing databases, so,
 
-## Why
+## What
 
-I took a look at `cmake-init` and modified to my own use:
+- Not really a database, just a programming language that is tied with a
+database engine.
 
-- Linking with sanitizers (ASan, UBSan, and such).
+## Build
 
-## How to use
-
-Modify [this script](tools/sed.sh), and run it at the project root.
-
-```bash
-sh ./tools/sed.sh
-```
-
-## Todo
-
-- [x] Package manager.
-- [x] At least it compiles.
-- [x] CI/CD.
-- [x] Doxygen.
-- [ ] Install.
-- [ ] CPack.
-- [x] Licensing.
-
-Modify the `project` section in the main CMake file to that of your project.
-
-<!--
-    The stuff above this comment should be deleted if you decide to use this
-    template.
--->
-
-## Building
-
-See the [BUILDING](BUILDING.md) document.
-
-## Contributing
-
-See the [CONTRIBUTING](CONTRIBUTING.md) document.
-
-## Licensing
-
-Choose your own!
+- Read [BUILDING](/BUILDING.md).
