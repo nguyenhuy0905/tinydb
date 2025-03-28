@@ -260,6 +260,13 @@ struct ParseData;
 class Parser {
 public:
   auto operator()(ParseData &t_data) { return (*m_parse_func)(t_data); }
+  auto parse_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
+  auto parse_add_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
+  auto parse_mul_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
+  auto parse_un_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
+  auto parse_lit_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
+  // num and str is very simple, a straight translation from one token type to
+  // the ast.
 
 private:
   auto (*m_parse_func)(ParseData &) -> std::expected<Parser, ParseError>;
