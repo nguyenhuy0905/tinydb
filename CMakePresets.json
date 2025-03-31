@@ -79,7 +79,11 @@
     {
       "name": "dev-module",
       "inherits": ["dev", "module"],
-      "binaryDir": "${sourceDir}/build/Debug-module"
+      "binaryDir": "${sourceDir}/build/Debug-module",
+      "cacheVariables": {
+        "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "a9e1cf81-9932-4810-974b-6eccaf14e457",
+        "CMAKE_CXX_MODULE_STD": "ON"
+      }
     },
     {
       "name": "dev-conan-unix",
