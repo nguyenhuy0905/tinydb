@@ -33,9 +33,26 @@ import tinydb.stmt.token;
 #include "parse.hpp"
 
 namespace {
+using namespace tinydb::stmt;
+
 template <typename... Vis> struct Visitor : Vis... {
   using Vis::operator()...;
 };
+
+/**
+ * @brief Parses an expression. Duh.
+ */
+[[maybe_unused]] auto parse_expr(std::span<Token>, size_t)
+    -> std::pair<ExprAst, size_t>;
+[[maybe_unused]] auto parse_add_expr(std::span<Token>, size_t)
+    -> std::pair<AddExprAst, size_t>;
+[[maybe_unused]] auto parse_mul_expr(std::span<Token>, size_t)
+    -> std::pair<MulExprAst, size_t>;
+[[maybe_unused]] auto parse_unary_expr(std::span<Token>, size_t)
+  -> std::pair<UnaryExprAst, size_t>;
+[[maybe_unused]] auto parse_lit_expr(std::span<Token>, size_t)
+  -> std::pair<LitExprAst, size_t>;
+
 } // namespace
 
 namespace tinydb::stmt {
@@ -247,35 +264,11 @@ static_assert(AstDump<AddExprAst>);
 static_assert(AstNode<ExprAst>);
 static_assert(AstDump<ExprAst>);
 
-// TODO: maybe create a ParseData class to hold data necessary for parsing. The
-// parser here is just a state machine.
-
-struct ParseData;
-
-/**
- * @class Parser
- * @brief Yet another state machine.
- *
- */
-class Parser {
-public:
-  auto operator()(ParseData &t_data) { return (*m_parse_func)(t_data); }
-  auto parse_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
-  auto parse_add_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
-  auto parse_mul_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
-  auto parse_un_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
-  auto parse_lit_expr(ParseData &t_data) -> std::expected<Parser, ParseError>;
-  // num and str is very simple, a straight translation from one token type to
-  // the ast.
-
-private:
-  auto (*m_parse_func)(ParseData &) -> std::expected<Parser, ParseError>;
-};
-
 auto parse(std::span<Token> t_tokens) -> std::expected<ParseRet, ParseError> {
   [[maybe_unused]] auto stfu = t_tokens;
-  fmt::print(fmt::fg(fmt::color::red), "Error: unimplemented!!!!!!!\n");
-  std::unreachable();
+  [[maybe_unused]] size_t tok_idx = 0;
+  ParseRet ret{};
+  return ret;
 }
 
 } // namespace tinydb::stmt
