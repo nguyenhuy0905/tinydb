@@ -96,6 +96,7 @@ public:
   explicit Ast(A &&t_node)
       : m_impl{new AstModel<std::remove_cvref_t<decltype(t_node)>>{
             std::forward<decltype(t_node)>(t_node)}} {}
+  Ast() = default;
   Ast(const Ast &t_other) : m_impl{t_other.m_impl->do_clone()} {}
   auto operator=(const Ast &t_other) -> Ast & {
     if (this == &t_other) {
@@ -179,7 +180,7 @@ struct ParseRet {
   /**
    * @brief The parse tree.
    */
-  std::unique_ptr<Ast> ast;
+  Ast ast;
   /**
    * @brief The offset from the token list passed in.
    */
