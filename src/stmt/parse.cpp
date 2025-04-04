@@ -42,15 +42,15 @@ template <typename... Vis> struct Visitor : Vis... {
 /**
  * @brief Parses an expression. Duh.
  */
-[[maybe_unused]] auto parse_expr(std::span<Token>, size_t)
+[[maybe_unused]] auto parse_expr(std::span<Token> t_token, size_t t_idx)
     -> std::expected<std::pair<ExprAst, size_t>, ParseError>;
-[[maybe_unused]] auto parse_add_expr(std::span<Token>, size_t)
+[[maybe_unused]] auto parse_add_expr(std::span<Token> t_token, size_t t_idx)
     -> std::expected<std::pair<AddExprAst, size_t>, ParseError>;
-[[maybe_unused]] auto parse_mul_expr(std::span<Token>, size_t)
+[[maybe_unused]] auto parse_mul_expr(std::span<Token> t_token, size_t t_idx)
     -> std::expected<std::pair<MulExprAst, size_t>, ParseError>;
-[[maybe_unused]] auto parse_unary_expr(std::span<Token>, size_t)
+[[maybe_unused]] auto parse_unary_expr(std::span<Token> t_tokens, size_t t_idx)
     -> std::expected<std::pair<UnaryExprAst, size_t>, ParseError>;
-[[maybe_unused]] auto parse_lit_expr(std::span<Token>, size_t)
+[[maybe_unused]] auto parse_lit_expr(std::span<Token> t_tokens, size_t t_idx)
     -> std::expected<std::pair<LitExprAst, size_t>, ParseError>;
 
 } // namespace
@@ -283,13 +283,14 @@ auto parse_add_expr(std::span<Token> t_tokens, size_t t_idx)
   if (!first_ret) {
     return std::unexpected{first_ret.error()};
   }
-  std::vector<AddExprAst::AddGr> follows{};
+  std::vector<AddExprAst::AddGr> &&follows{};
   auto idx = first_ret.value().second;
 
   {
     using enum AddExprAst::AddOp;
 
-    auto get_add_op = [=](size_t t_idx) -> std::optional<AddExprAst::AddOp> {
+    auto get_add_op =
+        [t_tokens](size_t t_idx) -> std::optional<AddExprAst::AddOp> {
       switch (t_tokens[t_idx].type) {
       case TokenType::Plus:
         return Add;
@@ -308,11 +309,16 @@ auto parse_add_expr(std::span<Token> t_tokens, size_t t_idx)
           AddExprAst{std::move(first_ret->first), std::move(follows)}, idx};
     }
 
-    auto mul_exp_pair = parse_mul_expr(t_tokens, idx);
+    // add 1 since idx is expected to be the add_op.
+    auto mul_exp_pair = parse_mul_expr(t_tokens, idx + 1);
     for (; mul_exp_pair && add_op;
-         mul_exp_pair = parse_mul_expr(t_tokens, idx)) {
+         mul_exp_pair = parse_mul_expr(t_tokens, idx + 1)) {
       follows.emplace_back(*add_op, mul_exp_pair->first);
       add_op = get_add_op(mul_exp_pair->second);
+      if (!add_op) {
+        return std::pair{
+            AddExprAst{std::move(first_ret->first), std::move(follows)}, idx};
+      }
       idx = mul_exp_pair->second;
     }
     if (!mul_exp_pair) {
@@ -324,13 +330,114 @@ auto parse_add_expr(std::span<Token> t_tokens, size_t t_idx)
                    idx};
 }
 
+auto parse_mul_expr(std::span<Token> t_tokens, size_t t_idx)
+    -> std::expected<std::pair<MulExprAst, size_t>, ParseError> {
+  auto first_ret = parse_unary_expr(t_tokens, t_idx);
+  if (!first_ret) {
+    return std::unexpected{first_ret.error()};
+  }
+  std::vector<MulExprAst::MulGr> &&follows{};
+  auto idx = first_ret->second;
+  {
+    auto get_mul_op =
+        [t_tokens](size_t t_idx) -> std::optional<MulExprAst::MulOp> {
+      using enum MulExprAst::MulOp;
+      switch (t_tokens[t_idx].type) {
+      case TokenType::Star:
+        return Mul;
+      case TokenType::Slash:
+        return Div;
+      default:
+        return std::nullopt;
+      }
+    };
+    auto mul_op = get_mul_op(first_ret->second);
+    if (!mul_op) {
+      return std::pair{MulExprAst{first_ret->first}, first_ret->second};
+    }
+    // add 1 since idx is expected to be the mul_op.
+    auto &&un_expr_pair = parse_unary_expr(t_tokens, idx + 1);
+    for (; un_expr_pair && mul_op;
+         un_expr_pair = parse_unary_expr(t_tokens, idx + 1)) {
+      follows.emplace_back(*mul_op, un_expr_pair->first);
+      mul_op = get_mul_op(un_expr_pair->second);
+      if (!mul_op) {
+        return std::pair{MulExprAst{first_ret->first, std::move(follows)},
+                         first_ret->second};
+      }
+      idx = un_expr_pair->second;
+    }
+    if (!un_expr_pair) {
+      return std::unexpected{un_expr_pair.error()};
+    }
+  }
+  return std::pair{MulExprAst{first_ret->first, std::move(follows)}, idx};
+}
+
+auto parse_unary_expr(std::span<Token> t_tokens, size_t t_idx)
+    -> std::expected<std::pair<UnaryExprAst, size_t>, ParseError> {
+  auto un_op_parse = [=]() -> std::optional<UnaryExprAst::UnOp> {
+    using enum UnaryExprAst::UnOp;
+    switch (t_tokens[t_idx].type) {
+    case TokenType::Minus:
+      return Minus;
+    case TokenType::Plus:
+      return Plus;
+    default:
+      return std::nullopt;
+    }
+  }();
+  auto lit_start_idx = un_op_parse ? t_idx + 1 : t_idx;
+  auto un_op = un_op_parse.value_or(UnaryExprAst::UnOp::Plus);
+  auto &&lit = parse_lit_expr(t_tokens, lit_start_idx);
+  if (!lit) {
+    return std::unexpected{lit.error()};
+  }
+  return std::pair{UnaryExprAst{un_op, lit->first}, lit->second};
+}
+
+auto parse_lit_expr(std::span<Token> t_tokens, size_t t_idx)
+    -> std::expected<std::pair<LitExprAst, size_t>, ParseError> {
+  using enum TokenType;
+  switch (t_tokens[t_idx].type) {
+  case Number:
+    // TODO: change Token::lexeme into some kind of variant instead.
+    return std::pair{LitExprAst{NumberAst{std::stol(t_tokens[t_idx].lexeme)}},
+                     t_idx + 1};
+  case String:
+    return std::pair{LitExprAst{StrAst{std::move(t_tokens[t_idx].lexeme)}},
+                     t_idx + 1};
+  case LeftParen: {
+    auto &&expr_res = parse_expr(t_tokens, t_idx + 1);
+    if (!expr_res) {
+      return std::unexpected{expr_res.error()};
+    }
+    return std::pair{LitExprAst{expr_res->first}, expr_res->second};
+  }
+  default:
+    fmt::print(stderr, "Error, only literal numbers and strings supported!!!");
+    std::unreachable();
+  }
+}
+
 } // namespace
 
 namespace tinydb::stmt {
 auto parse(std::span<Token> t_tokens) -> std::expected<ParseRet, ParseError> {
   [[maybe_unused]] auto stfu = t_tokens;
   [[maybe_unused]] size_t tok_idx = 0;
-  ParseRet ret{};
+  auto &&expr_res = parse_expr(t_tokens, tok_idx);
+  if (!expr_res) {
+    return std::unexpected{expr_res.error()};
+  }
+
+  // expected a semicolon after an expr
+  if (t_tokens.size() <= expr_res->second ||
+      t_tokens[expr_res->second].type != TokenType::Semicolon) {
+    return std::unexpected{
+        ParseError{.type = ParseError::ErrType::UnendedStmt}};
+  }
+  ParseRet ret{.ast = Ast{expr_res->first}, .pos = expr_res->second};
   return ret;
 }
 

@@ -5,6 +5,7 @@ import std;
 #endif // !TINYDB_IMPORT_STD
 #ifdef TINYDB_MODULE
 import tinydb.stmt.parse;
+import tinydb.stmt.token;
 #else
 #include "parse.detail.hpp"
 #include "parse.hpp"
@@ -87,7 +88,7 @@ TEST(Parse, Mul) {
     std::println("{}", test_mul.format());
   }
 }
-//
+
 TEST(Parse, Plus) {
   {
     using enum MulExprAst::MulOp;
@@ -111,5 +112,18 @@ TEST(Parse, Plus) {
     ASSERT_EQ(std::get<int64_t>(test_add.eval()), 8);
     // j4f
     std::println("{}", test_add.format());
+  }
+}
+
+TEST(Parse, Actual) {
+  using enum TokenType;
+  {
+    std::vector num_tokens{Token{.lexeme{"34"sv}, .line = 0, .type = Number},
+                           {.lexeme{";"sv}, .line = 0, .type = Semicolon}};
+    auto parse_ret = parse(num_tokens);
+    ASSERT_TRUE(parse_ret);
+    auto eval_res = parse_ret->ast.do_eval();
+    ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
+    ASSERT_EQ(std::get<int64_t>(eval_res), 34);
   }
 }
