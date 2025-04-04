@@ -43,15 +43,15 @@ template <typename... Vis> struct Visitor : Vis... {
  * @brief Parses an expression. Duh.
  */
 [[maybe_unused]] auto parse_expr(std::span<Token>, size_t)
-    -> std::pair<ExprAst, size_t>;
+    -> std::expected<std::pair<ExprAst, size_t>, ParseError>;
 [[maybe_unused]] auto parse_add_expr(std::span<Token>, size_t)
-    -> std::pair<AddExprAst, size_t>;
+    -> std::expected<std::pair<AddExprAst, size_t>, ParseError>;
 [[maybe_unused]] auto parse_mul_expr(std::span<Token>, size_t)
-    -> std::pair<MulExprAst, size_t>;
+    -> std::expected<std::pair<MulExprAst, size_t>, ParseError>;
 [[maybe_unused]] auto parse_unary_expr(std::span<Token>, size_t)
-  -> std::pair<UnaryExprAst, size_t>;
+    -> std::expected<std::pair<UnaryExprAst, size_t>, ParseError>;
 [[maybe_unused]] auto parse_lit_expr(std::span<Token>, size_t)
-  -> std::pair<LitExprAst, size_t>;
+    -> std::expected<std::pair<LitExprAst, size_t>, ParseError>;
 
 } // namespace
 
@@ -264,6 +264,69 @@ static_assert(AstDump<AddExprAst>);
 static_assert(AstNode<ExprAst>);
 static_assert(AstDump<ExprAst>);
 
+} // namespace tinydb::stmt
+
+namespace {
+
+auto parse_expr(std::span<Token> t_tokens, size_t t_idx)
+    -> std::expected<std::pair<ExprAst, size_t>, ParseError> {
+  auto &&ret = parse_add_expr(t_tokens, t_idx);
+  if (!ret) {
+    return std::unexpected{ret.error()};
+  }
+  return std::pair{ExprAst{ret.value().first}, ret.value().second};
+}
+
+auto parse_add_expr(std::span<Token> t_tokens, size_t t_idx)
+    -> std::expected<std::pair<AddExprAst, size_t>, ParseError> {
+  auto &&first_ret = parse_mul_expr(t_tokens, t_idx);
+  if (!first_ret) {
+    return std::unexpected{first_ret.error()};
+  }
+  std::vector<AddExprAst::AddGr> follows{};
+  auto idx = first_ret.value().second;
+
+  {
+    using enum AddExprAst::AddOp;
+
+    auto get_add_op = [=](size_t t_idx) -> std::optional<AddExprAst::AddOp> {
+      switch (t_tokens[t_idx].type) {
+      case TokenType::Plus:
+        return Add;
+        break;
+      case TokenType::Minus:
+        return Sub;
+        break;
+      default:
+        return std::nullopt;
+        break;
+      }
+    };
+    auto add_op = get_add_op(idx);
+    if (!add_op) {
+      return std::pair{
+          AddExprAst{std::move(first_ret->first), std::move(follows)}, idx};
+    }
+
+    auto mul_exp_pair = parse_mul_expr(t_tokens, idx);
+    for (; mul_exp_pair && add_op;
+         mul_exp_pair = parse_mul_expr(t_tokens, idx)) {
+      follows.emplace_back(*add_op, mul_exp_pair->first);
+      add_op = get_add_op(mul_exp_pair->second);
+      idx = mul_exp_pair->second;
+    }
+    if (!mul_exp_pair) {
+      return std::unexpected{mul_exp_pair.error()};
+    }
+  }
+
+  return std::pair{AddExprAst{std::move(first_ret->first), std::move(follows)},
+                   idx};
+}
+
+} // namespace
+
+namespace tinydb::stmt {
 auto parse(std::span<Token> t_tokens) -> std::expected<ParseRet, ParseError> {
   [[maybe_unused]] auto stfu = t_tokens;
   [[maybe_unused]] size_t tok_idx = 0;
