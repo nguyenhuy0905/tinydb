@@ -315,11 +315,11 @@ auto parse_add_expr(std::span<Token> t_tokens, size_t t_idx)
          mul_exp_pair = parse_mul_expr(t_tokens, idx + 1)) {
       follows.emplace_back(*add_op, mul_exp_pair->first);
       add_op = get_add_op(mul_exp_pair->second);
+      idx = mul_exp_pair->second;
       if (!add_op) {
         return std::pair{
             AddExprAst{std::move(first_ret->first), std::move(follows)}, idx};
       }
-      idx = mul_exp_pair->second;
     }
     if (!mul_exp_pair) {
       return std::unexpected{mul_exp_pair.error()};
@@ -361,11 +361,10 @@ auto parse_mul_expr(std::span<Token> t_tokens, size_t t_idx)
          un_expr_pair = parse_unary_expr(t_tokens, idx + 1)) {
       follows.emplace_back(*mul_op, un_expr_pair->first);
       mul_op = get_mul_op(un_expr_pair->second);
-      if (!mul_op) {
-        return std::pair{MulExprAst{first_ret->first, std::move(follows)},
-                         first_ret->second};
-      }
       idx = un_expr_pair->second;
+      if (!mul_op) {
+        return std::pair{MulExprAst{first_ret->first, std::move(follows)}, idx};
+      }
     }
     if (!un_expr_pair) {
       return std::unexpected{un_expr_pair.error()};
@@ -412,7 +411,14 @@ auto parse_lit_expr(std::span<Token> t_tokens, size_t t_idx)
     if (!expr_res) {
       return std::unexpected{expr_res.error()};
     }
-    return std::pair{LitExprAst{expr_res->first}, expr_res->second};
+    if (t_tokens.size() <= expr_res->second ||
+        t_tokens[expr_res->second].type != RightParen) {
+      return std::unexpected{
+          ParseError{.type = ParseError::ErrType::UnexpectedChar}};
+    }
+    // in here, expr_res->second is the right paren. Which we don't care about.
+    // So, we skip that token.
+    return std::pair{LitExprAst{expr_res->first}, expr_res->second + 1};
   }
   default:
     fmt::print(stderr, "Error, only literal numbers and strings supported!!!");

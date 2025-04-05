@@ -118,12 +118,47 @@ TEST(Parse, Plus) {
 TEST(Parse, Actual) {
   using enum TokenType;
   {
-    std::vector num_tokens{Token{.lexeme{"34"sv}, .line = 0, .type = Number},
+    std::vector num_tokens{Token{.lexeme{"-"sv}, .line = 0, .type = Minus},
+                           Token{.lexeme{"34"sv}, .line = 0, .type = Number},
                            {.lexeme{";"sv}, .line = 0, .type = Semicolon}};
     auto parse_ret = parse(num_tokens);
     ASSERT_TRUE(parse_ret);
     auto eval_res = parse_ret->ast.do_eval();
     ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
-    ASSERT_EQ(std::get<int64_t>(eval_res), 34);
+    ASSERT_EQ(std::get<int64_t>(eval_res), -34);
+  }
+  {
+    // -34 + (-7 * 5);
+    std::vector add_expr_tokens{Token{.lexeme{"-"sv}, .line = 0, .type = Minus},
+                                {.lexeme{"34"sv}, .line = 0, .type = Number},
+                                {.lexeme{"+"sv}, .line = 0, .type = Plus},
+                                {.lexeme{"("sv}, .line = 0, .type = LeftParen},
+                                {.lexeme{"-"sv}, .line = 0, .type = Minus},
+                                {.lexeme{"7"sv}, .line = 0, .type = Number},
+                                {.lexeme{"*"sv}, .line = 0, .type = Star},
+                                {.lexeme{"5"sv}, .line = 0, .type = Number},
+                                {.lexeme{")"sv}, .line = 0, .type = RightParen},
+                                {.lexeme{";"sv}, .line = 0, .type = Semicolon}};
+    auto parse_ret = parse(add_expr_tokens);
+    ASSERT_TRUE(parse_ret);
+    auto eval_res = parse_ret->ast.do_eval();
+    ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
+    ASSERT_EQ(std::get<int64_t>(eval_res), -69);
+  }
+  {
+    // -34 + -7 * 5;
+    std::vector add_expr_tokens{Token{.lexeme{"-"sv}, .line = 0, .type = Minus},
+                                {.lexeme{"34"sv}, .line = 0, .type = Number},
+                                {.lexeme{"+"sv}, .line = 0, .type = Plus},
+                                {.lexeme{"-"sv}, .line = 0, .type = Minus},
+                                {.lexeme{"7"sv}, .line = 0, .type = Number},
+                                {.lexeme{"*"sv}, .line = 0, .type = Star},
+                                {.lexeme{"5"sv}, .line = 0, .type = Number},
+                                {.lexeme{";"sv}, .line = 0, .type = Semicolon}};
+    auto parse_ret = parse(add_expr_tokens);
+    ASSERT_TRUE(parse_ret);
+    auto eval_res = parse_ret->ast.do_eval();
+    ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
+    ASSERT_EQ(std::get<int64_t>(eval_res), -69);
   }
 }
