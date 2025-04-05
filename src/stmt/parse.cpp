@@ -82,7 +82,7 @@ LitExprAst::LitExprAst(std::variant<NumberAst, StrAst, ExprAst> t_data)
 
 [[nodiscard]] auto LitExprAst::format() const -> std::string {
   return fmt::format(
-      "(lit-exp: {})",
+      "{}",
       std::visit(
           Visitor{[](const AstNode auto &t_data) { return t_data.format(); },
                   [](const std::unique_ptr<ExprAst> &t_data) {
@@ -147,7 +147,7 @@ UnaryExprAst::UnaryExprAst(UnOp t_op, LitExprAst t_lit)
       return '-';
     }
   }();
-  return fmt::format("(un-exp: (un-op: {}) {})", un_op, m_lit.format());
+  return fmt::format("(un-exp {} {})", un_op, m_lit.format());
 }
 MulExprAst::MulExprAst(UnaryExprAst t_first, std::vector<MulGr> &&t_follows)
     : m_follow{std::move(t_follows)}, m_first{std::move(t_first)} {}
@@ -177,7 +177,10 @@ MulExprAst::MulExprAst(UnaryExprAst t_first) : m_first{std::move(t_first)} {}
 [[nodiscard]] auto MulExprAst::clone() const -> MulExprAst { return {*this}; }
 
 [[nodiscard]] auto MulExprAst::format() const -> std::string {
-  return fmt::format("(mul-exp: {}{})", m_first.format(), [&]() {
+  if (m_follow.empty()) {
+    return fmt::format("{}", m_first.format());
+  }
+  return fmt::format("(mul-exp {}{})", m_first.format(), [&]() {
     std::string ret{};
     for (const auto &[op, exp] : m_follow) {
       char c_op = [&]() {
@@ -189,7 +192,7 @@ MulExprAst::MulExprAst(UnaryExprAst t_first) : m_first{std::move(t_first)} {}
           return '/';
         }
       }();
-      ret.append(fmt::format("\n\t(mul-op: {}) {}", c_op, exp.format()));
+      ret.append(fmt::format(" {} {}", c_op, exp.format()));
     }
     return ret;
   }());
@@ -221,7 +224,10 @@ AddExprAst::AddExprAst(MulExprAst t_first) : m_first{std::move(t_first)} {}
 [[nodiscard]] auto AddExprAst::clone() const -> AddExprAst { return {*this}; }
 
 [[nodiscard]] auto AddExprAst::format() const -> std::string {
-  return fmt::format("(mul-exp: {}{})", m_first.format(), [&]() {
+  if (m_follow.empty()) {
+    return fmt::format("{}", m_first.format());
+  }
+  return fmt::format("(add-exp {}{})", m_first.format(), [&]() {
     std::string ret{};
     for (const auto &[op, exp] : m_follow) {
       char c_op = [&]() {
@@ -233,7 +239,7 @@ AddExprAst::AddExprAst(MulExprAst t_first) : m_first{std::move(t_first)} {}
           return '-';
         }
       }();
-      ret.append(fmt::format("\n\t(mul-op: {}) {}", c_op, exp.format()));
+      ret.append(fmt::format(" {} {}", c_op, exp.format()));
     }
     return ret;
   }());
@@ -246,7 +252,7 @@ ExprAst::ExprAst(AddExprAst t_add) : m_add{std::move(t_add)} {}
 [[nodiscard]] auto ExprAst::clone() const -> ExprAst { return {*this}; }
 
 [[nodiscard]] auto ExprAst::format() const -> std::string {
-  return fmt::format("(expr: {})", m_add.format());
+  return fmt::format("{}", m_add.format());
 }
 
 static_assert(AstNode<NumberAst>);

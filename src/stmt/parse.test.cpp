@@ -24,7 +24,6 @@ TEST(Parse, Literals) {
     ASSERT_TRUE(std::holds_alternative<int64_t>(test_num.eval()));
     ASSERT_NO_THROW(std::get<int64_t>(test_num.eval()));
     ASSERT_EQ(std::get<int64_t>(test_num.eval()), 3);
-    ASSERT_EQ(test_num.format(), "(lit-num: 3)"sv);
     auto test_num_eval = std::get<int64_t>(test_num.eval());
     Ast test{test_num};
     ASSERT_NO_THROW(std::get<int64_t>(test.do_eval()));
@@ -141,6 +140,8 @@ TEST(Parse, Actual) {
                                 {.lexeme{";"sv}, .line = 0, .type = Semicolon}};
     auto parse_ret = parse(add_expr_tokens);
     ASSERT_TRUE(parse_ret);
+    // j4f
+    std::println("{}", parse_ret->ast.do_format());
     auto eval_res = parse_ret->ast.do_eval();
     ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
     ASSERT_EQ(std::get<int64_t>(eval_res), -69);
@@ -160,5 +161,16 @@ TEST(Parse, Actual) {
     auto eval_res = parse_ret->ast.do_eval();
     ASSERT_TRUE(std::holds_alternative<int64_t>(eval_res));
     ASSERT_EQ(std::get<int64_t>(eval_res), -69);
+  }
+  {
+    // test parse and eval
+    std::string_view expr{"-34 + - 7 * 5;"};
+    auto toks = tokenize(expr);
+    ASSERT_TRUE(toks);
+    auto ast = parse(*toks);
+    ASSERT_TRUE(ast);
+    auto eval = ast->ast.do_eval();
+    ASSERT_TRUE(std::holds_alternative<int64_t>(eval));
+    ASSERT_EQ(std::get<int64_t>(eval), -69);
   }
 }

@@ -94,7 +94,7 @@ public:
   [[nodiscard]] auto eval() const -> EvalRet { return m_num; }
   [[nodiscard]] auto clone() const -> NumberAst { return NumberAst{m_num}; }
   [[nodiscard]] auto format() const -> std::string {
-    return fmt::format("(lit-num: {})", m_num);
+    return fmt::format("(num {})", m_num);
   }
 
 private:
@@ -110,7 +110,7 @@ public:
   [[nodiscard]] auto eval() const -> EvalRet { return m_str; }
   [[nodiscard]] auto clone() const -> StrAst { return StrAst{m_str}; }
   [[nodiscard]] auto format() const -> std::string {
-    return fmt::format("(lit-str: {})", m_str);
+    return fmt::format("(str {})", m_str);
   }
 
 private:
