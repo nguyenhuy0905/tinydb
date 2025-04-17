@@ -62,7 +62,7 @@ auto keyword_lookup(std::string_view t_sv) noexcept -> std::optional<TokenType>;
 class TokenizerData {
 public:
   explicit TokenizerData(std::string_view t_sv)
-      : m_remain_str{t_sv}, m_curr_token{} {}
+      : m_curr_token{}, m_remain_str{t_sv}  {}
   /**
    * @brief Consumes the current @ref TokenizerData instance, and returns its
    * token list.
@@ -72,9 +72,10 @@ public:
   constexpr auto move_token_list() && { return m_tokens; }
 
 private:
+  Token m_curr_token = Token::new_empty_at(1);
   std::vector<Token> m_tokens;
   std::string_view m_remain_str;
-  Token m_curr_token = Token::new_empty_at(1);
+  size_t m_line_pos = 0;
 
   [[nodiscard]] constexpr auto is_null_token() const -> bool {
     return m_curr_token.type == TokenType::Null;
@@ -90,6 +91,7 @@ private:
     }
     auto ret = m_remain_str.front();
     m_remain_str.remove_prefix(1);
+    ++m_line_pos;
     return ret;
   }
 
@@ -106,13 +108,17 @@ private:
   }
 
   auto add_next_char() -> bool {
-    if (m_remain_str.empty()) {
-      return false;
-    }
-
-    m_curr_token.lexeme.push_back(m_remain_str.front());
-    m_remain_str.remove_prefix(1);
-    return true;
+    // if (m_remain_str.empty()) {
+    //   return false;
+    // }
+    //
+    // m_curr_token.lexeme.push_back(m_remain_str.front());
+    // m_remain_str.remove_prefix(1);
+    // return true;
+    return pop_next_char().transform([&](const char t_c) {
+          m_curr_token.lexeme.push_back(t_c);
+          return true;
+        }).has_value();
   }
 
   /**
@@ -145,7 +151,7 @@ private:
     auto line_num = (m_curr_token.type == TokenType::Semicolon)
                         ? m_curr_token.line + 1
                         : m_curr_token.line;
-    m_tokens.push_back(m_curr_token);
+    m_tokens.emplace_back(std::move(m_curr_token));
     m_curr_token = Token::new_empty_at(line_num);
     return true;
   }
